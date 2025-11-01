@@ -10,7 +10,7 @@ interface StatCardProps {
   iconColor?: string;
 }
 
-export function StatCard({ title, value, change, changeType, icon: Icon, iconColor = "bg-primary" }: StatCardProps) {
+export function StatCard({ title, value, change, changeType, icon: Icon, iconColor }: StatCardProps) {
   return (
     <Card className="stat-card">
       <CardContent className="p-6">
@@ -24,8 +24,8 @@ export function StatCard({ title, value, change, changeType, icon: Icon, iconCol
               </p>
             )}
           </div>
-          <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconColor}`}>
-            <Icon className="h-6 w-6 text-primary-foreground" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(var(--stat-icon-bg))]">
+            <Icon className="h-6 w-6 text-[hsl(var(--stat-icon-color))]" />
           </div>
         </div>
       </CardContent>
