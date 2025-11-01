@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Footer } from "@/components/layout/Footer";
 import { Bell, Search, MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,6 +104,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-6 bg-background">
             {children}
           </main>
+          <Footer />
         </div>
       </div>
     </SidebarProvider>
