@@ -24,7 +24,7 @@ export default function Auth() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual authentication with Lovable Cloud
-    navigate("/");
+    navigate("/dashboard");
   };
 
   return (
