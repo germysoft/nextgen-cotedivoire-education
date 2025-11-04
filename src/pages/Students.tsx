@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Filter, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { AddStudentDialog } from "@/components/students/AddStudentDialog";
 import {
   Table,
   TableBody,
@@ -53,10 +54,7 @@ export default function Students() {
           <h1 className="text-3xl font-bold tracking-tight">Gestion des Élèves</h1>
           <p className="text-muted-foreground">Liste complète des élèves inscrits</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvel Élève
-        </Button>
+        <AddStudentDialog />
       </div>
 
       <Card>

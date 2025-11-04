@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Eye, Edit, Phone, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Filter, Download, Eye, Edit, Phone, Mail } from "lucide-react";
+import { AddTeacherDialog } from "@/components/teachers/AddTeacherDialog";
 import {
   Table,
   TableBody,
@@ -33,10 +34,7 @@ export default function Teachers() {
           <h1 className="text-3xl font-bold tracking-tight">Gestion des Enseignants</h1>
           <p className="text-muted-foreground">Corps professoral de l'établissement</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvel Enseignant
-        </Button>
+        <AddTeacherDialog />
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

@@ -1,0 +1,103 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { GraduationCap, Globe } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export default function Auth() {
+  const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement actual authentication with Lovable Cloud
+    navigate("/");
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-4 text-center">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="h-10 w-10 text-primary" />
+            </div>
+          </div>
+          <div>
+            <CardTitle className="text-2xl font-bold">{t('auth.welcome')}</CardTitle>
+            <CardDescription>{t('auth.subtitle')}</CardDescription>
+          </div>
+          <div className="flex justify-center">
+            <Select value={language} onValueChange={(value) => setLanguage(value as 'fr' | 'en' | 'es')}>
+              <SelectTrigger className="w-32">
+                <Globe className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fr">Français</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="es">Español</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">{t('auth.email')}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="exemple@ecole.ci"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t('auth.password')}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" />
+                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                  {t('auth.rememberMe')}
+                </Label>
+              </div>
+              <Button variant="link" className="p-0 h-auto text-sm">
+                {t('auth.forgotPassword')}
+              </Button>
+            </div>
+            <Button type="submit" className="w-full">
+              {t('auth.signIn')}
+            </Button>
+          </form>
+          <div className="mt-6 text-center text-xs text-muted-foreground">
+            <p>© 2024 NextGen Éducation</p>
+            <p className="mt-1">Conforme aux standards MENA - Côte d'Ivoire</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
