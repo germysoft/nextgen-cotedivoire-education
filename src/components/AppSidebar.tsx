@@ -1,4 +1,4 @@
-import { Home, Users, GraduationCap, BookOpen, Calendar, DollarSign, MessageSquare, Settings, BarChart3, FileText, Building2 } from "lucide-react";
+import { Home, Users, GraduationCap, BookOpen, Calendar, DollarSign, MessageSquare, Settings, BarChart3, FileText, Building2, Heart, Library, Briefcase, Bus } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -14,16 +14,19 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Tableau de Bord", url: "/", icon: Home },
+  { title: "Tableau de Bord", url: "/dashboard", icon: Home },
   { title: "Élèves", url: "/students", icon: Users },
   { title: "Enseignants", url: "/teachers", icon: GraduationCap },
   { title: "Classes", url: "/classes", icon: BookOpen },
   { title: "Notes", url: "/grades", icon: FileText },
   { title: "Emploi du Temps", url: "/schedule", icon: Calendar },
   { title: "Comptabilité", url: "/finance", icon: DollarSign },
+  { title: "Ressources Humaines", url: "/hr", icon: Briefcase },
+  { title: "Messagerie", url: "/messaging", icon: MessageSquare },
+  { title: "Infrastructures", url: "/facilities", icon: Bus },
+  { title: "Bibliothèque", url: "/library", icon: Library },
+  { title: "Infirmerie", url: "/infirmary", icon: Heart },
   { title: "Statistiques", url: "/statistics", icon: BarChart3 },
-  { title: "Messagerie", url: "/messages", icon: MessageSquare },
-  { title: "Infrastructure", url: "/infrastructure", icon: Building2 },
   { title: "Paramètres", url: "/settings", icon: Settings },
 ];
 

@@ -13,6 +13,11 @@ import Teachers from "./pages/Teachers";
 import Classes from "./pages/Classes";
 import Grades from "./pages/Grades";
 import Finance from "./pages/Finance";
+import HR from "./pages/HR";
+import Messaging from "./pages/Messaging";
+import Facilities from "./pages/Facilities";
+import Library from "./pages/Library";
+import Infirmary from "./pages/Infirmary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,14 +35,19 @@ const App = () => (
             <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/students" element={<MainLayout><Students /></MainLayout>} />
           <Route path="/teachers" element={<MainLayout><Teachers /></MainLayout>} />
-          <Route path="/classes" element={<MainLayout><Classes /></MainLayout>} />
-          <Route path="/grades" element={<MainLayout><Grades /></MainLayout>} />
-          <Route path="/schedule" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/finance" element={<MainLayout><Finance /></MainLayout>} />
-          <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/settings" element={<MainLayout><Dashboard /></MainLayout>} />
+           <Route path="/classes" element={<MainLayout><Classes /></MainLayout>} />
+           <Route path="/grades" element={<MainLayout><Grades /></MainLayout>} />
+           <Route path="/schedule" element={<MainLayout><Dashboard /></MainLayout>} />
+           <Route path="/finance" element={<MainLayout><Finance /></MainLayout>} />
+           <Route path="/hr" element={<MainLayout><HR /></MainLayout>} />
+           <Route path="/messaging" element={<MainLayout><Messaging /></MainLayout>} />
+           <Route path="/facilities" element={<MainLayout><Facilities /></MainLayout>} />
+           <Route path="/library" element={<MainLayout><Library /></MainLayout>} />
+           <Route path="/infirmary" element={<MainLayout><Infirmary /></MainLayout>} />
+           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
+           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
+           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
+           <Route path="/settings" element={<MainLayout><Dashboard /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
