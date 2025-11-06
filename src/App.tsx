@@ -21,6 +21,8 @@ import Infirmary from "./pages/Infirmary";
 import Extracurricular from "./pages/Extracurricular";
 import Inventory from "./pages/Inventory";
 import Partnerships from "./pages/Partnerships";
+import ParentPortal from "./pages/ParentPortal";
+import ParentLogin from "./pages/ParentLogin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,8 @@ const App = () => (
           <Route path="/extracurricular" element={<MainLayout><Extracurricular /></MainLayout>} />
           <Route path="/inventory" element={<MainLayout><Inventory /></MainLayout>} />
           <Route path="/partnerships" element={<MainLayout><Partnerships /></MainLayout>} />
+          <Route path="/parent-login" element={<ParentLogin />} />
+          <Route path="/parent-portal" element={<ParentPortal />} />
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />

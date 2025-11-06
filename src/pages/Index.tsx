@@ -72,13 +72,13 @@ export default function Index() {
             Solution moderne et complète conforme aux standards du Ministère de l'Éducation Nationale
             de Côte d'Ivoire (MENA)
           </p>
-          <div className="flex gap-4 justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button size="lg" onClick={() => navigate("/auth")}>
               Accéder à la plateforme
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline">
-              En savoir plus
+            <Button size="lg" variant="outline" onClick={() => navigate("/parent-login")}>
+              Portail Parents & Élèves
             </Button>
           </div>
         </div>
