@@ -1,0 +1,265 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Package, 
+  Search, 
+  Plus,
+  AlertTriangle,
+  TrendingDown,
+  BarChart3,
+  Download
+} from "lucide-react";
+import { useState } from "react";
+
+const mockSupplies = [
+  { id: 1, name: "Cahiers 200 pages", category: "Fournitures", stock: 150, minStock: 100, unit: "unités", value: 75000 },
+  { id: 2, name: "Stylos bleus", category: "Fournitures", stock: 45, minStock: 50, unit: "boîtes", value: 22500 },
+  { id: 3, name: "Ramettes A4", category: "Bureautique", stock: 80, minStock: 30, unit: "ramettes", value: 160000 },
+  { id: 4, name: "Marqueurs tableau", category: "Matériel pédagogique", stock: 20, minStock: 25, unit: "boîtes", value: 30000 },
+  { id: 5, name: "Calculatrices", category: "Matériel pédagogique", stock: 35, minStock: 20, unit: "unités", value: 175000 },
+];
+
+const mockEquipment = [
+  { id: 1, name: "Ordinateur Dell", category: "Informatique", quantity: 25, state: "Bon", location: "Salle Info", value: 12500000 },
+  { id: 2, name: "Vidéoprojecteur Epson", category: "Audiovisuel", quantity: 8, state: "Bon", location: "Classes", value: 4000000 },
+  { id: 3, name: "Tableau interactif", category: "Pédagogique", quantity: 3, state: "Excellent", location: "Salles A", value: 4500000 },
+  { id: 4, name: "Microscopes", category: "Laboratoire", quantity: 12, state: "Bon", location: "Labo Sciences", value: 2400000 },
+  { id: 5, name: "Imprimante HP", category: "Bureautique", quantity: 5, state: "Moyen", location: "Administration", value: 1250000 },
+];
+
+const mockMovements = [
+  { id: 1, date: "2024-11-05", type: "Sortie", item: "Cahiers 200 pages", quantity: 50, user: "Secrétaire", reason: "Distribution 6ème" },
+  { id: 2, date: "2024-11-04", type: "Entrée", item: "Ramettes A4", quantity: 30, user: "Comptable", reason: "Achat fournisseur" },
+  { id: 3, date: "2024-11-03", type: "Sortie", item: "Stylos bleus", quantity: 10, user: "Censeur", reason: "Usage bureau" },
+  { id: 4, date: "2024-11-01", type: "Entrée", item: "Marqueurs tableau", quantity: 15, user: "Intendant", reason: "Réassort" },
+];
+
+export default function Inventory() {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const totalValue = mockSupplies.reduce((acc, item) => acc + item.value, 0);
+  const lowStockItems = mockSupplies.filter(item => item.stock < item.minStock).length;
+  const equipmentValue = mockEquipment.reduce((acc, item) => acc + item.value, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Gestion des Stocks</h1>
+          <p className="text-muted-foreground">Fournitures, équipements et patrimoine</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Inventaire
+          </Button>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter
+          </Button>
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valeur Fournitures</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalValue.toLocaleString()} FCFA</div>
+            <p className="text-xs text-muted-foreground">{mockSupplies.length} articles</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Alertes Stock</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{lowStockItems}</div>
+            <p className="text-xs text-muted-foreground">En dessous du seuil</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Équipements</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockEquipment.length}</div>
+            <p className="text-xs text-muted-foreground">Patrimoine actif</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valeur Totale</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {(equipmentValue + totalValue).toLocaleString()} FCFA
+            </div>
+            <p className="text-xs text-muted-foreground">Patrimoine total</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Inventaire</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="supplies">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="supplies">Fournitures</TabsTrigger>
+              <TabsTrigger value="equipment">Équipements</TabsTrigger>
+              <TabsTrigger value="movements">Mouvements</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="supplies" className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher une fourniture..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Article</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Stock Min</TableHead>
+                    <TableHead>Unité</TableHead>
+                    <TableHead>Valeur</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockSupplies.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{item.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={item.stock < item.minStock ? "destructive" : "default"}>
+                          {item.stock}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{item.minStock}</TableCell>
+                      <TableCell className="text-sm">{item.unit}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {item.value.toLocaleString()} FCFA
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost">Gérer</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="equipment" className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Équipement</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Quantité</TableHead>
+                    <TableHead>État</TableHead>
+                    <TableHead>Localisation</TableHead>
+                    <TableHead>Valeur</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockEquipment.map((equipment) => (
+                    <TableRow key={equipment.id}>
+                      <TableCell className="font-medium">{equipment.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{equipment.category}</Badge>
+                      </TableCell>
+                      <TableCell>{equipment.quantity}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            equipment.state === "Excellent" ? "default" : 
+                            equipment.state === "Bon" ? "secondary" : 
+                            "outline"
+                          }
+                        >
+                          {equipment.state}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {equipment.location}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {equipment.value.toLocaleString()} FCFA
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost">Voir</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="movements" className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Article</TableHead>
+                    <TableHead>Quantité</TableHead>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Motif</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockMovements.map((movement) => (
+                    <TableRow key={movement.id}>
+                      <TableCell className="font-mono text-sm">{movement.date}</TableCell>
+                      <TableCell>
+                        <Badge variant={movement.type === "Entrée" ? "default" : "secondary"}>
+                          {movement.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{movement.item}</TableCell>
+                      <TableCell>{movement.quantity}</TableCell>
+                      <TableCell className="text-sm">{movement.user}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {movement.reason}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost">Détails</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

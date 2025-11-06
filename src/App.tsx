@@ -18,6 +18,9 @@ import Messaging from "./pages/Messaging";
 import Facilities from "./pages/Facilities";
 import Library from "./pages/Library";
 import Infirmary from "./pages/Infirmary";
+import Extracurricular from "./pages/Extracurricular";
+import Inventory from "./pages/Inventory";
+import Partnerships from "./pages/Partnerships";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,10 +47,13 @@ const App = () => (
            <Route path="/facilities" element={<MainLayout><Facilities /></MainLayout>} />
            <Route path="/library" element={<MainLayout><Library /></MainLayout>} />
            <Route path="/infirmary" element={<MainLayout><Infirmary /></MainLayout>} />
-           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
-           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
-           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
-           <Route path="/settings" element={<MainLayout><Dashboard /></MainLayout>} />
+          <Route path="/extracurricular" element={<MainLayout><Extracurricular /></MainLayout>} />
+          <Route path="/inventory" element={<MainLayout><Inventory /></MainLayout>} />
+          <Route path="/partnerships" element={<MainLayout><Partnerships /></MainLayout>} />
+          <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
+          <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
+          <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
+          <Route path="/settings" element={<MainLayout><Dashboard /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

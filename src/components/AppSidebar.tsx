@@ -1,4 +1,4 @@
-import { Home, Users, GraduationCap, BookOpen, Calendar, DollarSign, MessageSquare, Settings, BarChart3, FileText, Building2, Heart, Library, Briefcase, Bus } from "lucide-react";
+import { Home, Users, GraduationCap, BookOpen, Calendar, DollarSign, MessageSquare, Settings, BarChart3, FileText, Building2, Heart, Library, Briefcase, Bus, Trophy, Package, Handshake } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -26,6 +26,9 @@ const menuItems = [
   { title: "Infrastructures", url: "/facilities", icon: Bus },
   { title: "Bibliothèque", url: "/library", icon: Library },
   { title: "Infirmerie", url: "/infirmary", icon: Heart },
+  { title: "Parascolaire", url: "/extracurricular", icon: Trophy },
+  { title: "Stocks", url: "/inventory", icon: Package },
+  { title: "Partenariats", url: "/partnerships", icon: Handshake },
   { title: "Statistiques", url: "/statistics", icon: BarChart3 },
   { title: "Paramètres", url: "/settings", icon: Settings },
 ];
