@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ import {
   TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
+import NotificationCenter, { type Notification } from "@/components/parent/NotificationCenter";
 
 // Mock student data
 const mockStudent = {
@@ -85,6 +86,31 @@ export default function ParentPortal() {
     toast.success("Téléchargement du bulletin en cours...");
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    // Navigate to the appropriate tab based on notification type
+    const tabMap = {
+      absence: "attendance",
+      retard: "attendance",
+      note: "grades",
+      paiement: "payments",
+    };
+    
+    toast.info("Navigation vers " + notification.title);
+    // You could add tab switching logic here
+  };
+
+  // Simulate real-time notifications for demo
+  useEffect(() => {
+    // Show a welcome notification after 2 seconds
+    const timer = setTimeout(() => {
+      toast.info("Bienvenue sur le Portail Parents", {
+        description: "Vous avez des notifications non lues à consulter",
+      });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -100,10 +126,13 @@ export default function ParentPortal() {
                 <p className="text-xs text-muted-foreground">NextGen Éducation</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
-            </Button>
+            <div className="flex items-center gap-2">
+              <NotificationCenter onNotificationClick={handleNotificationClick} />
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
+              </Button>
+            </div>
           </div>
         </div>
       </div>
