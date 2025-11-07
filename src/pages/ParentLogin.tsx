@@ -30,21 +30,27 @@ export default function ParentLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center">
-              <GraduationCap className="h-10 w-10 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/20">
+              <GraduationCap className="h-12 w-12 text-primary" />
             </div>
           </div>
-          <div>
-            <CardTitle className="text-2xl">Portail Parents & Élèves</CardTitle>
-            <CardDescription className="mt-2">
-              NextGen Éducation - Accès sécurisé au suivi scolaire
+          <h1 className="text-3xl font-bold text-foreground">Portail Parents & Élèves</h1>
+          <p className="text-muted-foreground mt-2">
+            NextGen Éducation - Accès sécurisé au suivi scolaire
+          </p>
+        </div>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Connexion</CardTitle>
+            <CardDescription>
+              Connectez-vous avec votre identifiant et code d'accès
             </CardDescription>
-          </div>
-        </CardHeader>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -94,16 +100,21 @@ export default function ParentLogin() {
             </div>
 
             {/* Demo credentials */}
-            <Card className="bg-muted/50 border-dashed">
-              <CardContent className="pt-4 pb-3">
-                <p className="text-xs font-medium mb-2">Accès de démonstration:</p>
-                <p className="text-xs text-muted-foreground">Email: parent@demo.ci</p>
-                <p className="text-xs text-muted-foreground">Code: 123456</p>
-              </CardContent>
-            </Card>
+            <div className="bg-muted/30 border border-dashed border-border rounded-lg p-4">
+              <p className="text-xs font-medium mb-2 text-foreground">Accès de démonstration:</p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Email:</span> parent@demo.ci
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Code:</span> 123456
+                </p>
+              </div>
+            </div>
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
