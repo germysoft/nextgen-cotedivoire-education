@@ -18,13 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const students = [
-  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1600077106724-946750eeaf3c?w=150&h=150&fit=crop" },
-  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&h=150&fit=crop" },
-  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "Actif", fees: "Partiel", photo: "https://images.unsplash.com/photo-1554244933-d876deb6b2ff?w=150&h=150&fit=crop" },
-  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150&h=150&fit=crop" },
-  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "Actif", fees: "En attente", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop" },
-  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1596788404239-d18a058c9c6d?w=150&h=150&fit=crop" },
-  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&h=150&fit=crop" },
+  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=150&h=150&fit=crop&crop=faces" },
+  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1595956246544-e697b3b12ac0?w=150&h=150&fit=crop&crop=faces" },
+  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "Actif", fees: "Partiel", photo: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=150&h=150&fit=crop&crop=faces" },
+  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces" },
+  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "Actif", fees: "En attente", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces" },
+  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces" },
+  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces" },
 ];
 
 const filterConfigs: FilterConfig[] = [
