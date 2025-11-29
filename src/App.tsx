@@ -66,6 +66,17 @@ import Sauvegarde from "./pages/parametrage/Sauvegarde";
 import Langues from "./pages/parametrage/Langues";
 import Logs from "./pages/parametrage/Logs";
 import Utilisateurs from "./pages/parametrage/Utilisateurs";
+import Contrats from "./pages/hr/Contrats";
+import Echeances from "./pages/scolarite/Echeances";
+import MENAImportExport from "./pages/scolarite/MENA";
+import Emails from "./pages/messaging/Emails";
+import PointageEnseignants from "./pages/enseignants/Pointage";
+import Assiduite from "./pages/enseignants/Assiduite";
+import FicheService from "./pages/enseignants/FicheService";
+import Caisse from "./pages/comptabilite/Caisse";
+import BulletinsNotes from "./pages/notes/Bulletins";
+import PlanningInfrastructures from "./pages/infrastructures/Planning";
+import GenericPlaceholder from "./pages/GenericPlaceholder";
 
 const queryClient = new QueryClient();
 
@@ -110,10 +121,14 @@ const App = () => (
           <Route path="/hr/conges" element={<MainLayout><Conges /></MainLayout>} />
           <Route path="/hr/pointage" element={<MainLayout><Pointage /></MainLayout>} />
           <Route path="/hr/historique" element={<MainLayout><HistoriqueCarriere /></MainLayout>} />
+          <Route path="/hr/contrats" element={<MainLayout><Contrats /></MainLayout>} />
           
           {/* Enseignants Routes */}
           <Route path="/teachers" element={<MainLayout><PlanningEnseignants /></MainLayout>} />
           <Route path="/enseignants/suivi-cours" element={<MainLayout><SuiviCours /></MainLayout>} />
+          <Route path="/enseignants/pointage" element={<MainLayout><PointageEnseignants /></MainLayout>} />
+          <Route path="/enseignants/assiduite" element={<MainLayout><Assiduite /></MainLayout>} />
+          <Route path="/enseignants/fiche-service" element={<MainLayout><FicheService /></MainLayout>} />
           
           {/* Pédagogie Routes */}
           <Route path="/pedagogie/elearning" element={<MainLayout><Elearning /></MainLayout>} />
@@ -128,18 +143,26 @@ const App = () => (
           <Route path="/notes/validation" element={<MainLayout><Validation /></MainLayout>} />
           <Route path="/notes/qcm" element={<MainLayout><QCM /></MainLayout>} />
           <Route path="/notes/moyennes" element={<MainLayout><Moyennes /></MainLayout>} />
+          <Route path="/notes/bulletins" element={<MainLayout><BulletinsNotes /></MainLayout>} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
           <Route path="/scolarite/matricule" element={<MainLayout><Matricule /></MainLayout>} />
           <Route path="/scolarite/historique" element={<MainLayout><Historique /></MainLayout>} />
+          <Route path="/scolarite/echeances" element={<MainLayout><Echeances /></MainLayout>} />
+          <Route path="/scolarite/mena" element={<MainLayout><MENAImportExport /></MainLayout>} />
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
+          <Route path="/portail/notes" element={<MainLayout><GenericPlaceholder title="Notes & Bulletins" description="Consultation des notes et bulletins scolaires" /></MainLayout>} />
+          <Route path="/portail/absences" element={<MainLayout><GenericPlaceholder title="Absences & Emploi du Temps" description="Suivi des absences et consultation de l'emploi du temps" /></MainLayout>} />
+          <Route path="/portail/paiements" element={<MainLayout><GenericPlaceholder title="Paiements Parents" description="Historique et gestion des paiements" /></MainLayout>} />
+          <Route path="/portail/chat" element={<MainLayout><GenericPlaceholder title="Chat Parents" description="Messagerie avec les enseignants et l'administration" /></MainLayout>} />
           <Route path="/dashboard/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />
           <Route path="/messaging/forum" element={<MainLayout><Forum /></MainLayout>} />
           <Route path="/messaging/notifications" element={<MainLayout><NotificationsAuto /></MainLayout>} />
+          <Route path="/messaging/emails" element={<MainLayout><Emails /></MainLayout>} />
           
           {/* Services Routes */}
           <Route path="/services/transport" element={<MainLayout><Transport /></MainLayout>} />
@@ -148,15 +171,60 @@ const App = () => (
           
           {/* Bibliothèque Routes */}
           <Route path="/bibliotheque/emprunts" element={<MainLayout><Emprunts /></MainLayout>} />
+          <Route path="/bibliotheque/alertes" element={<MainLayout><GenericPlaceholder title="Alertes Retard" description="Gestion des alertes de retour de livres" /></MainLayout>} />
+          <Route path="/bibliotheque/inventaire" element={<MainLayout><GenericPlaceholder title="Inventaire Bibliothèque" description="Inventaire des livres et ressources" /></MainLayout>} />
           
           {/* Infirmerie Routes */}
           <Route path="/infirmerie/consultations" element={<MainLayout><Consultations /></MainLayout>} />
+          <Route path="/infirmerie/historique" element={<MainLayout><GenericPlaceholder title="Historique Médical" description="Historique des consultations médicales" /></MainLayout>} />
+          <Route path="/infirmerie/alertes" element={<MainLayout><GenericPlaceholder title="Alertes Urgentes" description="Gestion des urgences médicales" /></MainLayout>} />
           
           {/* Comptabilité Routes */}
           <Route path="/comptabilite/bilan" element={<MainLayout><Bilan /></MainLayout>} />
+          <Route path="/comptabilite/caisse" element={<MainLayout><Caisse /></MainLayout>} />
+          <Route path="/comptabilite/journaux" element={<MainLayout><GenericPlaceholder title="Journaux Comptables" description="Journaux comptables et écritures" /></MainLayout>} />
+          <Route path="/comptabilite/paiements" element={<MainLayout><GenericPlaceholder title="Paiements Scolaires" description="Gestion des paiements" /></MainLayout>} />
+          <Route path="/comptabilite/quittances" element={<MainLayout><GenericPlaceholder title="Quittances" description="Génération de quittances" /></MainLayout>} />
           
           {/* Infrastructures Routes */}
           <Route path="/infrastructures/maintenance" element={<MainLayout><Maintenance /></MainLayout>} />
+          <Route path="/infrastructures/planning" element={<MainLayout><PlanningInfrastructures /></MainLayout>} />
+          
+          {/* Parascolaire Routes */}
+          <Route path="/parascolaire/participation" element={<MainLayout><GenericPlaceholder title="Participation" description="Suivi de la participation aux activités" /></MainLayout>} />
+          <Route path="/parascolaire/evenements" element={<MainLayout><GenericPlaceholder title="Événements" description="Gestion des événements scolaires" /></MainLayout>} />
+          
+          {/* Stocks Routes */}
+          <Route path="/stocks/seuils" element={<MainLayout><GenericPlaceholder title="Seuils d'Alerte" description="Configuration des seuils de stock" /></MainLayout>} />
+          <Route path="/stocks/inventaire" element={<MainLayout><GenericPlaceholder title="Inventaire Auto" description="Inventaire automatique" /></MainLayout>} />
+          
+          {/* Partenariats Routes */}
+          <Route path="/partenariats/reunions" element={<MainLayout><GenericPlaceholder title="Réunions & PV" description="Gestion des réunions et procès-verbaux" /></MainLayout>} />
+          <Route path="/partenariats/sponsors" element={<MainLayout><GenericPlaceholder title="Sponsors" description="Gestion des sponsors et partenaires" /></MainLayout>} />
+          
+          {/* MENA Routes */}
+          <Route path="/mena/sync" element={<MainLayout><GenericPlaceholder title="Synchronisation MENA" description="Synchronisation avec le système MENA" /></MainLayout>} />
+          <Route path="/mena/fichier" element={<MainLayout><GenericPlaceholder title="Fichier National" description="Gestion du fichier national" /></MainLayout>} />
+          <Route path="/mena/preinscriptions" element={<MainLayout><GenericPlaceholder title="Préinscriptions" description="Gestion des préinscriptions MENA" /></MainLayout>} />
+          <Route path="/mena/decisions" element={<MainLayout><GenericPlaceholder title="Décisions & Bilans" description="Décisions et bilans MENA" /></MainLayout>} />
+          
+          {/* Outils Routes */}
+          <Route path="/outils/bureautique" element={<MainLayout><GenericPlaceholder title="Suite Bureautique" description="Outils de bureautique en ligne" /></MainLayout>} />
+          <Route path="/outils/signature" element={<MainLayout><GenericPlaceholder title="Signature Électronique" description="Signature électronique de documents" /></MainLayout>} />
+          <Route path="/outils/modeles" element={<MainLayout><GenericPlaceholder title="Modèles de Courriers" description="Bibliothèque de modèles" /></MainLayout>} />
+          <Route path="/outils/cloud" element={<MainLayout><GenericPlaceholder title="Cloud Sécurisé" description="Stockage cloud sécurisé" /></MainLayout>} />
+          
+          {/* Statistiques Routes */}
+          <Route path="/statistiques/tableaux" element={<MainLayout><GenericPlaceholder title="Tableaux Croisés" description="Tableaux croisés dynamiques" /></MainLayout>} />
+          <Route path="/statistiques/export" element={<MainLayout><GenericPlaceholder title="Export Multi-format" description="Export des rapports" /></MainLayout>} />
+          <Route path="/statistiques/planifies" element={<MainLayout><GenericPlaceholder title="Rapports Planifiés" description="Rapports automatiques planifiés" /></MainLayout>} />
+          
+          {/* Modules Optionnels Routes */}
+          <Route path="/modules/elearning" element={<MainLayout><GenericPlaceholder title="E-learning Avancé" description="Plateforme e-learning" /></MainLayout>} />
+          <Route path="/modules/mobile" element={<MainLayout><GenericPlaceholder title="Application Mobile" description="App mobile native" /></MainLayout>} />
+          <Route path="/modules/qrcode" element={<MainLayout><GenericPlaceholder title="QR Code Scolaire" description="Gestion par QR codes" /></MainLayout>} />
+          <Route path="/modules/paiement-mobile" element={<MainLayout><GenericPlaceholder title="Paiement Mobile" description="Paiement mobile money" /></MainLayout>} />
+          <Route path="/modules/ia" element={<MainLayout><GenericPlaceholder title="Intelligence Artificielle" description="Outils IA pour l'éducation" /></MainLayout>} />
           
           {/* Paramétrage Routes */}
           <Route path="/settings" element={<MainLayout><Utilisateurs /></MainLayout>} />
