@@ -24,6 +24,13 @@ import Partnerships from "./pages/Partnerships";
 import ParentPortal from "./pages/ParentPortal";
 import ParentLogin from "./pages/ParentLogin";
 import NotFound from "./pages/NotFound";
+import DashboardAdmin from "./pages/dashboard/Admin";
+import DashboardPedagogique from "./pages/dashboard/Pedagogique";
+import Affectations from "./pages/hr/Affectations";
+import Paiements from "./pages/scolarite/Paiements";
+import SMSPro from "./pages/messaging/SMS";
+import Transport from "./pages/services/Transport";
+import Cantine from "./pages/services/Cantine";
 
 const queryClient = new QueryClient();
 
@@ -52,8 +59,26 @@ const App = () => (
           <Route path="/extracurricular" element={<MainLayout><Extracurricular /></MainLayout>} />
           <Route path="/inventory" element={<MainLayout><Inventory /></MainLayout>} />
           <Route path="/partnerships" element={<MainLayout><Partnerships /></MainLayout>} />
-          <Route path="/parent-login" element={<ParentLogin />} />
+           <Route path="/parent-login" element={<ParentLogin />} />
           <Route path="/parent-portal" element={<ParentPortal />} />
+          
+          {/* Dashboard Routes */}
+          <Route path="/dashboard/admin" element={<MainLayout><DashboardAdmin /></MainLayout>} />
+          <Route path="/dashboard/pedagogique" element={<MainLayout><DashboardPedagogique /></MainLayout>} />
+          
+          {/* HR Routes */}
+          <Route path="/hr/affectations" element={<MainLayout><Affectations /></MainLayout>} />
+          
+          {/* Scolarité Routes */}
+          <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
+          
+          {/* Messaging Routes */}
+          <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />
+          
+          {/* Services Routes */}
+          <Route path="/services/transport" element={<MainLayout><Transport /></MainLayout>} />
+          <Route path="/services/cantine" element={<MainLayout><Cantine /></MainLayout>} />
+          
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
