@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
 import { GradeConfig } from "./GradeEntryWizard";
+import { useRole } from "@/contexts/RoleContext";
+import { 
+  getTeacherClasses, 
+  getTeacherSubjectsForClass,
+  mockTeacherAssignments 
+} from "@/data/teacherAssignments";
 
 interface GradeConfigurationProps {
   onComplete: (config: GradeConfig) => void;
@@ -47,20 +53,50 @@ const columnTypes = [
 ];
 
 export function GradeConfiguration({ onComplete }: GradeConfigurationProps) {
+  const { currentRole, currentUserId } = useRole();
   const [classId, setClassId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [gradeType, setGradeType] = useState<"10" | "20" | "40" | "bonus">("20");
   const [trimester, setTrimester] = useState("1");
   const [columnName, setColumnName] = useState("");
   const [coefficient, setCoefficient] = useState("1");
+  
+  // Listes filtrées selon le rôle et l'utilisateur
+  const [availableClasses, setAvailableClasses] = useState(mockClasses);
+  const [availableSubjects, setAvailableSubjects] = useState(mockSubjects);
+
+  // Filtrer les classes et matières pour les enseignants
+  useEffect(() => {
+    if (currentRole === 'enseignant') {
+      const teacherClasses = getTeacherClasses(currentUserId);
+      setAvailableClasses(teacherClasses);
+      
+      // Si une classe est sélectionnée, filtrer les matières
+      if (classId) {
+        const teacherSubjects = getTeacherSubjectsForClass(currentUserId, classId);
+        setAvailableSubjects(teacherSubjects);
+      } else {
+        setAvailableSubjects([]);
+      }
+    } else {
+      // Admin/Directeur voit tout
+      setAvailableClasses(mockClasses);
+      setAvailableSubjects(mockSubjects);
+    }
+  }, [currentRole, currentUserId, classId]);
+
+  // Réinitialiser la matière quand la classe change
+  useEffect(() => {
+    setSubjectId("");
+  }, [classId]);
 
   const canProceed = classId && subjectId && gradeType && trimester && columnName && coefficient;
 
   const handleNext = () => {
     if (!canProceed) return;
 
-    const selectedClass = mockClasses.find(c => c.id === classId);
-    const selectedSubject = mockSubjects.find(s => s.id === subjectId);
+    const selectedClass = availableClasses.find(c => c.id === classId);
+    const selectedSubject = availableSubjects.find(s => s.id === subjectId);
 
     if (selectedClass && selectedSubject) {
       onComplete({
@@ -88,27 +124,49 @@ export function GradeConfiguration({ onComplete }: GradeConfigurationProps) {
                   <SelectValue placeholder="Sélectionner une classe" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockClasses.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </SelectItem>
-                  ))}
+                  {availableClasses.length > 0 ? (
+                    availableClasses.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Aucune classe assignée
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label>Matière *</Label>
-              <Select value={subjectId} onValueChange={setSubjectId}>
+              <Select 
+                value={subjectId} 
+                onValueChange={setSubjectId}
+                disabled={!classId || availableSubjects.length === 0}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une matière" />
+                  <SelectValue placeholder={
+                    !classId 
+                      ? "Sélectionner d'abord une classe" 
+                      : availableSubjects.length === 0 
+                        ? "Aucune matière assignée pour cette classe"
+                        : "Sélectionner une matière"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockSubjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
+                  {availableSubjects.length > 0 ? (
+                    availableSubjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Aucune matière assignée
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
