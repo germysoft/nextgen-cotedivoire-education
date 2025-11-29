@@ -71,6 +71,7 @@ const menuStructure: MenuItem[] = [
       { title: "Conseils de Classe", url: "/pedagogie/conseils" },
       { title: "Bulletins MENA", url: "/pedagogie/bulletins" },
       { title: "Discipline", url: "/pedagogie/discipline" },
+      { title: "Convocations Parents", url: "/pedagogie/convocations" },
       { title: "E-learning", url: "/pedagogie/elearning" },
     ],
   },

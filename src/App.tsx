@@ -76,6 +76,7 @@ import FicheService from "./pages/enseignants/FicheService";
 import Caisse from "./pages/comptabilite/Caisse";
 import BulletinsNotes from "./pages/notes/Bulletins";
 import PlanningInfrastructures from "./pages/infrastructures/Planning";
+import Convocations from "./pages/Convocations";
 import GenericPlaceholder from "./pages/GenericPlaceholder";
 
 const queryClient = new QueryClient();
@@ -137,6 +138,7 @@ const App = () => (
           <Route path="/pedagogie/conseils" element={<MainLayout><Conseils /></MainLayout>} />
           <Route path="/pedagogie/discipline" element={<MainLayout><Discipline /></MainLayout>} />
           <Route path="/pedagogie/bulletins" element={<MainLayout><Bulletins /></MainLayout>} />
+          <Route path="/pedagogie/convocations" element={<MainLayout><Convocations /></MainLayout>} />
           
           {/* Notes Routes */}
           <Route path="/notes/baremes" element={<MainLayout><Baremes /></MainLayout>} />
