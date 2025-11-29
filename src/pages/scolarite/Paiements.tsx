@@ -8,8 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, TrendingUp, AlertCircle, CheckCircle, Search, Download, Plus } from "lucide-react";
+import { DollarSign, TrendingUp, AlertCircle, CheckCircle, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { DataTableFilters, FilterConfig } from "@/components/data-table/DataTableFilters";
+import { DataTableExport } from "@/components/data-table/DataTableExport";
 import { toast } from "sonner";
 
 const paiements = [
@@ -37,10 +39,49 @@ const evolutionMensuelle = [
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--destructive))'];
 
+const filterConfigs: FilterConfig[] = [
+  {
+    key: "statut",
+    label: "Statut",
+    type: "select",
+    options: [
+      { value: "Soldé", label: "Soldé" },
+      { value: "Partiel", label: "Partiel" },
+      { value: "Impayé", label: "Impayé" },
+    ],
+  },
+  {
+    key: "classe",
+    label: "Classe",
+    type: "select",
+    options: [
+      { value: "6ème A", label: "6ème A" },
+      { value: "5ème B", label: "5ème B" },
+      { value: "4ème A", label: "4ème A" },
+      { value: "3ème C", label: "3ème C" },
+      { value: "Terminale S", label: "Terminale S" },
+    ],
+  },
+  {
+    key: "montantMin",
+    label: "Montant minimum",
+    type: "number",
+  },
+];
+
+const exportColumns = [
+  { key: "matricule", label: "Matricule" },
+  { key: "eleve", label: "Élève" },
+  { key: "classe", label: "Classe" },
+  { key: "montant_du", label: "Montant Dû (FCFA)" },
+  { key: "montant_paye", label: "Montant Payé (FCFA)" },
+  { key: "statut", label: "Statut" },
+  { key: "date_dernier_paiement", label: "Dernier Paiement" },
+];
+
 const Paiements = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [filterStatut, setFilterStatut] = useState("tous");
 
   const handleNewPaiement = () => {
     toast.success("Paiement enregistré avec succès. Reçu généré.");
@@ -53,10 +94,21 @@ const Paiements = () => {
   const tauxRecouvrement = ((totalPaye / totalDu) * 100).toFixed(1);
 
   const filteredPaiements = paiements.filter(p => {
-    const matchSearch = p.eleve.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                       p.matricule.includes(searchTerm);
-    const matchStatus = filterStatut === "tous" || p.statut === filterStatut;
-    return matchSearch && matchStatus;
+    if (filters.search && 
+        !p.eleve.toLowerCase().includes(filters.search.toLowerCase()) &&
+        !p.matricule.includes(filters.search)) {
+      return false;
+    }
+    if (filters.statut && p.statut !== filters.statut) {
+      return false;
+    }
+    if (filters.classe && p.classe !== filters.classe) {
+      return false;
+    }
+    if (filters.montantMin && p.montant_du < Number(filters.montantMin)) {
+      return false;
+    }
+    return true;
   });
 
   return (
@@ -66,80 +118,74 @@ const Paiements = () => {
           <h1 className="text-4xl font-bold text-foreground">Gestion des Paiements</h1>
           <p className="text-muted-foreground mt-2">Suivi des frais de scolarité et paiements des élèves</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export Excel
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nouveau Paiement
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Enregistrer un Paiement</DialogTitle>
-                <DialogDescription>Saisir les informations du paiement</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Matricule Élève</Label>
-                    <Input placeholder="2024001" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Élève</Label>
-                    <Input disabled value="KOUAME Koffi - 6ème A" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Type de Frais</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="scolarite">Scolarité</SelectItem>
-                        <SelectItem value="inscription">Inscription</SelectItem>
-                        <SelectItem value="cantine">Cantine</SelectItem>
-                        <SelectItem value="transport">Transport</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Montant (FCFA)</Label>
-                    <Input type="number" placeholder="50000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Mode de Paiement</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="especes">Espèces</SelectItem>
-                        <SelectItem value="mobile">Mobile Money</SelectItem>
-                        <SelectItem value="virement">Virement</SelectItem>
-                        <SelectItem value="cheque">Chèque</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau Paiement
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Enregistrer un Paiement</DialogTitle>
+              <DialogDescription>Saisir les informations du paiement</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Matricule Élève</Label>
+                  <Input placeholder="2024001" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Observation</Label>
-                  <Input placeholder="Notes additionnelles..." />
+                  <Label>Élève</Label>
+                  <Input disabled value="KOUAME Koffi - 6ème A" />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleNewPaiement}>Enregistrer & Imprimer Reçu</Button>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Type de Frais</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scolarite">Scolarité</SelectItem>
+                      <SelectItem value="inscription">Inscription</SelectItem>
+                      <SelectItem value="cantine">Cantine</SelectItem>
+                      <SelectItem value="transport">Transport</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Montant (FCFA)</Label>
+                  <Input type="number" placeholder="50000" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mode de Paiement</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="especes">Espèces</SelectItem>
+                      <SelectItem value="mobile">Mobile Money</SelectItem>
+                      <SelectItem value="virement">Virement</SelectItem>
+                      <SelectItem value="cheque">Chèque</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              <div className="space-y-2">
+                <Label>Observation</Label>
+                <Input placeholder="Notes additionnelles..." />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
+              <Button onClick={handleNewPaiement}>Enregistrer & Imprimer Reçu</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -205,26 +251,16 @@ const Paiements = () => {
                   <CardDescription>Liste complète avec statuts</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select value={filterStatut} onValueChange={setFilterStatut}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tous">Tous</SelectItem>
-                      <SelectItem value="Soldé">Soldés</SelectItem>
-                      <SelectItem value="Partiel">Partiels</SelectItem>
-                      <SelectItem value="Impayé">Impayés</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher..."
-                      className="pl-8 w-64"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
+                  <DataTableFilters
+                    filters={filterConfigs}
+                    onFilterChange={setFilters}
+                    searchPlaceholder="Rechercher un élève..."
+                  />
+                  <DataTableExport
+                    data={filteredPaiements}
+                    columns={exportColumns}
+                    filename="paiements-scolarite"
+                  />
                 </div>
               </div>
             </CardHeader>
