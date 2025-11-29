@@ -65,6 +65,7 @@ import RolesConfig from "./pages/parametrage/Roles";
 import Sauvegarde from "./pages/parametrage/Sauvegarde";
 import Langues from "./pages/parametrage/Langues";
 import Logs from "./pages/parametrage/Logs";
+import Utilisateurs from "./pages/parametrage/Utilisateurs";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,8 @@ const App = () => (
           <Route path="/infrastructures/maintenance" element={<MainLayout><Maintenance /></MainLayout>} />
           
           {/* Paramétrage Routes */}
+          <Route path="/settings" element={<MainLayout><Utilisateurs /></MainLayout>} />
+          <Route path="/parametrage/utilisateurs" element={<MainLayout><Utilisateurs /></MainLayout>} />
           <Route path="/parametrage/roles" element={<MainLayout><RolesConfig /></MainLayout>} />
           <Route path="/parametrage/sauvegarde" element={<MainLayout><Sauvegarde /></MainLayout>} />
           <Route path="/parametrage/langues" element={<MainLayout><Langues /></MainLayout>} />
@@ -166,7 +169,6 @@ const App = () => (
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/settings" element={<MainLayout><Dashboard /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
