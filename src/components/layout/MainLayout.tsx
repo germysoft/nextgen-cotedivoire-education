@@ -1,9 +1,9 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Footer } from "@/components/layout/Footer";
-import { Bell, Search, MessageSquare, Maximize, ChevronDown } from "lucide-react";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
+import { Bell, MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,14 +31,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card px-6">
             <SidebarTrigger />
             <div className="flex flex-1 items-center gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Rechercher..."
-                  className="pl-10"
-                />
-              </div>
+              <GlobalSearch />
               <div className="ml-auto flex items-center gap-3">
                 <Button variant="ghost" size="icon" className="relative">
                   <MessageSquare className="h-5 w-5" />
