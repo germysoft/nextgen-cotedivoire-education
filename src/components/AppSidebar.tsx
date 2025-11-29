@@ -4,10 +4,11 @@ import {
   Trophy, Package, Handshake, ChevronDown, ClipboardList, School, BookOpenCheck,
   Bell, UserCheck, Archive, Wallet, Utensils, Bed, Book, Activity, Shield,
   Globe, FileSpreadsheet, Lock, Puzzle, TrendingUp, Mail, Users2, Building,
-  Stethoscope, Boxes, Handshake as Partnership, Link2, Cloud, BarChart2
+  Stethoscope, Boxes, Handshake as Partnership, Link2, Cloud, BarChart2, Star
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
+import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import {
   Sidebar,
   SidebarContent,
@@ -261,6 +262,7 @@ const menuStructure: MenuItem[] = [
 export function AppSidebar() {
   const { open } = useSidebar();
   const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({});
+  const { favorites } = useFavoritesContext();
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) => ({
@@ -286,6 +288,36 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {favorites.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center gap-2">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              Favoris
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {favorites.map((fav) => (
+                  <SidebarMenuItem key={fav.path}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={fav.path}
+                        className={({ isActive }) =>
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "hover:bg-sidebar-accent/50"
+                        }
+                      >
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span>{fav.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        
         <SidebarGroup>
           <SidebarGroupLabel>Navigation Principale</SidebarGroupLabel>
           <SidebarGroupContent>
