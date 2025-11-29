@@ -9,6 +9,8 @@ import {
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { menuPermissionMap } from "@/types/roles";
 import {
   Sidebar,
   SidebarContent,
@@ -266,6 +268,7 @@ export function AppSidebar() {
   const { open } = useSidebar();
   const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({});
   const { favorites } = useFavoritesContext();
+  const { hasPermission } = usePermissions();
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) => ({
@@ -273,6 +276,12 @@ export function AppSidebar() {
       [title]: !prev[title],
     }));
   };
+
+  // Filtrer les items du menu selon les permissions
+  const filteredMenuStructure = menuStructure.filter((item) => {
+    const permissionKey = menuPermissionMap[item.title];
+    return permissionKey ? hasPermission(permissionKey) : true;
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -325,7 +334,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation Principale</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuStructure.map((item) => (
+              {filteredMenuStructure.map((item) => (
                 item.url ? (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
