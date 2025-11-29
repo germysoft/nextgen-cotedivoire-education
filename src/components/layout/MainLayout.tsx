@@ -2,10 +2,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Footer } from "@/components/layout/Footer";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
-import { Bell, MessageSquare, Maximize, ChevronDown } from "lucide-react";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import { MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,15 +37,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <MessageSquare className="h-5 w-5" />
                 </Button>
                 
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  >
-                    4
-                  </Badge>
-                </Button>
+                <NotificationPanel />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
