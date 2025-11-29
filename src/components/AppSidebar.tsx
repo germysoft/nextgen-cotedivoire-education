@@ -33,28 +33,15 @@ interface SubMenuItem {
 interface MenuItem {
   title: string;
   icon: any;
-  subItems: SubMenuItem[];
+  url?: string;
+  subItems?: SubMenuItem[];
 }
 
 const menuStructure: MenuItem[] = [
   {
     title: "Tableaux de Bord",
     icon: Home,
-    subItems: [
-      { title: "Vue Globale", url: "/dashboard" },
-      { title: "TB Administratif", url: "/dashboard/admin" },
-      { title: "TB Pédagogique", url: "/dashboard/pedagogique" },
-      { title: "TB Scolarité", url: "/dashboard/scolarite" },
-      { title: "TB Notes", url: "/dashboard/notes" },
-      { title: "TB Élèves & Parents", url: "/dashboard/eleves-parents" },
-      { title: "TB Messagerie & SMS", url: "/dashboard/messagerie" },
-      { title: "TB Pointage Enseignants", url: "/dashboard/pointage" },
-      { title: "TB Inscription", url: "/dashboard/inscription" },
-      { title: "TB Archivage", url: "/dashboard/archivage" },
-      { title: "TB Comptabilité", url: "/dashboard/comptabilite" },
-      { title: "Graphiques & Rapports", url: "/dashboard/rapports" },
-      { title: "Alertes Automatiques", url: "/dashboard/alertes" },
-    ],
+    url: "/dashboard",
   },
   {
     title: "Ressources Humaines",
@@ -304,43 +291,61 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuStructure.map((item) => (
-                <Collapsible
-                  key={item.title}
-                  open={openGroups[item.title]}
-                  onOpenChange={() => toggleGroup(item.title)}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className="w-full">
+                item.url ? (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={({ isActive }) =>
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "hover:bg-sidebar-accent/50"
+                        }
+                      >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                        <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.subItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.url}>
-                            <SidebarMenuSubButton asChild>
-                              <NavLink
-                                to={subItem.url}
-                                end
-                                className={({ isActive }) =>
-                                  isActive
-                                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                                    : "hover:bg-sidebar-accent/50"
-                                }
-                              >
-                                <span>{subItem.title}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
+                      </NavLink>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
-                </Collapsible>
+                ) : (
+                  <Collapsible
+                    key={item.title}
+                    open={openGroups[item.title]}
+                    onOpenChange={() => toggleGroup(item.title)}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="w-full">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                          <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.subItems?.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.url}>
+                              <SidebarMenuSubButton asChild>
+                                <NavLink
+                                  to={subItem.url}
+                                  end
+                                  className={({ isActive }) =>
+                                    isActive
+                                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                      : "hover:bg-sidebar-accent/50"
+                                  }
+                                >
+                                  <span>{subItem.title}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
