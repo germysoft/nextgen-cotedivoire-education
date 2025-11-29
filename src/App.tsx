@@ -29,11 +29,15 @@ import DashboardPedagogique from "./pages/dashboard/Pedagogique";
 import Affectations from "./pages/hr/Affectations";
 import Conges from "./pages/hr/Conges";
 import Pointage from "./pages/hr/Pointage";
+import HistoriqueCarriere from "./pages/hr/Historique";
 import Paiements from "./pages/scolarite/Paiements";
 import Matricule from "./pages/scolarite/Matricule";
 import Historique from "./pages/scolarite/Historique";
+import AlertesImpayes from "./pages/scolarite/Alertes";
+import DocumentsEleves from "./pages/scolarite/Documents";
 import SMSPro from "./pages/messaging/SMS";
 import Forum from "./pages/messaging/Forum";
+import NotificationsAuto from "./pages/messaging/Notifications";
 import Transport from "./pages/services/Transport";
 import Cantine from "./pages/services/Cantine";
 import Internat from "./pages/services/Internat";
@@ -41,13 +45,18 @@ import Elearning from "./pages/pedagogie/Elearning";
 import Attribution from "./pages/pedagogie/Attribution";
 import Matieres from "./pages/pedagogie/Matieres";
 import Conseils from "./pages/pedagogie/Conseils";
+import Discipline from "./pages/pedagogie/Discipline";
+import Bulletins from "./pages/pedagogie/Bulletins";
 import Emprunts from "./pages/bibliotheque/Emprunts";
 import Consultations from "./pages/infirmerie/Consultations";
 import Bilan from "./pages/comptabilite/Bilan";
 import Baremes from "./pages/notes/Baremes";
 import Validation from "./pages/notes/Validation";
 import QCM from "./pages/notes/QCM";
+import Moyennes from "./pages/notes/Moyennes";
 import Maintenance from "./pages/infrastructures/Maintenance";
+import PlanningEnseignants from "./pages/enseignants/Planning";
+import SuiviCours from "./pages/enseignants/SuiviCours";
 
 const queryClient = new QueryClient();
 
@@ -87,26 +96,37 @@ const App = () => (
           <Route path="/hr/affectations" element={<MainLayout><Affectations /></MainLayout>} />
           <Route path="/hr/conges" element={<MainLayout><Conges /></MainLayout>} />
           <Route path="/hr/pointage" element={<MainLayout><Pointage /></MainLayout>} />
+          <Route path="/hr/historique" element={<MainLayout><HistoriqueCarriere /></MainLayout>} />
+          
+          {/* Enseignants Routes */}
+          <Route path="/teachers" element={<MainLayout><PlanningEnseignants /></MainLayout>} />
+          <Route path="/enseignants/suivi-cours" element={<MainLayout><SuiviCours /></MainLayout>} />
           
           {/* Pédagogie Routes */}
           <Route path="/pedagogie/elearning" element={<MainLayout><Elearning /></MainLayout>} />
           <Route path="/pedagogie/attribution" element={<MainLayout><Attribution /></MainLayout>} />
           <Route path="/pedagogie/matieres" element={<MainLayout><Matieres /></MainLayout>} />
           <Route path="/pedagogie/conseils" element={<MainLayout><Conseils /></MainLayout>} />
+          <Route path="/pedagogie/discipline" element={<MainLayout><Discipline /></MainLayout>} />
+          <Route path="/pedagogie/bulletins" element={<MainLayout><Bulletins /></MainLayout>} />
           
           {/* Notes Routes */}
           <Route path="/notes/baremes" element={<MainLayout><Baremes /></MainLayout>} />
           <Route path="/notes/validation" element={<MainLayout><Validation /></MainLayout>} />
           <Route path="/notes/qcm" element={<MainLayout><QCM /></MainLayout>} />
+          <Route path="/notes/moyennes" element={<MainLayout><Moyennes /></MainLayout>} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
           <Route path="/scolarite/matricule" element={<MainLayout><Matricule /></MainLayout>} />
           <Route path="/scolarite/historique" element={<MainLayout><Historique /></MainLayout>} />
+          <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
+          <Route path="/dashboard/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />
           <Route path="/messaging/forum" element={<MainLayout><Forum /></MainLayout>} />
+          <Route path="/messaging/notifications" element={<MainLayout><NotificationsAuto /></MainLayout>} />
           
           {/* Services Routes */}
           <Route path="/services/transport" element={<MainLayout><Transport /></MainLayout>} />
