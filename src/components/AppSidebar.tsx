@@ -4,7 +4,9 @@ import {
   Trophy, Package, Handshake, ChevronDown, ClipboardList, School, BookOpenCheck,
   Bell, UserCheck, Archive, Wallet, Utensils, Bed, Book, Activity, Shield,
   Globe, FileSpreadsheet, Lock, Puzzle, TrendingUp, Mail, Users2, Building,
-  Stethoscope, Boxes, Handshake as Partnership, Link2, Cloud, BarChart2, Star
+  Stethoscope, Boxes, Handshake as Partnership, Link2, Cloud, BarChart2, Star,
+  ClipboardCheck, UserCircle, Users as UsersGroup, FileCheck, Award, FileSignature, 
+  Send, ShieldCheck
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
@@ -97,6 +99,24 @@ const menuStructure: MenuItem[] = [
       { title: "Validation Notes", url: "/notes/validation" },
       { title: "Bulletins & Relevés", url: "/notes/bulletins" },
       { title: "QCM Auto-corrigé", url: "/notes/qcm" },
+    ],
+  },
+  {
+    title: "Gestion des Examens",
+    icon: ClipboardCheck,
+    subItems: [
+      { title: "Paramétrage Examens", url: "/examens/parametrage" },
+      { title: "Inscription Candidats", url: "/examens/candidats" },
+      { title: "Jurys & Examinateurs", url: "/examens/jurys" },
+      { title: "Salles & Planning", url: "/examens/salles" },
+      { title: "Convocations", url: "/examens/convocations" },
+      { title: "Procès-Verbaux", url: "/examens/pv" },
+      { title: "Saisie Notes Examens", url: "/examens/notes" },
+      { title: "Délibérations", url: "/examens/deliberations" },
+      { title: "Résultats & Classements", url: "/examens/resultats" },
+      { title: "Documents Officiels", url: "/examens/documents" },
+      { title: "Communication", url: "/examens/communication" },
+      { title: "Audit & Sécurité", url: "/examens/audit" },
     ],
   },
   {
