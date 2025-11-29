@@ -266,7 +266,16 @@ const menuStructure: MenuItem[] = [
 
 export function AppSidebar() {
   const { open } = useSidebar();
-  const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({});
+  // Initialiser tous les groupes comme fermés pour éviter le warning controlled/uncontrolled
+  const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>(() => {
+    const initialState: { [key: string]: boolean } = {};
+    menuStructure.forEach(item => {
+      if (item.subItems) {
+        initialState[item.title] = false;
+      }
+    });
+    return initialState;
+  });
   const { favorites } = useFavoritesContext();
   const { hasPermission } = usePermissions();
 
