@@ -209,7 +209,7 @@ const menuStructure: MenuItem[] = [
     ],
   },
   {
-    title: "Associations & Partenariats",
+    title: "Partenariats",
     icon: Handshake,
     subItems: [
       { title: "APEL", url: "/partnerships" },
