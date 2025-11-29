@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, Users } from "lucide-react";
 import { AddStudentDialog } from "@/components/students/AddStudentDialog";
 import { DataTableFilters, FilterConfig } from "@/components/data-table/DataTableFilters";
 import { DataTableExport } from "@/components/data-table/DataTableExport";
@@ -14,15 +14,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const students = [
-  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "Actif", fees: "Payé" },
-  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "Actif", fees: "Payé" },
-  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "Actif", fees: "Partiel" },
-  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "Actif", fees: "Payé" },
-  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "Actif", fees: "En attente" },
-  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "Actif", fees: "Payé" },
-  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "Actif", fees: "Payé" },
+  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jean" },
+  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marie" },
+  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "Actif", fees: "Partiel", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Pascal" },
+  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fatou" },
+  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "Actif", fees: "En attente", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ibrahim" },
+  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice" },
+  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Serge" },
 ];
 
 const filterConfigs: FilterConfig[] = [
@@ -101,20 +102,40 @@ export default function Students() {
     }
   };
 
+  const uniqueClasses = Array.from(new Set(filteredStudents.map(s => s.class))).sort();
+  const classesText = uniqueClasses.length > 3 
+    ? `${uniqueClasses.slice(0, 3).join(", ")}...` 
+    : uniqueClasses.join(", ");
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestion des Élèves</h1>
-          <p className="text-muted-foreground">Liste complète des élèves inscrits</p>
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Gestion des Élèves
+          </h1>
+          <p className="text-muted-foreground mt-2 flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Liste complète des élèves inscrits
+          </p>
         </div>
         <AddStudentDialog />
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg border-primary/10">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Liste des Élèves ({filteredStudents.length})</CardTitle>
+            <div>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Liste des Élèves ({filteredStudents.length})
+              </CardTitle>
+              {uniqueClasses.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Classes : {classesText}
+                </p>
+              )}
+            </div>
             <div className="flex gap-2">
               <DataTableFilters
                 filters={filterConfigs}
@@ -129,11 +150,12 @@ export default function Students() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="p-0">
+          <div className="overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-[80px]">Photo</TableHead>
                   <TableHead>Matricule</TableHead>
                   <TableHead>Nom Complet</TableHead>
                   <TableHead>Classe</TableHead>
@@ -145,26 +167,40 @@ export default function Students() {
               </TableHeader>
               <TableBody>
                 {filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.id}</TableCell>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    <TableCell>{student.age} ans</TableCell>
+                  <TableRow key={student.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell>
-                      <Badge variant="outline">{student.status}</Badge>
+                      <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                        <AvatarImage src={student.photo} alt={student.name} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {student.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{student.id}</TableCell>
+                    <TableCell className="font-semibold">{student.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-medium">
+                        {student.class}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{student.age} ans</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
+                        {student.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={getFeesColor(student.fees)}>{student.fees}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="hover:bg-primary/10 hover:text-primary">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="hover:bg-primary/10 hover:text-primary">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="hover:bg-destructive/10 hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
