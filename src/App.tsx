@@ -7,6 +7,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { MainLayout } from "./components/layout/MainLayout";
+import CustomDashboard from "./pages/CustomDashboard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
+            <Route path="/dashboard/custom" element={<MainLayout><CustomDashboard /></MainLayout>} />
           <Route path="/students" element={<MainLayout><Students /></MainLayout>} />
           <Route path="/teachers" element={<MainLayout><Teachers /></MainLayout>} />
            <Route path="/classes" element={<MainLayout><Classes /></MainLayout>} />
