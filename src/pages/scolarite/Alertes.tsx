@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, DollarSign, User, Calendar, MessageSquare } from "lucide-react";
+import { DataTableFilters, FilterConfig } from "@/components/data-table/DataTableFilters";
+import { DataTableExport } from "@/components/data-table/DataTableExport";
 import {
   Table,
   TableBody,
@@ -19,11 +22,68 @@ const impayes = [
   { eleve: "KONE Ibrahim", classe: "4ème A", montantDu: 225000, moisRetard: 1.5, derniereRelance: "13 Déc 2024", statut: "Alerte" },
 ];
 
+const filterConfigs: FilterConfig[] = [
+  {
+    key: "statut",
+    label: "Statut",
+    type: "select",
+    options: [
+      { value: "Critique", label: "Critique" },
+      { value: "Important", label: "Important" },
+      { value: "Alerte", label: "Alerte" },
+    ],
+  },
+  {
+    key: "classe",
+    label: "Classe",
+    type: "select",
+    options: [
+      { value: "Tle D", label: "Tle D" },
+      { value: "1ère A", label: "1ère A" },
+      { value: "2nde B", label: "2nde B" },
+      { value: "3ème C", label: "3ème C" },
+      { value: "4ème A", label: "4ème A" },
+    ],
+  },
+  {
+    key: "montantMin",
+    label: "Montant minimum",
+    type: "number",
+  },
+];
+
+const exportColumns = [
+  { key: "eleve", label: "Élève" },
+  { key: "classe", label: "Classe" },
+  { key: "montantDu", label: "Montant Dû (FCFA)" },
+  { key: "moisRetard", label: "Retard (mois)" },
+  { key: "derniereRelance", label: "Dernière Relance" },
+  { key: "statut", label: "Statut" },
+];
+
 export default function Alertes() {
-  const totalImpayes = impayes.reduce((sum, i) => sum + i.montantDu, 0);
-  const critiques = impayes.filter(i => i.statut === "Critique").length;
-  const important = impayes.filter(i => i.statut === "Important").length;
-  const alertes = impayes.filter(i => i.statut === "Alerte").length;
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  
+  const filteredImpayes = impayes.filter((imp) => {
+    if (filters.search && !imp.eleve.toLowerCase().includes(filters.search.toLowerCase())) {
+      return false;
+    }
+    if (filters.statut && imp.statut !== filters.statut) {
+      return false;
+    }
+    if (filters.classe && imp.classe !== filters.classe) {
+      return false;
+    }
+    if (filters.montantMin && imp.montantDu < Number(filters.montantMin)) {
+      return false;
+    }
+    return true;
+  });
+  
+  const totalImpayes = filteredImpayes.reduce((sum, i) => sum + i.montantDu, 0);
+  const critiques = filteredImpayes.filter(i => i.statut === "Critique").length;
+  const important = filteredImpayes.filter(i => i.statut === "Important").length;
+  const alertes = filteredImpayes.filter(i => i.statut === "Alerte").length;
 
   return (
     <div className="space-y-6">
@@ -85,7 +145,21 @@ export default function Alertes() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Liste des Impayés</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Liste des Impayés</CardTitle>
+            <div className="flex gap-2">
+              <DataTableFilters
+                filters={filterConfigs}
+                onFilterChange={setFilters}
+                searchPlaceholder="Rechercher un élève..."
+              />
+              <DataTableExport
+                data={filteredImpayes}
+                columns={exportColumns}
+                filename="alertes-impayes"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -101,7 +175,7 @@ export default function Alertes() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {impayes.map((imp, idx) => (
+              {filteredImpayes.map((imp, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
                     <div className="flex items-center gap-2">
