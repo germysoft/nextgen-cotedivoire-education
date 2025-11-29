@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, Calculator, TrendingUp } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { GradeEntryWizard } from "@/components/grades/GradeEntryWizard";
 
 // Mock data
 const mockStudentGrades = [
@@ -47,7 +46,7 @@ const mockStudentGrades = [
 export default function Grades() {
   const [selectedClass, setSelectedClass] = useState("6èmeA");
   const [selectedTrimester, setSelectedTrimester] = useState("1");
-  const [isGradeDialogOpen, setIsGradeDialogOpen] = useState(false);
+  const [isGradeWizardOpen, setIsGradeWizardOpen] = useState(false);
 
   const calculateAverage = (subjects: any[]) => {
     const totalPoints = subjects.reduce((acc, s) => acc + s.grade * s.coef, 0);
@@ -74,103 +73,15 @@ export default function Grades() {
             <Download className="mr-2 h-4 w-4" />
             Exporter
           </Button>
-          <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Calculator className="mr-2 h-4 w-4" />
-                Saisir Notes
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Saisir les notes</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Classe</Label>
-                    <Select defaultValue="6emeA">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="6emeA">6èmeA</SelectItem>
-                        <SelectItem value="5emeB">5èmeB</SelectItem>
-                        <SelectItem value="4emeC">4èmeC</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Matière</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="francais">Français</SelectItem>
-                        <SelectItem value="maths">Mathématiques</SelectItem>
-                        <SelectItem value="anglais">Anglais</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Trimestre</Label>
-                    <Select defaultValue="1">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1er Trimestre</SelectItem>
-                        <SelectItem value="2">2ème Trimestre</SelectItem>
-                        <SelectItem value="3">3ème Trimestre</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Type d'évaluation</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="devoir">Devoir</SelectItem>
-                      <SelectItem value="compo">Composition</SelectItem>
-                      <SelectItem value="interro">Interrogation</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="border rounded-lg p-4 max-h-[300px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Matricule</TableHead>
-                        <TableHead>Nom & Prénoms</TableHead>
-                        <TableHead>Note /20</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockStudentGrades.map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-mono text-sm">{student.matricule}</TableCell>
-                          <TableCell>{student.studentName}</TableCell>
-                          <TableCell>
-                            <Input type="number" className="w-20" placeholder="0" min="0" max="20" step="0.5" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" onClick={() => setIsGradeDialogOpen(false)}>Annuler</Button>
-                  <Button onClick={() => setIsGradeDialogOpen(false)}>Enregistrer</Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => setIsGradeWizardOpen(true)}>
+            <Calculator className="mr-2 h-4 w-4" />
+            Saisir Notes
+          </Button>
         </div>
       </div>
+
+      {/* Grade Entry Wizard */}
+      <GradeEntryWizard open={isGradeWizardOpen} onOpenChange={setIsGradeWizardOpen} />
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
