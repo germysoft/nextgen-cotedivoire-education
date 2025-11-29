@@ -18,13 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const students = [
-  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jean" },
-  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marie" },
-  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "Actif", fees: "Partiel", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Pascal" },
-  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Fatou" },
-  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "Actif", fees: "En attente", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ibrahim" },
-  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice" },
-  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "Actif", fees: "Payé", photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Serge" },
+  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1600077106724-946750eeaf3c?w=150&h=150&fit=crop" },
+  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&h=150&fit=crop" },
+  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "Actif", fees: "Partiel", photo: "https://images.unsplash.com/photo-1554244933-d876deb6b2ff?w=150&h=150&fit=crop" },
+  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150&h=150&fit=crop" },
+  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "Actif", fees: "En attente", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop" },
+  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1596788404239-d18a058c9c6d?w=150&h=150&fit=crop" },
+  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "Actif", fees: "Payé", photo: "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&h=150&fit=crop" },
 ];
 
 const filterConfigs: FilterConfig[] = [
@@ -104,10 +104,9 @@ export default function Students() {
     }
   };
 
-  const uniqueClasses = Array.from(new Set(filteredStudents.map(s => s.class))).sort();
-  const classesText = uniqueClasses.length > 3 
-    ? `${uniqueClasses.slice(0, 3).join(", ")}...` 
-    : uniqueClasses.join(", ");
+  const displayTitle = filters.class 
+    ? `Liste des Élèves (${filters.class})` 
+    : `Liste des Élèves (${filteredStudents.length})`;
 
   return (
     <div className="space-y-6 p-6">
@@ -127,17 +126,10 @@ export default function Students() {
       <Card className="shadow-lg border-primary/10">
         <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Liste des Élèves ({filteredStudents.length})
-              </CardTitle>
-              {uniqueClasses.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Classes : {classesText}
-                </p>
-              )}
-            </div>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              {displayTitle}
+            </CardTitle>
             <div className="flex gap-2">
               <DataTableFilters
                 filters={filterConfigs}
