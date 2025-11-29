@@ -61,6 +61,10 @@ import Moyennes from "./pages/notes/Moyennes";
 import Maintenance from "./pages/infrastructures/Maintenance";
 import PlanningEnseignants from "./pages/enseignants/Planning";
 import SuiviCours from "./pages/enseignants/SuiviCours";
+import RolesConfig from "./pages/parametrage/Roles";
+import Sauvegarde from "./pages/parametrage/Sauvegarde";
+import Langues from "./pages/parametrage/Langues";
+import Logs from "./pages/parametrage/Logs";
 
 const queryClient = new QueryClient();
 
@@ -152,6 +156,12 @@ const App = () => (
           
           {/* Infrastructures Routes */}
           <Route path="/infrastructures/maintenance" element={<MainLayout><Maintenance /></MainLayout>} />
+          
+          {/* Paramétrage Routes */}
+          <Route path="/parametrage/roles" element={<MainLayout><RolesConfig /></MainLayout>} />
+          <Route path="/parametrage/sauvegarde" element={<MainLayout><Sauvegarde /></MainLayout>} />
+          <Route path="/parametrage/langues" element={<MainLayout><Langues /></MainLayout>} />
+          <Route path="/parametrage/logs" element={<MainLayout><Logs /></MainLayout>} />
           
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
