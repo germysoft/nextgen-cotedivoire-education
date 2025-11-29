@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, FileText, Users, GraduationCap, Calendar, DollarSign, UserCheck, MessageSquare, Building, BookOpen, Activity, Briefcase, Box, Handshake, LayoutDashboard, ClipboardList, Settings, TrendingUp } from "lucide-react";
+import { Search, FileText, Users, GraduationCap, Calendar, DollarSign, UserCheck, MessageSquare, Building, BookOpen, Activity, Briefcase, Box, Handshake, LayoutDashboard, ClipboardList, Settings, TrendingUp, Star } from "lucide-react";
+import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import {
   CommandDialog,
   CommandEmpty,
@@ -101,6 +102,7 @@ const routes: Route[] = [
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { toggleFavorite, isFavorite } = useFavoritesContext();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -150,14 +152,31 @@ export function GlobalSearch() {
             <CommandGroup key={category} heading={category}>
               {categoryRoutes.map((route) => {
                 const Icon = route.icon;
+                const isFav = isFavorite(route.path);
                 return (
                   <CommandItem
                     key={route.path}
                     value={route.title}
                     onSelect={() => handleSelect(route.path)}
+                    className="flex items-center justify-between group"
                   >
-                    <Icon className="mr-2 h-4 w-4" />
-                    <span>{route.title}</span>
+                    <div className="flex items-center flex-1">
+                      <Icon className="mr-2 h-4 w-4" />
+                      <span>{route.title}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite({ path: route.path, title: route.title });
+                      }}
+                      className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Star
+                        className={`h-4 w-4 ${
+                          isFav ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                        }`}
+                      />
+                    </button>
                   </CommandItem>
                 );
               })}
