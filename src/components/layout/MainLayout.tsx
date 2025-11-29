@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Footer } from "@/components/layout/Footer";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import { RoleSelector } from "@/components/layout/RoleSelector";
 import { MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +34,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <div className="flex flex-1 items-center gap-4">
               <GlobalSearch />
               <div className="ml-auto flex items-center gap-3">
+                <RoleSelector />
+                
                 <Button variant="ghost" size="icon" className="relative">
                   <MessageSquare className="h-5 w-5" />
                 </Button>

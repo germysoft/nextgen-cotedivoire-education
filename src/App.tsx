@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { RoleProvider } from "./contexts/RoleContext";
 import { MainLayout } from "./components/layout/MainLayout";
 import CustomDashboard from "./pages/CustomDashboard";
 import Index from "./pages/Index";
@@ -68,10 +69,11 @@ const App = () => (
     <LanguageProvider>
       <FavoritesProvider>
         <NotificationsProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+          <RoleProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -159,7 +161,8 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-          </TooltipProvider>
+            </TooltipProvider>
+          </RoleProvider>
         </NotificationsProvider>
       </FavoritesProvider>
     </LanguageProvider>
