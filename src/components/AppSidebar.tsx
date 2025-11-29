@@ -42,7 +42,10 @@ const menuStructure: MenuItem[] = [
   {
     title: "Tableaux de Bord",
     icon: Home,
-    url: "/dashboard",
+    subItems: [
+      { title: "Vue Globale", url: "/dashboard" },
+      { title: "Dashboard Personnalisé", url: "/dashboard/custom" },
+    ],
   },
   {
     title: "Ressources Humaines",
