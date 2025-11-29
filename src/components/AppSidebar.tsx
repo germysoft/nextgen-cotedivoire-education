@@ -162,7 +162,7 @@ const menuStructure: MenuItem[] = [
     ],
   },
   {
-    title: "Cantine, Transport & Internat",
+    title: "Services",
     icon: Utensils,
     subItems: [
       { title: "Cantine", url: "/services/cantine" },
