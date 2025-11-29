@@ -79,6 +79,18 @@ import PlanningInfrastructures from "./pages/infrastructures/Planning";
 import Convocations from "./pages/Convocations";
 import StudentProfile from "./pages/StudentProfile";
 import GenericPlaceholder from "./pages/GenericPlaceholder";
+import ParametrageExamens from "./pages/examens/Parametrage";
+import InscriptionCandidats from "./pages/examens/Candidats";
+import JurysExamens from "./pages/examens/Jurys";
+import SallesExamens from "./pages/examens/Salles";
+import ConvocationsExamens from "./pages/examens/Convocations";
+import ProcesVerbaux from "./pages/examens/ProcesVerbaux";
+import NotesExamens from "./pages/examens/NotesExamens";
+import Deliberations from "./pages/examens/Deliberations";
+import ResultatsExamens from "./pages/examens/Resultats";
+import DocumentsOfficiels from "./pages/examens/DocumentsOfficiels";
+import CommunicationExamens from "./pages/examens/Communication";
+import AuditExamens from "./pages/examens/Audit";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +160,20 @@ const App = () => (
           <Route path="/notes/qcm" element={<MainLayout><QCM /></MainLayout>} />
           <Route path="/notes/moyennes" element={<MainLayout><Moyennes /></MainLayout>} />
           <Route path="/notes/bulletins" element={<MainLayout><BulletinsNotes /></MainLayout>} />
+          
+          {/* Examens Routes */}
+          <Route path="/examens/parametrage" element={<MainLayout><ParametrageExamens /></MainLayout>} />
+          <Route path="/examens/candidats" element={<MainLayout><InscriptionCandidats /></MainLayout>} />
+          <Route path="/examens/jurys" element={<MainLayout><JurysExamens /></MainLayout>} />
+          <Route path="/examens/salles" element={<MainLayout><SallesExamens /></MainLayout>} />
+          <Route path="/examens/convocations" element={<MainLayout><ConvocationsExamens /></MainLayout>} />
+          <Route path="/examens/pv" element={<MainLayout><ProcesVerbaux /></MainLayout>} />
+          <Route path="/examens/notes" element={<MainLayout><NotesExamens /></MainLayout>} />
+          <Route path="/examens/deliberations" element={<MainLayout><Deliberations /></MainLayout>} />
+          <Route path="/examens/resultats" element={<MainLayout><ResultatsExamens /></MainLayout>} />
+          <Route path="/examens/documents" element={<MainLayout><DocumentsOfficiels /></MainLayout>} />
+          <Route path="/examens/communication" element={<MainLayout><CommunicationExamens /></MainLayout>} />
+          <Route path="/examens/audit" element={<MainLayout><AuditExamens /></MainLayout>} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
