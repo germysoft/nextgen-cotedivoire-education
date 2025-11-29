@@ -30,9 +30,13 @@ import Affectations from "./pages/hr/Affectations";
 import Conges from "./pages/hr/Conges";
 import Pointage from "./pages/hr/Pointage";
 import Paiements from "./pages/scolarite/Paiements";
+import Matricule from "./pages/scolarite/Matricule";
+import Historique from "./pages/scolarite/Historique";
 import SMSPro from "./pages/messaging/SMS";
+import Forum from "./pages/messaging/Forum";
 import Transport from "./pages/services/Transport";
 import Cantine from "./pages/services/Cantine";
+import Internat from "./pages/services/Internat";
 import Elearning from "./pages/pedagogie/Elearning";
 import Attribution from "./pages/pedagogie/Attribution";
 import Matieres from "./pages/pedagogie/Matieres";
@@ -42,6 +46,8 @@ import Consultations from "./pages/infirmerie/Consultations";
 import Bilan from "./pages/comptabilite/Bilan";
 import Baremes from "./pages/notes/Baremes";
 import Validation from "./pages/notes/Validation";
+import QCM from "./pages/notes/QCM";
+import Maintenance from "./pages/infrastructures/Maintenance";
 
 const queryClient = new QueryClient();
 
@@ -91,16 +97,21 @@ const App = () => (
           {/* Notes Routes */}
           <Route path="/notes/baremes" element={<MainLayout><Baremes /></MainLayout>} />
           <Route path="/notes/validation" element={<MainLayout><Validation /></MainLayout>} />
+          <Route path="/notes/qcm" element={<MainLayout><QCM /></MainLayout>} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
+          <Route path="/scolarite/matricule" element={<MainLayout><Matricule /></MainLayout>} />
+          <Route path="/scolarite/historique" element={<MainLayout><Historique /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />
+          <Route path="/messaging/forum" element={<MainLayout><Forum /></MainLayout>} />
           
           {/* Services Routes */}
           <Route path="/services/transport" element={<MainLayout><Transport /></MainLayout>} />
           <Route path="/services/cantine" element={<MainLayout><Cantine /></MainLayout>} />
+          <Route path="/services/internat" element={<MainLayout><Internat /></MainLayout>} />
           
           {/* Bibliothèque Routes */}
           <Route path="/bibliotheque/emprunts" element={<MainLayout><Emprunts /></MainLayout>} />
@@ -110,6 +121,9 @@ const App = () => (
           
           {/* Comptabilité Routes */}
           <Route path="/comptabilite/bilan" element={<MainLayout><Bilan /></MainLayout>} />
+          
+          {/* Infrastructures Routes */}
+          <Route path="/infrastructures/maintenance" element={<MainLayout><Maintenance /></MainLayout>} />
           
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
