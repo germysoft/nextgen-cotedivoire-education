@@ -38,13 +38,23 @@ const trimesters = [
   { value: "3", label: "3ème Trimestre" },
 ];
 
+const columnTypes = [
+  { value: "Interrogation", label: "Interrogation" },
+  { value: "Devoir", label: "Devoir" },
+  { value: "Bonus", label: "Bonus" },
+  { value: "Composition", label: "Composition" },
+  { value: "Examen", label: "Examen" },
+];
+
 export function GradeConfiguration({ onComplete }: GradeConfigurationProps) {
   const [classId, setClassId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [gradeType, setGradeType] = useState<"10" | "20" | "40" | "bonus">("20");
   const [trimester, setTrimester] = useState("1");
+  const [columnName, setColumnName] = useState("");
+  const [coefficient, setCoefficient] = useState("1");
 
-  const canProceed = classId && subjectId && gradeType && trimester;
+  const canProceed = classId && subjectId && gradeType && trimester && columnName && coefficient;
 
   const handleNext = () => {
     if (!canProceed) return;
@@ -60,6 +70,8 @@ export function GradeConfiguration({ onComplete }: GradeConfigurationProps) {
         subjectName: selectedSubject.name,
         gradeType,
         trimester,
+        columnName,
+        coefficient: parseFloat(coefficient),
       });
     }
   };
@@ -116,12 +128,47 @@ export function GradeConfiguration({ onComplete }: GradeConfigurationProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Type de note *</Label>
+              <Select value={columnName} onValueChange={setColumnName}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {columnTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Coefficient *</Label>
+              <Select value={coefficient} onValueChange={setCoefficient}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.5">0.5</SelectItem>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="1.5">1.5</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="2.5">2.5</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                  <SelectItem value="4">4</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="space-y-2">
-        <Label>Type de note *</Label>
+        <Label>Barème de notation *</Label>
         <div className="grid grid-cols-2 gap-4">
           {gradeTypes.map((type) => (
             <Card

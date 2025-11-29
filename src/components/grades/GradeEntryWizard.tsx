@@ -19,6 +19,8 @@ export interface GradeConfig {
   subjectName: string;
   gradeType: "10" | "20" | "40" | "bonus";
   trimester: string;
+  columnName: string;
+  coefficient: number;
 }
 
 export interface GradeColumn {
@@ -57,7 +59,7 @@ export function GradeEntryWizard({ open, onOpenChange }: GradeEntryWizardProps) 
       { studentId: "5", matricule: "66800005A", name: "Koné Aminata", grades: {} },
     ];
     setStudentGrades(mockStudents);
-    setColumns([{ id: "col1", name: "Interrogation 1", coefficient: 1 }]);
+    setColumns([{ id: "col1", name: `${configuration.columnName} 1`, coefficient: configuration.coefficient }]);
     setCurrentStep(2);
   };
 

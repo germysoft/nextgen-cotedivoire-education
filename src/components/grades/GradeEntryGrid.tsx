@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Upload, Download } from "lucide-react";
 import { GradeConfig, GradeColumn, StudentGrade } from "./GradeEntryWizard";
 import { toast } from "sonner";
@@ -29,26 +30,39 @@ export function GradeEntryGrid({
   onNext,
   onBack,
 }: GradeEntryGridProps) {
-  const [newColumnName, setNewColumnName] = useState("");
+  const [newColumnType, setNewColumnType] = useState("");
   const [newColumnCoef, setNewColumnCoef] = useState("1");
   const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
+
+  const columnTypes = [
+    { value: "Interrogation", label: "Interrogation" },
+    { value: "Devoir", label: "Devoir" },
+    { value: "Bonus", label: "Bonus" },
+    { value: "Composition", label: "Composition" },
+    { value: "Examen", label: "Examen" },
+  ];
 
   const maxGrade = config.gradeType === "bonus" ? 5 : parseInt(config.gradeType);
 
   const handleAddColumn = () => {
-    if (!newColumnName.trim()) {
-      toast.error("Veuillez entrer un nom pour la colonne");
+    if (!newColumnType.trim()) {
+      toast.error("Veuillez sélectionner un type de note");
       return;
     }
 
+    // Count existing columns of this type
+    const existingCount = columns.filter(col => 
+      col.name.startsWith(newColumnType)
+    ).length;
+
     const newColumn: GradeColumn = {
       id: `col${Date.now()}`,
-      name: newColumnName,
+      name: `${newColumnType} ${existingCount + 1}`,
       coefficient: parseFloat(newColumnCoef) || 1,
     };
 
     setColumns([...columns, newColumn]);
-    setNewColumnName("");
+    setNewColumnType("");
     setNewColumnCoef("1");
     setIsAddColumnOpen(false);
     toast.success("Colonne ajoutée avec succès");
@@ -225,12 +239,19 @@ export function GradeEntryGrid({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label>Nom de la colonne</Label>
-                    <Input
-                      placeholder="Ex: Interrogation 2"
-                      value={newColumnName}
-                      onChange={(e) => setNewColumnName(e.target.value)}
-                    />
+                    <Label>Type de note</Label>
+                    <Select value={newColumnType} onValueChange={setNewColumnType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {columnTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Coefficient</Label>
