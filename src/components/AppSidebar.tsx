@@ -171,7 +171,7 @@ const menuStructure: MenuItem[] = [
     ],
   },
   {
-    title: "Bibliothèque & Fournitures",
+    title: "Bibliothèque",
     icon: Library,
     subItems: [
       { title: "Gestion Livres", url: "/library" },
@@ -218,7 +218,7 @@ const menuStructure: MenuItem[] = [
     ],
   },
   {
-    title: "Intégration MENA/DESPS",
+    title: "MENA/DESPS",
     icon: Link2,
     subItems: [
       { title: "Synchronisation", url: "/mena/sync" },
