@@ -1,5 +1,13 @@
-import { Home, Users, GraduationCap, BookOpen, Calendar, DollarSign, MessageSquare, Settings, BarChart3, FileText, Building2, Heart, Library, Briefcase, Bus, Trophy, Package, Handshake } from "lucide-react";
+import { 
+  Home, Users, GraduationCap, BookOpen, Calendar, DollarSign, MessageSquare, 
+  Settings, BarChart3, FileText, Building2, Heart, Library, Briefcase, Bus, 
+  Trophy, Package, Handshake, ChevronDown, ClipboardList, School, BookOpenCheck,
+  Bell, UserCheck, Archive, Wallet, Utensils, Bed, Book, Activity, Shield,
+  Globe, FileSpreadsheet, Lock, Puzzle, TrendingUp, Mail, Users2, Building,
+  Stethoscope, Boxes, Handshake as Partnership, Link2, Cloud, BarChart2
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,31 +18,269 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const menuItems = [
-  { title: "Tableau de Bord", url: "/dashboard", icon: Home },
-  { title: "Élèves", url: "/students", icon: Users },
-  { title: "Enseignants", url: "/teachers", icon: GraduationCap },
-  { title: "Classes", url: "/classes", icon: BookOpen },
-  { title: "Notes", url: "/grades", icon: FileText },
-  { title: "Emploi du Temps", url: "/schedule", icon: Calendar },
-  { title: "Comptabilité", url: "/finance", icon: DollarSign },
-  { title: "Ressources Humaines", url: "/hr", icon: Briefcase },
-  { title: "Messagerie", url: "/messaging", icon: MessageSquare },
-  { title: "Infrastructures", url: "/facilities", icon: Bus },
-  { title: "Bibliothèque", url: "/library", icon: Library },
-  { title: "Infirmerie", url: "/infirmary", icon: Heart },
-  { title: "Parascolaire", url: "/extracurricular", icon: Trophy },
-  { title: "Stocks", url: "/inventory", icon: Package },
-  { title: "Partenariats", url: "/partnerships", icon: Handshake },
-  { title: "Statistiques", url: "/statistics", icon: BarChart3 },
-  { title: "Paramètres", url: "/settings", icon: Settings },
+interface SubMenuItem {
+  title: string;
+  url: string;
+}
+
+interface MenuItem {
+  title: string;
+  icon: any;
+  subItems: SubMenuItem[];
+}
+
+const menuStructure: MenuItem[] = [
+  {
+    title: "Tableaux de Bord",
+    icon: Home,
+    subItems: [
+      { title: "Vue Globale", url: "/dashboard" },
+      { title: "TB Administratif", url: "/dashboard/admin" },
+      { title: "TB Pédagogique", url: "/dashboard/pedagogique" },
+      { title: "TB Scolarité", url: "/dashboard/scolarite" },
+      { title: "TB Notes", url: "/dashboard/notes" },
+      { title: "TB Élèves & Parents", url: "/dashboard/eleves-parents" },
+      { title: "TB Messagerie & SMS", url: "/dashboard/messagerie" },
+      { title: "TB Pointage Enseignants", url: "/dashboard/pointage" },
+      { title: "TB Inscription", url: "/dashboard/inscription" },
+      { title: "TB Archivage", url: "/dashboard/archivage" },
+      { title: "TB Comptabilité", url: "/dashboard/comptabilite" },
+      { title: "Graphiques & Rapports", url: "/dashboard/rapports" },
+      { title: "Alertes Automatiques", url: "/dashboard/alertes" },
+    ],
+  },
+  {
+    title: "Ressources Humaines",
+    icon: Briefcase,
+    subItems: [
+      { title: "Dossier Personnel", url: "/hr" },
+      { title: "Affectations & Promotions", url: "/hr/affectations" },
+      { title: "Congés & Absences", url: "/hr/conges" },
+      { title: "Pointage", url: "/hr/pointage" },
+      { title: "Historique Carrière", url: "/hr/historique" },
+      { title: "Contrats & Attestations", url: "/hr/contrats" },
+    ],
+  },
+  {
+    title: "Gestion Pédagogique",
+    icon: School,
+    subItems: [
+      { title: "Cycles & Classes", url: "/classes" },
+      { title: "Attribution Enseignants", url: "/pedagogie/attribution" },
+      { title: "Matières & Programmes", url: "/pedagogie/matieres" },
+      { title: "Conseils de Classe", url: "/pedagogie/conseils" },
+      { title: "Bulletins MENA", url: "/pedagogie/bulletins" },
+      { title: "Discipline", url: "/pedagogie/discipline" },
+      { title: "E-learning", url: "/pedagogie/elearning" },
+    ],
+  },
+  {
+    title: "Gestion de la Scolarité",
+    icon: ClipboardList,
+    subItems: [
+      { title: "Inscription/Réinscription", url: "/students" },
+      { title: "Paiements", url: "/scolarite/paiements" },
+      { title: "Génération Matricule", url: "/scolarite/matricule" },
+      { title: "Suivi Échéances", url: "/scolarite/echeances" },
+      { title: "Historique Scolaire", url: "/scolarite/historique" },
+      { title: "Import/Export MENA", url: "/scolarite/mena" },
+    ],
+  },
+  {
+    title: "Notes & Évaluations",
+    icon: BookOpenCheck,
+    subItems: [
+      { title: "Saisie des Notes", url: "/grades" },
+      { title: "Configuration Barèmes", url: "/notes/baremes" },
+      { title: "Calcul Moyennes", url: "/notes/moyennes" },
+      { title: "Validation Notes", url: "/notes/validation" },
+      { title: "Bulletins & Relevés", url: "/notes/bulletins" },
+      { title: "QCM Auto-corrigé", url: "/notes/qcm" },
+    ],
+  },
+  {
+    title: "Messagerie & SMS",
+    icon: MessageSquare,
+    subItems: [
+      { title: "Chat Interne", url: "/messaging" },
+      { title: "SMS Professionnels", url: "/messaging/sms" },
+      { title: "Notifications Auto", url: "/messaging/notifications" },
+      { title: "Envoi Emails", url: "/messaging/emails" },
+      { title: "Forum Interne", url: "/messaging/forum" },
+    ],
+  },
+  {
+    title: "Portail Parents & Élèves",
+    icon: Users2,
+    subItems: [
+      { title: "Accès Portail", url: "/parent-portal" },
+      { title: "Connexion Sécurisée", url: "/parent-login" },
+      { title: "Notes & Bulletins", url: "/portail/notes" },
+      { title: "Absences & Emploi", url: "/portail/absences" },
+      { title: "Paiements", url: "/portail/paiements" },
+      { title: "Documents", url: "/portail/documents" },
+      { title: "Chat Parents", url: "/portail/chat" },
+    ],
+  },
+  {
+    title: "Suivi Enseignants",
+    icon: UserCheck,
+    subItems: [
+      { title: "Planning Hebdomadaire", url: "/teachers" },
+      { title: "Suivi des Cours", url: "/enseignants/suivi-cours" },
+      { title: "Pointage Auto", url: "/enseignants/pointage" },
+      { title: "Rapport Assiduité", url: "/enseignants/assiduite" },
+      { title: "Fiche de Service", url: "/enseignants/fiche-service" },
+    ],
+  },
+  {
+    title: "Comptabilité Générale",
+    icon: DollarSign,
+    subItems: [
+      { title: "Recettes & Dépenses", url: "/finance" },
+      { title: "Gestion Caisse", url: "/comptabilite/caisse" },
+      { title: "Journaux Comptables", url: "/comptabilite/journaux" },
+      { title: "Balance & Bilan", url: "/comptabilite/bilan" },
+      { title: "Paiements Scolaires", url: "/comptabilite/paiements" },
+      { title: "Quittances", url: "/comptabilite/quittances" },
+    ],
+  },
+  {
+    title: "Infrastructures",
+    icon: Building2,
+    subItems: [
+      { title: "Salles & Locaux", url: "/facilities" },
+      { title: "Maintenance", url: "/infrastructures/maintenance" },
+      { title: "Planning Utilisation", url: "/infrastructures/planning" },
+    ],
+  },
+  {
+    title: "Cantine, Transport & Internat",
+    icon: Utensils,
+    subItems: [
+      { title: "Cantine", url: "/services/cantine" },
+      { title: "Transport Scolaire", url: "/services/transport" },
+      { title: "Internat", url: "/services/internat" },
+    ],
+  },
+  {
+    title: "Bibliothèque & Fournitures",
+    icon: Library,
+    subItems: [
+      { title: "Gestion Livres", url: "/library" },
+      { title: "Emprunts & Retours", url: "/bibliotheque/emprunts" },
+      { title: "Alertes Retard", url: "/bibliotheque/alertes" },
+      { title: "Inventaire", url: "/bibliotheque/inventaire" },
+    ],
+  },
+  {
+    title: "Activités Parascolaires",
+    icon: Trophy,
+    subItems: [
+      { title: "Clubs & Sports", url: "/extracurricular" },
+      { title: "Participation", url: "/parascolaire/participation" },
+      { title: "Événements", url: "/parascolaire/evenements" },
+    ],
+  },
+  {
+    title: "Infirmerie",
+    icon: Heart,
+    subItems: [
+      { title: "Fiches Médicales", url: "/infirmary" },
+      { title: "Consultations", url: "/infirmerie/consultations" },
+      { title: "Historique Médical", url: "/infirmerie/historique" },
+      { title: "Alertes Urgentes", url: "/infirmerie/alertes" },
+    ],
+  },
+  {
+    title: "Stocks & Patrimoine",
+    icon: Package,
+    subItems: [
+      { title: "Entrées/Sorties", url: "/inventory" },
+      { title: "Seuils Alerte", url: "/stocks/seuils" },
+      { title: "Inventaire Auto", url: "/stocks/inventaire" },
+    ],
+  },
+  {
+    title: "Associations & Partenariats",
+    icon: Handshake,
+    subItems: [
+      { title: "APEL", url: "/partnerships" },
+      { title: "Réunions & PV", url: "/partenariats/reunions" },
+      { title: "Sponsors", url: "/partenariats/sponsors" },
+    ],
+  },
+  {
+    title: "Intégration MENA/DESPS",
+    icon: Link2,
+    subItems: [
+      { title: "Synchronisation", url: "/mena/sync" },
+      { title: "Fichier National", url: "/mena/fichier" },
+      { title: "Préinscriptions", url: "/mena/preinscriptions" },
+      { title: "Décisions & Bilans", url: "/mena/decisions" },
+    ],
+  },
+  {
+    title: "Outils Productivité",
+    icon: FileSpreadsheet,
+    subItems: [
+      { title: "Suite Bureautique", url: "/outils/bureautique" },
+      { title: "Signature Électronique", url: "/outils/signature" },
+      { title: "Modèles Courriers", url: "/outils/modeles" },
+      { title: "Cloud Sécurisé", url: "/outils/cloud" },
+    ],
+  },
+  {
+    title: "Statistiques & Rapports",
+    icon: BarChart3,
+    subItems: [
+      { title: "Rapports Globaux", url: "/statistics" },
+      { title: "Tableaux Croisés", url: "/statistiques/tableaux" },
+      { title: "Export Multi-format", url: "/statistiques/export" },
+      { title: "Rapports Planifiés", url: "/statistiques/planifies" },
+    ],
+  },
+  {
+    title: "Paramétrage & Sécurité",
+    icon: Settings,
+    subItems: [
+      { title: "Utilisateurs", url: "/settings" },
+      { title: "Rôles & Droits", url: "/parametrage/roles" },
+      { title: "Sauvegarde", url: "/parametrage/sauvegarde" },
+      { title: "Multilingue", url: "/parametrage/langues" },
+      { title: "Logs Système", url: "/parametrage/logs" },
+    ],
+  },
+  {
+    title: "Modules Optionnels",
+    icon: Puzzle,
+    subItems: [
+      { title: "E-learning Avancé", url: "/modules/elearning" },
+      { title: "App Mobile", url: "/modules/mobile" },
+      { title: "QR Code Scolaire", url: "/modules/qrcode" },
+      { title: "Paiement Mobile", url: "/modules/paiement-mobile" },
+      { title: "Intelligence Artificielle", url: "/modules/ia" },
+    ],
+  },
 ];
 
 export function AppSidebar() {
   const { open } = useSidebar();
+  const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>({});
+
+  const toggleGroup = (title: string) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }));
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -54,26 +300,47 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation Principale</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+              {menuStructure.map((item) => (
+                <Collapsible
+                  key={item.title}
+                  open={openGroups[item.title]}
+                  onOpenChange={() => toggleGroup(item.title)}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="w-full">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.subItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.url}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink
+                                to={subItem.url}
+                                end
+                                className={({ isActive }) =>
+                                  isActive
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                    : "hover:bg-sidebar-accent/50"
+                                }
+                              >
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
