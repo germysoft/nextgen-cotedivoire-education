@@ -91,6 +91,7 @@ import ResultatsExamens from "./pages/examens/Resultats";
 import DocumentsOfficiels from "./pages/examens/DocumentsOfficiels";
 import CommunicationExamens from "./pages/examens/Communication";
 import AuditExamens from "./pages/examens/Audit";
+import RapprochementDECO from "./pages/examens/RapprochementDECO";
 
 const queryClient = new QueryClient();
 
@@ -174,6 +175,7 @@ const App = () => (
           <Route path="/examens/documents" element={<MainLayout><DocumentsOfficiels /></MainLayout>} />
           <Route path="/examens/communication" element={<MainLayout><CommunicationExamens /></MainLayout>} />
           <Route path="/examens/audit" element={<MainLayout><AuditExamens /></MainLayout>} />
+          <Route path="/examens/rapprochement" element={<MainLayout><RapprochementDECO /></MainLayout>} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />

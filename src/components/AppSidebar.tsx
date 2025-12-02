@@ -117,6 +117,7 @@ const menuStructure: MenuItem[] = [
       { title: "Documents Officiels", url: "/examens/documents" },
       { title: "Communication", url: "/examens/communication" },
       { title: "Audit & Sécurité", url: "/examens/audit" },
+      { title: "Rapprochement DECO", url: "/examens/rapprochement" },
     ],
   },
   {
