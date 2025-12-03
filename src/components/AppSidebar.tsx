@@ -119,6 +119,7 @@ const menuStructure: MenuItem[] = [
       { title: "Audit & Sécurité", url: "/examens/audit" },
       { title: "Rapprochement DECO", url: "/examens/rapprochement" },
       { title: "Tableau de Bord Examens", url: "/examens/tableau-bord" },
+      { title: "Alertes & Monitoring", url: "/examens/alertes-monitoring" },
     ],
   },
   {
