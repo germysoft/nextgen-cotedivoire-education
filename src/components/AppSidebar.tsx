@@ -118,6 +118,7 @@ const menuStructure: MenuItem[] = [
       { title: "Communication", url: "/examens/communication" },
       { title: "Audit & Sécurité", url: "/examens/audit" },
       { title: "Rapprochement DECO", url: "/examens/rapprochement" },
+      { title: "Tableau de Bord Examens", url: "/examens/tableau-bord" },
     ],
   },
   {
