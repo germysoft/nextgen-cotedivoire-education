@@ -93,6 +93,7 @@ import CommunicationExamens from "./pages/examens/Communication";
 import AuditExamens from "./pages/examens/Audit";
 import RapprochementDECO from "./pages/examens/RapprochementDECO";
 import TableauBordExamens from "./pages/examens/TableauBordExamens";
+import AlertesMonitoring from "./pages/examens/AlertesMonitoring";
 
 const queryClient = new QueryClient();
 
@@ -178,6 +179,7 @@ const App = () => (
           <Route path="/examens/audit" element={<MainLayout><AuditExamens /></MainLayout>} />
           <Route path="/examens/rapprochement" element={<MainLayout><RapprochementDECO /></MainLayout>} />
           <Route path="/examens/tableau-bord" element={<MainLayout><TableauBordExamens /></MainLayout>} />
+          <Route path="/examens/alertes-monitoring" element={<MainLayout><AlertesMonitoring /></MainLayout>} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
