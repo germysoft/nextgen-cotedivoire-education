@@ -105,48 +105,50 @@ export default function ConvocationsExamens() {
   };
 
   // Génération PDF candidat
-  const handleGenerateCandidatePDF = (candidate: ExamCandidate) => {
+  const handleGenerateCandidatePDF = async (candidate: ExamCandidate) => {
     const center = mockExamCenters.find(c => c.id === candidate.centerId);
     if (center) {
-      generateCandidateConvocationPDF(candidate, mockExamSchedule, center);
+      const verification = await generateCandidateConvocationPDF(candidate, mockExamSchedule, center);
       updateCandidateStatus(candidate.id, 'generated');
-      toast.success(`Convocation générée pour ${candidate.lastName} ${candidate.firstName}`);
+      toast.success(`Convocation générée avec QR code: ${verification.code}`);
     }
   };
 
   // Génération PDF jury
-  const handleGenerateJuryPDF = (member: JuryMember) => {
+  const handleGenerateJuryPDF = async (member: JuryMember) => {
     const center = mockExamCenters.find(c => c.id === member.centerId);
     if (center) {
-      generateJuryConvocationPDF(member, mockExamSchedule, center);
+      const verification = await generateJuryConvocationPDF(member, mockExamSchedule, center);
       updateJuryStatus(member.id, 'generated');
-      toast.success(`Convocation générée pour ${member.lastName} ${member.firstName}`);
+      toast.success(`Convocation générée avec QR code: ${verification.code}`);
     }
   };
 
   // Génération en lot candidats
-  const handleBatchGenerateCandidates = () => {
+  const handleBatchGenerateCandidates = async () => {
     const toGenerate = selectedCandidates.length > 0 
       ? candidates.filter(c => selectedCandidates.includes(c.id))
       : filteredCandidates;
     
-    generateBatchCandidatePDFs(toGenerate, mockExamSchedule, mockExamCenters);
+    toast.info(`Génération de ${toGenerate.length} convocations en cours...`);
+    const verifications = await generateBatchCandidatePDFs(toGenerate, mockExamSchedule, mockExamCenters);
     
     toGenerate.forEach(c => updateCandidateStatus(c.id, 'generated'));
-    toast.success(`${toGenerate.length} convocations candidats générées`);
+    toast.success(`${verifications.length} convocations candidats générées avec QR codes`);
     setSelectedCandidates([]);
   };
 
   // Génération en lot jurys
-  const handleBatchGenerateJury = () => {
+  const handleBatchGenerateJury = async () => {
     const toGenerate = selectedJury.length > 0 
       ? juryMembers.filter(j => selectedJury.includes(j.id))
       : filteredJury;
     
-    generateBatchJuryPDFs(toGenerate, mockExamSchedule, mockExamCenters);
+    toast.info(`Génération de ${toGenerate.length} convocations en cours...`);
+    const verifications = await generateBatchJuryPDFs(toGenerate, mockExamSchedule, mockExamCenters);
     
     toGenerate.forEach(j => updateJuryStatus(j.id, 'generated'));
-    toast.success(`${toGenerate.length} convocations jury générées`);
+    toast.success(`${verifications.length} convocations jury générées avec QR codes`);
     setSelectedJury([]);
   };
 

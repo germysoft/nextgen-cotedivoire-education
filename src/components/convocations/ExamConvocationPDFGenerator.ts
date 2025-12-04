@@ -2,16 +2,30 @@ import jsPDF from 'jspdf';
 import { ExamCandidate, JuryMember, ExamSchedule, ExamCenter, roleLabels } from '@/data/mockExamConvocations';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { generateQRCodeBase64 } from './QRCodeGenerator';
+import { 
+  createCandidateVerification, 
+  createJuryVerification, 
+  generateVerificationURL,
+  VerificationData 
+} from '@/utils/convocationVerification';
 
-export function generateCandidateConvocationPDF(
+export async function generateCandidateConvocationPDF(
   candidate: ExamCandidate,
   schedule: ExamSchedule[],
   center: ExamCenter
-) {
+): Promise<VerificationData> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let yPos = 15;
+
+  // Créer les données de vérification
+  const verificationData = createCandidateVerification(candidate);
+  const verificationURL = generateVerificationURL(verificationData.code);
+  
+  // Générer le QR code
+  const qrCodeDataUrl = await generateQRCodeBase64(verificationURL, { width: 80 });
 
   // En-tête officiel
   doc.setFontSize(10);
@@ -45,11 +59,15 @@ export function generateCandidateConvocationPDF(
   doc.setFontSize(11);
   doc.text(`Session ${candidate.session}`, pageWidth / 2, yPos, { align: 'center' });
   
-  // Numéro de convocation
+  // Numéro de convocation et code de vérification
   yPos += 10;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`N° Candidat: ${candidate.candidateNumber}`, pageWidth - margin, yPos, { align: 'right' });
+  doc.text(`N° Candidat: ${candidate.candidateNumber}`, margin, yPos);
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Code vérification: ${verificationData.code}`, pageWidth - margin, yPos, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
   
   // Informations du candidat (encadré)
   yPos += 10;
@@ -172,40 +190,65 @@ export function generateCandidateConvocationPDF(
     yPos += 5;
   });
   
+  // QR Code avec cadre
+  const qrSize = 30;
+  const qrX = margin;
+  const qrY = doc.internal.pageSize.getHeight() - 50;
+  
+  // Cadre autour du QR code
+  doc.setDrawColor(59, 130, 246);
+  doc.setLineWidth(0.5);
+  doc.rect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 12);
+  
+  // Ajouter le QR code
+  doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+  
+  // Texte sous le QR code
+  doc.setFontSize(6);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Scannez pour vérifier', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
+  doc.text('l\'authenticité', qrX + qrSize / 2, qrY + qrSize + 7, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  
   // Cachet et signature
-  yPos = doc.internal.pageSize.getHeight() - 45;
   doc.setFontSize(9);
-  doc.text(`Fait à Abidjan, le ${format(new Date(), 'dd MMMM yyyy', { locale: fr })}`, margin, yPos);
+  doc.text(`Fait à Abidjan, le ${format(new Date(), 'dd MMMM yyyy', { locale: fr })}`, margin + qrSize + 10, qrY + 5);
   
-  yPos += 10;
-  doc.text('Le Directeur des Examens et Concours', pageWidth - margin - 60, yPos);
+  doc.text('Le Directeur des Examens et Concours', pageWidth - margin - 60, qrY + 5);
   
-  yPos += 15;
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);
-  doc.text('(Cachet et signature)', pageWidth - margin - 50, yPos);
+  doc.text('(Cachet et signature)', pageWidth - margin - 50, qrY + 20);
   
-  // QR Code placeholder
-  doc.setDrawColor(150, 150, 150);
-  doc.rect(margin, doc.internal.pageSize.getHeight() - 40, 25, 25);
+  // Hash de sécurité en bas de page
   doc.setFontSize(6);
-  doc.text('QR Code', margin + 5, doc.internal.pageSize.getHeight() - 25);
-  doc.text('Vérification', margin + 3, doc.internal.pageSize.getHeight() - 20);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`Hash: ${verificationData.documentHash}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
   
   // Télécharger
   const fileName = `Convocation_${candidate.examType}_${candidate.candidateNumber}.pdf`;
   doc.save(fileName);
+  
+  return verificationData;
 }
 
-export function generateJuryConvocationPDF(
+export async function generateJuryConvocationPDF(
   member: JuryMember,
   schedule: ExamSchedule[],
   center: ExamCenter
-) {
+): Promise<VerificationData> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let yPos = 15;
+
+  // Créer les données de vérification
+  const verificationData = createJuryVerification(member);
+  const verificationURL = generateVerificationURL(verificationData.code);
+  
+  // Générer le QR code
+  const qrCodeDataUrl = await generateQRCodeBase64(verificationURL, { width: 80 });
 
   // En-tête officiel
   doc.setFontSize(10);
@@ -239,15 +282,21 @@ export function generateJuryConvocationPDF(
   doc.setFontSize(11);
   doc.text(`Session ${member.session}`, pageWidth / 2, yPos, { align: 'center' });
   
-  // Référence
+  // Référence et code de vérification
   yPos += 10;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text(`Réf: DECO/${member.examType}/${new Date().getFullYear()}/JURY-${member.id.split('-')[1]}`, margin, yPos);
-  doc.text(`Matricule: ${member.matricule}`, pageWidth - margin, yPos, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Code: ${verificationData.code}`, pageWidth - margin, yPos, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+  
+  yPos += 5;
+  doc.text(`Matricule: ${member.matricule}`, margin, yPos);
   
   // Informations du membre (encadré)
-  yPos += 12;
+  yPos += 10;
   const infoBoxHeight = 35;
   doc.setFillColor(248, 250, 252);
   doc.rect(margin, yPos, pageWidth - 2 * margin, infoBoxHeight, 'F');
@@ -339,55 +388,87 @@ export function generateJuryConvocationPDF(
   yPos += 5;
   doc.text('transmission des pièces justificatives (PV signés, fiches de présence).', margin, yPos);
   
+  // QR Code
+  const qrSize = 30;
+  const qrX = margin;
+  const qrY = doc.internal.pageSize.getHeight() - 55;
+  
+  doc.setDrawColor(59, 130, 246);
+  doc.setLineWidth(0.5);
+  doc.rect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 12);
+  
+  doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+  
+  doc.setFontSize(6);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Scannez pour vérifier', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
+  doc.text('l\'authenticité', qrX + qrSize / 2, qrY + qrSize + 7, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  
   // Signature
-  yPos = doc.internal.pageSize.getHeight() - 45;
   doc.setFontSize(9);
-  doc.text(`Fait à Abidjan, le ${format(new Date(), 'dd MMMM yyyy', { locale: fr })}`, margin, yPos);
+  doc.text(`Fait à Abidjan, le ${format(new Date(), 'dd MMMM yyyy', { locale: fr })}`, margin + qrSize + 10, qrY + 5);
   
-  yPos += 10;
-  doc.text('Le Directeur des Examens et Concours', pageWidth - margin - 60, yPos);
+  doc.text('Le Directeur des Examens et Concours', pageWidth - margin - 60, qrY + 5);
   
-  yPos += 15;
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);
-  doc.text('(Cachet et signature)', pageWidth - margin - 50, yPos);
+  doc.text('(Cachet et signature)', pageWidth - margin - 50, qrY + 20);
   
   // Accusé de réception
   yPos = doc.internal.pageSize.getHeight() - 20;
   doc.setLineWidth(0.3);
   doc.line(margin, yPos - 5, pageWidth - margin, yPos - 5);
-  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
   doc.text('Accusé de réception: Je soussigné(e) ________________________ certifie avoir reçu cette convocation le ____/____/______', margin, yPos);
   doc.text('Signature: ____________________', pageWidth - margin - 45, yPos + 5);
+  
+  // Hash de sécurité
+  doc.setFontSize(6);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`Hash: ${verificationData.documentHash}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
   
   // Télécharger
   const fileName = `Convocation_Jury_${member.examType}_${member.matricule}.pdf`;
   doc.save(fileName);
+  
+  return verificationData;
 }
 
-export function generateBatchCandidatePDFs(
+export async function generateBatchCandidatePDFs(
   candidates: ExamCandidate[],
   schedule: ExamSchedule[],
   centers: ExamCenter[]
-) {
-  candidates.forEach(candidate => {
+): Promise<VerificationData[]> {
+  const verifications: VerificationData[] = [];
+  
+  for (const candidate of candidates) {
     const center = centers.find(c => c.id === candidate.centerId);
     if (center) {
-      generateCandidateConvocationPDF(candidate, schedule, center);
+      const verification = await generateCandidateConvocationPDF(candidate, schedule, center);
+      verifications.push(verification);
     }
-  });
+  }
+  
+  return verifications;
 }
 
-export function generateBatchJuryPDFs(
+export async function generateBatchJuryPDFs(
   members: JuryMember[],
   schedule: ExamSchedule[],
   centers: ExamCenter[]
-) {
-  members.forEach(member => {
+): Promise<VerificationData[]> {
+  const verifications: VerificationData[] = [];
+  
+  for (const member of members) {
     const center = centers.find(c => c.id === member.centerId);
     if (center) {
-      generateJuryConvocationPDF(member, schedule, center);
+      const verification = await generateJuryConvocationPDF(member, schedule, center);
+      verifications.push(verification);
     }
-  });
+  }
+  
+  return verifications;
 }

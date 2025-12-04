@@ -94,6 +94,7 @@ import AuditExamens from "./pages/examens/Audit";
 import RapprochementDECO from "./pages/examens/RapprochementDECO";
 import TableauBordExamens from "./pages/examens/TableauBordExamens";
 import AlertesMonitoring from "./pages/examens/AlertesMonitoring";
+import VerificationConvocation from "./pages/VerificationConvocation";
 
 const queryClient = new QueryClient();
 
@@ -180,6 +181,9 @@ const App = () => (
           <Route path="/examens/rapprochement" element={<MainLayout><RapprochementDECO /></MainLayout>} />
           <Route path="/examens/tableau-bord" element={<MainLayout><TableauBordExamens /></MainLayout>} />
           <Route path="/examens/alertes-monitoring" element={<MainLayout><AlertesMonitoring /></MainLayout>} />
+          
+          {/* Verification Route (public) */}
+          <Route path="/verification-convocation" element={<VerificationConvocation />} />
           
           {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
