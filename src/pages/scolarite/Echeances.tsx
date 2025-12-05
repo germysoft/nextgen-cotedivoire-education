@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, AlertCircle, CheckCircle, Clock, Send, Bell, TrendingUp, Filter, Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { Calendar, AlertCircle, CheckCircle, Clock, Send, Bell, TrendingUp, Filter, Plus, Eye, Edit, Trash2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { DataTableFilters } from "@/components/data-table/DataTableFilters";
 import { DataTableExport } from "@/components/data-table/DataTableExport";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import AutomaticReminders from "@/components/scolarite/AutomaticReminders";
 
 // Mock data for payment deadlines
 const echeances = [
@@ -296,6 +297,10 @@ export default function EcheancesPage() {
         <TabsList>
           <TabsTrigger value="echeances">Échéances Élèves</TabsTrigger>
           <TabsTrigger value="calendrier">Calendrier Mensuel</TabsTrigger>
+          <TabsTrigger value="rappels">
+            <Settings className="mr-2 h-4 w-4" />
+            Rappels Automatiques
+          </TabsTrigger>
           <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
         </TabsList>
 
@@ -437,6 +442,10 @@ export default function EcheancesPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="rappels">
+          <AutomaticReminders />
         </TabsContent>
 
         <TabsContent value="statistiques">
