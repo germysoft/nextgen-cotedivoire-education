@@ -95,6 +95,10 @@ import RapprochementDECO from "./pages/examens/RapprochementDECO";
 import TableauBordExamens from "./pages/examens/TableauBordExamens";
 import AlertesMonitoring from "./pages/examens/AlertesMonitoring";
 import VerificationConvocation from "./pages/VerificationConvocation";
+import NotesParents from "./pages/portail/NotesParents";
+import AbsencesParents from "./pages/portail/AbsencesParents";
+import PaiementsParents from "./pages/portail/PaiementsParents";
+import ChatParents from "./pages/portail/ChatParents";
 
 const queryClient = new QueryClient();
 
