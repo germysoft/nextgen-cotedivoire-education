@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import AppointmentReminders from "@/components/portail/AppointmentReminders";
 import { 
   CalendarDays, 
   Clock, 
@@ -597,6 +598,9 @@ export default function CalendrierParents() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Système de rappels */}
+      <AppointmentReminders />
     </div>
   );
 }
