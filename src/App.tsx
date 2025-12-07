@@ -196,10 +196,10 @@ const App = () => (
           <Route path="/scolarite/echeances" element={<MainLayout><Echeances /></MainLayout>} />
           <Route path="/scolarite/mena" element={<MainLayout><MENAImportExport /></MainLayout>} />
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
-          <Route path="/portail/notes" element={<MainLayout><GenericPlaceholder title="Notes & Bulletins" description="Consultation des notes et bulletins scolaires" /></MainLayout>} />
-          <Route path="/portail/absences" element={<MainLayout><GenericPlaceholder title="Absences & Emploi du Temps" description="Suivi des absences et consultation de l'emploi du temps" /></MainLayout>} />
-          <Route path="/portail/paiements" element={<MainLayout><GenericPlaceholder title="Paiements Parents" description="Historique et gestion des paiements" /></MainLayout>} />
-          <Route path="/portail/chat" element={<MainLayout><GenericPlaceholder title="Chat Parents" description="Messagerie avec les enseignants et l'administration" /></MainLayout>} />
+          <Route path="/portail/notes" element={<MainLayout><NotesParents /></MainLayout>} />
+          <Route path="/portail/absences" element={<MainLayout><AbsencesParents /></MainLayout>} />
+          <Route path="/portail/paiements" element={<MainLayout><PaiementsParents /></MainLayout>} />
+          <Route path="/portail/chat" element={<MainLayout><ChatParents /></MainLayout>} />
           <Route path="/dashboard/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           
           {/* Messaging Routes */}
