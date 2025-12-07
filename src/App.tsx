@@ -99,6 +99,7 @@ import NotesParents from "./pages/portail/NotesParents";
 import AbsencesParents from "./pages/portail/AbsencesParents";
 import PaiementsParents from "./pages/portail/PaiementsParents";
 import ChatParents from "./pages/portail/ChatParents";
+import CalendrierParents from "./pages/portail/CalendrierParents";
 
 const queryClient = new QueryClient();
 
@@ -200,6 +201,7 @@ const App = () => (
           <Route path="/portail/absences" element={<MainLayout><AbsencesParents /></MainLayout>} />
           <Route path="/portail/paiements" element={<MainLayout><PaiementsParents /></MainLayout>} />
           <Route path="/portail/chat" element={<MainLayout><ChatParents /></MainLayout>} />
+          <Route path="/portail/calendrier" element={<MainLayout><CalendrierParents /></MainLayout>} />
           <Route path="/dashboard/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           
           {/* Messaging Routes */}
