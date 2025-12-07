@@ -144,6 +144,7 @@ const menuStructure: MenuItem[] = [
       { title: "Paiements", url: "/portail/paiements" },
       { title: "Documents", url: "/portail/documents" },
       { title: "Chat Parents", url: "/portail/chat" },
+      { title: "Calendrier & RDV", url: "/portail/calendrier" },
     ],
   },
   {
