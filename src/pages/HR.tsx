@@ -5,108 +5,65 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  Users, 
-  UserPlus, 
-  Download, 
-  Search, 
-  Calendar, 
-  Clock,
-  TrendingUp,
-  DollarSign,
-  FileText
+  Users, Download, Search, Calendar, TrendingUp, DollarSign, 
+  Eye, Edit, Phone, Mail, Filter, Building2
 } from "lucide-react";
-
-const mockStaff = [
-  { 
-    id: 1, 
-    name: "Traoré Mamadou", 
-    role: "Enseignant", 
-    department: "Mathématiques", 
-    status: "Permanent",
-    salary: 450000,
-    joinDate: "2015-09-01",
-    attendance: "98%"
-  },
-  { 
-    id: 2, 
-    name: "Bamba Akissi", 
-    role: "Enseignant", 
-    department: "Français", 
-    status: "Permanent",
-    salary: 420000,
-    joinDate: "2018-09-01",
-    attendance: "95%"
-  },
-  { 
-    id: 3, 
-    name: "Koné Yves", 
-    role: "Secrétaire", 
-    department: "Administration", 
-    status: "Permanent",
-    salary: 280000,
-    joinDate: "2019-01-15",
-    attendance: "100%"
-  },
-  { 
-    id: 4, 
-    name: "Diallo Mariam", 
-    role: "Comptable", 
-    department: "Finance", 
-    status: "Permanent",
-    salary: 350000,
-    joinDate: "2020-03-10",
-    attendance: "97%"
-  },
-  { 
-    id: 5, 
-    name: "Yao Serge", 
-    role: "Enseignant", 
-    department: "Anglais", 
-    status: "Vacataire",
-    salary: 180000,
-    joinDate: "2024-09-01",
-    attendance: "92%"
-  },
-];
-
-const mockLeaveRequests = [
-  { id: 1, name: "Traoré Mamadou", type: "Congé annuel", startDate: "2024-12-15", endDate: "2024-12-30", status: "En attente" },
-  { id: 2, name: "Bamba Akissi", type: "Congé maladie", startDate: "2024-11-08", endDate: "2024-11-10", status: "Approuvé" },
-];
+import { AddPersonnelDialog } from "@/components/hr/AddPersonnelDialog";
+import { PersonnelProfile } from "@/components/hr/PersonnelProfile";
+import { mockPersonnel } from "@/data/mockPersonnel";
+import { Personnel, categoriesPersonnel, statutsPersonnel, departements } from "@/types/personnel";
 
 export default function HR() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategorie, setFilterCategorie] = useState<string>("all");
+  const [filterStatut, setFilterStatut] = useState<string>("all");
+  const [filterDepartement, setFilterDepartement] = useState<string>("all");
+  const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const getInitials = (nom: string, prenom: string) => {
+    return `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase();
   };
 
-  const totalStaff = mockStaff.length;
-  const permanentStaff = mockStaff.filter(s => s.status === "Permanent").length;
-  const totalSalaries = mockStaff.reduce((acc, s) => acc + s.salary, 0);
+  const filteredPersonnel = mockPersonnel.filter(p => {
+    const matchSearch = `${p.nom} ${p.prenom} ${p.matricule} ${p.poste}`.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCategorie = filterCategorie === "all" || p.categoriePersonnel === filterCategorie;
+    const matchStatut = filterStatut === "all" || p.statut === filterStatut;
+    const matchDept = filterDepartement === "all" || p.departement === filterDepartement;
+    return matchSearch && matchCategorie && matchStatut && matchDept && p.actif;
+  });
+
+  const stats = {
+    total: mockPersonnel.filter(p => p.actif).length,
+    permanents: mockPersonnel.filter(p => p.statut === "Permanent" && p.actif).length,
+    enseignants: mockPersonnel.filter(p => p.categoriePersonnel === "Enseignant" && p.actif).length,
+    masseSalariale: mockPersonnel.filter(p => p.actif).reduce((acc, p) => acc + p.salaireBase, 0),
+  };
+
+  const openProfile = (personnel: Personnel) => {
+    setSelectedPersonnel(personnel);
+    setProfileOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Ressources Humaines</h1>
-          <p className="text-muted-foreground">Gestion du personnel et des ressources humaines</p>
+          <p className="text-muted-foreground">Gestion complète du personnel de l'établissement</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Exporter
           </Button>
-          <Button>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Nouveau Personnel
-          </Button>
+          <AddPersonnelDialog />
         </div>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -114,8 +71,8 @@ export default function HR() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStaff}</div>
-            <p className="text-xs text-muted-foreground">{permanentStaff} permanents</p>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">{stats.permanents} permanents, {stats.enseignants} enseignants</p>
           </CardContent>
         </Card>
         <Card>
@@ -124,7 +81,7 @@ export default function HR() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(totalSalaries / 1000000).toFixed(1)}M</div>
+            <div className="text-2xl font-bold">{(stats.masseSalariale / 1000000).toFixed(1)}M</div>
             <p className="text-xs text-muted-foreground">FCFA / mois</p>
           </CardContent>
         </Card>
@@ -144,148 +101,99 @@ export default function HR() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockLeaveRequests.length}</div>
+            <div className="text-2xl font-bold">3</div>
             <p className="text-xs text-muted-foreground">Demandes actives</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content */}
       <Card>
         <CardHeader>
-          <CardTitle>Personnel</CardTitle>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle>Liste du Personnel ({filteredPersonnel.length})</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Rechercher..." className="pl-8 w-48" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              </div>
+              <Select value={filterCategorie} onValueChange={setFilterCategorie}>
+                <SelectTrigger className="w-36"><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes catégories</SelectItem>
+                  {categoriesPersonnel.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterStatut} onValueChange={setFilterStatut}>
+                <SelectTrigger className="w-32"><SelectValue placeholder="Statut" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous statuts</SelectItem>
+                  {statutsPersonnel.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterDepartement} onValueChange={setFilterDepartement}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Département" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous départements</SelectItem>
+                  {departements.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="staff">
-            <TabsList>
-              <TabsTrigger value="staff">Liste du Personnel</TabsTrigger>
-              <TabsTrigger value="leaves">Congés & Absences</TabsTrigger>
-              <TabsTrigger value="attendance">Pointage</TabsTrigger>
-              <TabsTrigger value="payroll">Paie</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="staff" className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher un membre du personnel..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom & Prénoms</TableHead>
-                    <TableHead>Fonction</TableHead>
-                    <TableHead>Département</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Salaire</TableHead>
-                    <TableHead>Date d'embauche</TableHead>
-                    <TableHead>Présence</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockStaff.map((staff) => (
-                    <TableRow key={staff.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>{getInitials(staff.name)}</AvatarFallback>
-                          </Avatar>
-                          <span>{staff.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{staff.role}</TableCell>
-                      <TableCell>{staff.department}</TableCell>
-                      <TableCell>
-                        <Badge variant={staff.status === "Permanent" ? "default" : "secondary"}>
-                          {staff.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {staff.salary.toLocaleString()} FCFA
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{staff.joinDate}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{staff.attendance}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="ghost">Voir</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-
-            <TabsContent value="leaves" className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Type de congé</TableHead>
-                    <TableHead>Date début</TableHead>
-                    <TableHead>Date fin</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockLeaveRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.name}</TableCell>
-                      <TableCell>{request.type}</TableCell>
-                      <TableCell className="font-mono text-sm">{request.startDate}</TableCell>
-                      <TableCell className="font-mono text-sm">{request.endDate}</TableCell>
-                      <TableCell>
-                        <Badge variant={request.status === "Approuvé" ? "default" : "secondary"}>
-                          {request.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {request.status === "En attente" && (
-                          <>
-                            <Button size="sm" variant="default" className="mr-2">Approuver</Button>
-                            <Button size="sm" variant="outline">Rejeter</Button>
-                          </>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-
-            <TabsContent value="attendance">
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-4">
-                  <Clock className="h-16 w-16 mx-auto text-muted-foreground" />
-                  <h3 className="text-lg font-semibold">Système de Pointage</h3>
-                  <p className="text-muted-foreground">Gestion du pointage quotidien du personnel</p>
-                  <Button>Configurer le Pointage</Button>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="payroll">
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-4">
-                  <FileText className="h-16 w-16 mx-auto text-muted-foreground" />
-                  <h3 className="text-lg font-semibold">Gestion de la Paie</h3>
-                  <p className="text-muted-foreground">Génération des fiches de paie et bulletins de salaire</p>
-                  <Button>Générer les Fiches de Paie</Button>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Personnel</TableHead>
+                <TableHead>Poste</TableHead>
+                <TableHead>Département</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead>Salaire</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPersonnel.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={p.photo} />
+                        <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(p.nom, p.prenom)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{p.civilite} {p.prenom} {p.nom}</div>
+                        <div className="text-sm text-muted-foreground font-mono">{p.matricule}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{p.poste}</TableCell>
+                  <TableCell><Badge variant="outline" className="gap-1"><Building2 className="h-3 w-3" />{p.departement}</Badge></TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1 text-sm">
+                      <div className="flex items-center gap-1"><Phone className="h-3 w-3 text-muted-foreground" />{p.telephone}</div>
+                      <div className="flex items-center gap-1"><Mail className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground truncate max-w-32">{p.email}</span></div>
+                    </div>
+                  </TableCell>
+                  <TableCell><Badge variant={p.statut === "Permanent" ? "default" : "secondary"}>{p.statut}</Badge></TableCell>
+                  <TableCell className="font-semibold">{p.salaireBase.toLocaleString()} FCFA</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openProfile(p)}><Eye className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
+
+      {selectedPersonnel && (
+        <PersonnelProfile personnel={selectedPersonnel} open={profileOpen} onClose={() => setProfileOpen(false)} />
+      )}
     </div>
   );
 }
