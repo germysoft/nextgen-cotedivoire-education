@@ -14,6 +14,7 @@ import {
 import { AddPersonnelDialog } from "@/components/hr/AddPersonnelDialog";
 import { PersonnelProfile } from "@/components/hr/PersonnelProfile";
 import { PayslipGenerator } from "@/components/hr/PayslipGenerator";
+import { EvaluationForm } from "@/components/hr/EvaluationForm";
 import { mockPersonnel } from "@/data/mockPersonnel";
 import { Personnel, categoriesPersonnel, statutsPersonnel, departements } from "@/types/personnel";
 
@@ -182,6 +183,7 @@ export default function HR() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <PayslipGenerator personnel={p} />
+                      <EvaluationForm personnel={p} />
                       <Button variant="ghost" size="icon" onClick={() => openProfile(p)}><Eye className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
                     </div>
