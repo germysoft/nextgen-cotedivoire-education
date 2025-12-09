@@ -9,10 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Download, Search, Calendar, TrendingUp, DollarSign, 
-  Eye, Edit, Phone, Mail, Filter, Building2
+  Eye, Edit, Phone, Mail, Filter, Building2, FileText
 } from "lucide-react";
 import { AddPersonnelDialog } from "@/components/hr/AddPersonnelDialog";
 import { PersonnelProfile } from "@/components/hr/PersonnelProfile";
+import { PayslipGenerator } from "@/components/hr/PayslipGenerator";
 import { mockPersonnel } from "@/data/mockPersonnel";
 import { Personnel, categoriesPersonnel, statutsPersonnel, departements } from "@/types/personnel";
 
@@ -180,6 +181,7 @@ export default function HR() {
                   <TableCell className="font-semibold">{p.salaireBase.toLocaleString()} FCFA</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <PayslipGenerator personnel={p} />
                       <Button variant="ghost" size="icon" onClick={() => openProfile(p)}><Eye className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
                     </div>
