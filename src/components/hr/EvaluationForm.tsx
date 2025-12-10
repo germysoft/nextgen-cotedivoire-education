@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ClipboardCheck, Target, Star, Plus, Trash2, Save, Send, 
-  CheckCircle2, AlertCircle, Clock, TrendingUp, Award
+  CheckCircle2, AlertCircle, Clock, TrendingUp, Award, FileText
 } from "lucide-react";
 import { Personnel } from "@/types/personnel";
 import { 
@@ -22,6 +22,7 @@ import {
 } from "@/types/evaluation";
 import { generateEvaluationId, generateObjectifId } from "@/data/mockEvaluations";
 import { toast } from "sonner";
+import { generateEvaluationPDF } from "./EvaluationPDFGenerator";
 
 interface EvaluationFormProps {
   personnel: Personnel;
@@ -584,15 +585,48 @@ export function EvaluationForm({ personnel, existingEvaluation, onSave }: Evalua
           </ScrollArea>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => handleSave('Brouillon')}>
-            <Save className="mr-2 h-4 w-4" />
-            Enregistrer brouillon
+        <div className="flex justify-between gap-2 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              const evaluation: Evaluation = {
+                id: existingEvaluation?.id || generateEvaluationId(),
+                personnelId: personnel.id,
+                evaluateurId: "current-user",
+                evaluateurNom: "M. Kouamé Jean-Pierre",
+                periode,
+                dateEvaluation: new Date().toISOString().split('T')[0],
+                typeEvaluation,
+                statut: 'Brouillon',
+                criteres,
+                objectifsPrecedents,
+                objectifsFuturs,
+                noteGlobale,
+                appreciationGenerale,
+                pointsForts: pointsForts.filter(p => p.trim()),
+                axesAmelioration: axesAmelioration.filter(a => a.trim()),
+                besoinsFormation: besoinsFormation.filter(b => b.trim()),
+                signatureEvaluateur: { date: new Date().toISOString().split('T')[0] },
+                dateCreation: existingEvaluation?.dateCreation || new Date().toISOString(),
+                dateModification: new Date().toISOString()
+              };
+              generateEvaluationPDF(evaluation, personnel);
+              toast.success("PDF généré avec succès");
+            }}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Exporter PDF
           </Button>
-          <Button onClick={() => handleSave('En cours')}>
-            <Send className="mr-2 h-4 w-4" />
-            Soumettre l'évaluation
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => handleSave('Brouillon')}>
+              <Save className="mr-2 h-4 w-4" />
+              Enregistrer brouillon
+            </Button>
+            <Button onClick={() => handleSave('En cours')}>
+              <Send className="mr-2 h-4 w-4" />
+              Soumettre l'évaluation
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
