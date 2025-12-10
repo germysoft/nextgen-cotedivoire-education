@@ -9,12 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Download, Search, Calendar, TrendingUp, DollarSign, 
-  Eye, Edit, Phone, Mail, Filter, Building2, FileText, ClipboardList
+  Eye, Edit, Phone, Mail, Filter, Building2, FileText, ClipboardList, Target
 } from "lucide-react";
 import { AddPersonnelDialog } from "@/components/hr/AddPersonnelDialog";
 import { PersonnelProfile } from "@/components/hr/PersonnelProfile";
 import { PayslipGenerator } from "@/components/hr/PayslipGenerator";
 import { EvaluationForm } from "@/components/hr/EvaluationForm";
+import { ObjectifsTracker } from "@/components/hr/ObjectifsTracker";
 import { mockPersonnel } from "@/data/mockPersonnel";
 import { mockEvaluations } from "@/data/mockEvaluations";
 import { Personnel, categoriesPersonnel, statutsPersonnel, departements } from "@/types/personnel";
@@ -123,7 +124,20 @@ export default function HR() {
         </Card>
       </div>
 
-      <Card>
+      <Tabs defaultValue="personnel" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="personnel" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Personnel
+          </TabsTrigger>
+          <TabsTrigger value="objectifs" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Suivi Objectifs
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="personnel">
+          <Card>
         <CardHeader>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle>Liste du Personnel ({filteredPersonnel.length})</CardTitle>
@@ -207,7 +221,13 @@ export default function HR() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+        </Card>
+        </TabsContent>
+
+        <TabsContent value="objectifs">
+          <ObjectifsTracker />
+        </TabsContent>
+      </Tabs>
 
       {selectedPersonnel && (
         <PersonnelProfile personnel={selectedPersonnel} open={profileOpen} onClose={() => setProfileOpen(false)} />
