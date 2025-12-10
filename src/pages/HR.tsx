@@ -9,14 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Download, Search, Calendar, TrendingUp, DollarSign, 
-  Eye, Edit, Phone, Mail, Filter, Building2, FileText
+  Eye, Edit, Phone, Mail, Filter, Building2, FileText, ClipboardList
 } from "lucide-react";
 import { AddPersonnelDialog } from "@/components/hr/AddPersonnelDialog";
 import { PersonnelProfile } from "@/components/hr/PersonnelProfile";
 import { PayslipGenerator } from "@/components/hr/PayslipGenerator";
 import { EvaluationForm } from "@/components/hr/EvaluationForm";
 import { mockPersonnel } from "@/data/mockPersonnel";
+import { mockEvaluations } from "@/data/mockEvaluations";
 import { Personnel, categoriesPersonnel, statutsPersonnel, departements } from "@/types/personnel";
+import { generateAnnualReportPDF } from "@/components/hr/EvaluationPDFGenerator";
+import { toast } from "sonner";
 
 export default function HR() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,6 +61,17 @@ export default function HR() {
           <p className="text-muted-foreground">Gestion complète du personnel de l'établissement</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              const currentYear = new Date().getFullYear();
+              generateAnnualReportPDF(mockEvaluations, mockPersonnel, `${currentYear - 1}-${currentYear}`);
+              toast.success("Bilan annuel exporté avec succès");
+            }}
+          >
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Bilan Évaluations
+          </Button>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Exporter
