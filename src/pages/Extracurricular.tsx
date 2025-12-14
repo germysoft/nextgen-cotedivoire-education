@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,8 +53,16 @@ import {
   MessageCircle,
   TreePine,
   ChevronRight,
-  Star
+  Star,
+  FileDown
 } from "lucide-react";
+import {
+  generateGlobalReport,
+  generateClubReport,
+  generateSportTeamReport,
+  generateBudgetReport,
+  generateParticipationReport
+} from "@/components/extracurricular/ExtracurricularPDFGenerator";
 import { 
   mockClubs, 
   mockSportTeams, 
@@ -129,7 +138,18 @@ export default function Extracurricular() {
   };
 
   const handleExportData = () => {
-    toast.success("Export des données en cours...");
+    generateGlobalReport();
+    toast.success("Rapport global généré avec succès");
+  };
+
+  const handleGenerateBudgetReport = () => {
+    generateBudgetReport();
+    toast.success("Bilan budgétaire généré avec succès");
+  };
+
+  const handleGenerateParticipationReport = () => {
+    generateParticipationReport();
+    toast.success("Rapport de participation généré avec succès");
   };
 
   return (
@@ -140,7 +160,29 @@ export default function Extracurricular() {
           <h1 className="text-3xl font-bold text-foreground">Activités Parascolaires</h1>
           <p className="text-muted-foreground">Gestion des clubs, sports et événements scolaires</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <FileDown className="mr-2 h-4 w-4" />
+                Rapports PDF
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={handleExportData}>
+                <FileText className="mr-2 h-4 w-4" />
+                Rapport Global
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleGenerateParticipationReport}>
+                <Users className="mr-2 h-4 w-4" />
+                Rapport de Participation
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleGenerateBudgetReport}>
+                <DollarSign className="mr-2 h-4 w-4" />
+                Bilan Budgétaire
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" onClick={handleExportData}>
             <Download className="mr-2 h-4 w-4" />
             Exporter
@@ -723,6 +765,12 @@ export default function Extracurricular() {
                             </ScrollArea>
                           </DialogContent>
                         </Dialog>
+                        <Button size="sm" variant="outline" onClick={() => {
+                          generateClubReport(club);
+                          toast.success(`Fiche du ${club.name} générée`);
+                        }}>
+                          <FileDown className="h-4 w-4" />
+                        </Button>
                         <Button size="sm" variant="outline">
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -976,6 +1024,12 @@ export default function Extracurricular() {
                             </ScrollArea>
                           </DialogContent>
                         </Dialog>
+                        <Button size="sm" variant="outline" onClick={() => {
+                          generateSportTeamReport(team);
+                          toast.success(`Fiche équipe ${team.sport} générée`);
+                        }}>
+                          <FileDown className="h-4 w-4" />
+                        </Button>
                         <Button size="sm" variant="outline">
                           <Edit className="h-4 w-4" />
                         </Button>
