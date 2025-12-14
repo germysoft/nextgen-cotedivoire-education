@@ -54,7 +54,9 @@ import {
   TreePine,
   ChevronRight,
   Star,
-  FileDown
+  FileDown,
+  GraduationCap,
+  Sparkles
 } from "lucide-react";
 import {
   generateGlobalReport,
@@ -63,6 +65,13 @@ import {
   generateBudgetReport,
   generateParticipationReport
 } from "@/components/extracurricular/ExtracurricularPDFGenerator";
+import {
+  generateClubCertificate,
+  generateSportCertificate,
+  generateAllClubCertificates,
+  generateAllTeamCertificates,
+  generateExcellenceCertificate
+} from "@/components/extracurricular/CertificatePDFGenerator";
 import { 
   mockClubs, 
   mockSportTeams, 
@@ -674,6 +683,15 @@ export default function Extracurricular() {
                                 </TabsContent>
 
                                 <TabsContent value="members" className="p-4">
+                                  <div className="flex justify-end mb-4">
+                                    <Button size="sm" onClick={() => {
+                                      generateAllClubCertificates(club);
+                                      toast.success(`Génération de ${club.members.length} certificats en cours...`);
+                                    }}>
+                                      <GraduationCap className="mr-2 h-4 w-4" />
+                                      Tous les certificats
+                                    </Button>
+                                  </div>
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
@@ -682,6 +700,7 @@ export default function Extracurricular() {
                                         <TableHead>Rôle</TableHead>
                                         <TableHead>Assiduité</TableHead>
                                         <TableHead>Inscription</TableHead>
+                                        <TableHead className="text-right">Certificat</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -711,6 +730,24 @@ export default function Extracurricular() {
                                             </div>
                                           </TableCell>
                                           <TableCell className="font-mono text-sm">{member.joinDate}</TableCell>
+                                          <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                              <Button size="sm" variant="ghost" onClick={() => {
+                                                generateClubCertificate(club, member);
+                                                toast.success(`Certificat de ${member.studentName} généré`);
+                                              }}>
+                                                <GraduationCap className="h-4 w-4" />
+                                              </Button>
+                                              {member.attendance >= 90 && (
+                                                <Button size="sm" variant="ghost" className="text-amber-500" onClick={() => {
+                                                  generateExcellenceCertificate(club, member);
+                                                  toast.success(`Certificat d'excellence généré`);
+                                                }}>
+                                                  <Sparkles className="h-4 w-4" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </TableCell>
                                         </TableRow>
                                       ))}
                                     </TableBody>
@@ -887,6 +924,15 @@ export default function Extracurricular() {
                                 </TabsList>
 
                                 <TabsContent value="players" className="p-4">
+                                  <div className="flex justify-end mb-4">
+                                    <Button size="sm" onClick={() => {
+                                      generateAllTeamCertificates(team);
+                                      toast.success(`Génération de ${team.players.length} certificats en cours...`);
+                                    }}>
+                                      <GraduationCap className="mr-2 h-4 w-4" />
+                                      Tous les certificats
+                                    </Button>
+                                  </div>
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
@@ -895,6 +941,7 @@ export default function Extracurricular() {
                                         <TableHead>Position</TableHead>
                                         <TableHead>N°</TableHead>
                                         <TableHead>Performance</TableHead>
+                                        <TableHead className="text-right">Certificat</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -928,6 +975,14 @@ export default function Extracurricular() {
                                             }>
                                               {player.performance}
                                             </Badge>
+                                          </TableCell>
+                                          <TableCell className="text-right">
+                                            <Button size="sm" variant="ghost" onClick={() => {
+                                              generateSportCertificate(team, player);
+                                              toast.success(`Certificat de ${player.studentName} généré`);
+                                            }}>
+                                              <GraduationCap className="h-4 w-4" />
+                                            </Button>
                                           </TableCell>
                                         </TableRow>
                                       ))}
