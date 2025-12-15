@@ -23,6 +23,8 @@ import Facilities from "./pages/Facilities";
 import Library from "./pages/Library";
 import Infirmary from "./pages/Infirmary";
 import Extracurricular from "./pages/Extracurricular";
+import ParticipationParascolaire from "./pages/parascolaire/Participation";
+import EvenementsParascolaire from "./pages/parascolaire/Evenements";
 import Inventory from "./pages/Inventory";
 import Partnerships from "./pages/Partnerships";
 import ParentPortal from "./pages/ParentPortal";
@@ -237,8 +239,8 @@ const App = () => (
           <Route path="/infrastructures/planning" element={<MainLayout><PlanningInfrastructures /></MainLayout>} />
           
           {/* Parascolaire Routes */}
-          <Route path="/parascolaire/participation" element={<MainLayout><GenericPlaceholder title="Participation" description="Suivi de la participation aux activités" /></MainLayout>} />
-          <Route path="/parascolaire/evenements" element={<MainLayout><GenericPlaceholder title="Événements" description="Gestion des événements scolaires" /></MainLayout>} />
+          <Route path="/parascolaire/participation" element={<MainLayout><ParticipationParascolaire /></MainLayout>} />
+          <Route path="/parascolaire/evenements" element={<MainLayout><EvenementsParascolaire /></MainLayout>} />
           
           {/* Stocks Routes */}
           <Route path="/stocks/seuils" element={<MainLayout><GenericPlaceholder title="Seuils d'Alerte" description="Configuration des seuils de stock" /></MainLayout>} />
