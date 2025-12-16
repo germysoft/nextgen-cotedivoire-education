@@ -70,6 +70,7 @@ import Logs from "./pages/parametrage/Logs";
 import Utilisateurs from "./pages/parametrage/Utilisateurs";
 import Contrats from "./pages/hr/Contrats";
 import Entretiens from "./pages/hr/Entretiens";
+import Formations from "./pages/hr/Formations";
 import Echeances from "./pages/scolarite/Echeances";
 import MENAImportExport from "./pages/scolarite/MENA";
 import Emails from "./pages/messaging/Emails";
@@ -150,6 +151,7 @@ const App = () => (
           <Route path="/hr/historique" element={<MainLayout><HistoriqueCarriere /></MainLayout>} />
           <Route path="/hr/contrats" element={<MainLayout><Contrats /></MainLayout>} />
           <Route path="/hr/entretiens" element={<MainLayout><Entretiens /></MainLayout>} />
+          <Route path="/hr/formations" element={<MainLayout><Formations /></MainLayout>} />
           
           {/* Enseignants Routes */}
           <Route path="/teachers" element={<MainLayout><PlanningEnseignants /></MainLayout>} />
