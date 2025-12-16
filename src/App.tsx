@@ -73,6 +73,7 @@ import Entretiens from "./pages/hr/Entretiens";
 import Formations from "./pages/hr/Formations";
 import Competences from "./pages/hr/Competences";
 import Recrutement from "./pages/hr/Recrutement";
+import TableauBordRH from "./pages/hr/TableauBordRH";
 import Echeances from "./pages/scolarite/Echeances";
 import MENAImportExport from "./pages/scolarite/MENA";
 import Emails from "./pages/messaging/Emails";
@@ -156,6 +157,7 @@ const App = () => (
           <Route path="/hr/formations" element={<MainLayout><Formations /></MainLayout>} />
           <Route path="/hr/competences" element={<MainLayout><Competences /></MainLayout>} />
           <Route path="/hr/recrutement" element={<MainLayout><Recrutement /></MainLayout>} />
+          <Route path="/hr/tableau-bord" element={<MainLayout><TableauBordRH /></MainLayout>} />
           
           {/* Enseignants Routes */}
           <Route path="/teachers" element={<MainLayout><PlanningEnseignants /></MainLayout>} />

@@ -55,6 +55,7 @@ const menuStructure: MenuItem[] = [
     title: "Ressources Humaines",
     icon: Briefcase,
     subItems: [
+      { title: "Tableau de Bord RH", url: "/hr/tableau-bord" },
       { title: "Dossier Personnel", url: "/hr" },
       { title: "Affectations & Promotions", url: "/hr/affectations" },
       { title: "Congés & Absences", url: "/hr/conges" },
