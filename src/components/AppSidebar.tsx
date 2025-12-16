@@ -61,6 +61,7 @@ const menuStructure: MenuItem[] = [
       { title: "Pointage", url: "/hr/pointage" },
       { title: "Historique Carrière", url: "/hr/historique" },
       { title: "Contrats & Attestations", url: "/hr/contrats" },
+      { title: "Entretiens Annuels", url: "/hr/entretiens" },
     ],
   },
   {
