@@ -63,6 +63,7 @@ const menuStructure: MenuItem[] = [
       { title: "Contrats & Attestations", url: "/hr/contrats" },
       { title: "Entretiens Annuels", url: "/hr/entretiens" },
       { title: "Formations", url: "/hr/formations" },
+      { title: "Compétences", url: "/hr/competences" },
     ],
   },
   {
