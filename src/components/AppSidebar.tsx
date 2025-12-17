@@ -73,6 +73,7 @@ const menuStructure: MenuItem[] = [
     icon: School,
     subItems: [
       { title: "Cycles & Classes", url: "/classes" },
+      { title: "Emplois du Temps", url: "/pedagogie/emplois-du-temps" },
       { title: "Attribution Enseignants", url: "/pedagogie/attribution" },
       { title: "Matières & Programmes", url: "/pedagogie/matieres" },
       { title: "Conseils de Classe", url: "/pedagogie/conseils" },
