@@ -8,12 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, AlertTriangle, Download, Plus, Users, BookOpen, MapPin, Search, Eye, Trash2, Edit, Check, X, Wand2, Printer } from "lucide-react";
+import { Calendar, Clock, AlertTriangle, Download, Plus, Users, BookOpen, MapPin, Search, Eye, Trash2, Edit, Check, X, Wand2, Printer, Copy } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AutoScheduleGenerator } from "@/components/schedule/AutoScheduleGenerator";
 import { SchedulePrintGenerator } from "@/components/schedule/SchedulePrintGenerator";
+import { ScheduleDuplicator } from "@/components/schedule/ScheduleDuplicator";
 
 interface TimeSlot {
   id: string;
@@ -116,6 +117,7 @@ const EmploisDuTemps = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAutoGenerateOpen, setIsAutoGenerateOpen] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -375,6 +377,10 @@ const EmploisDuTemps = () => {
           <Button variant="outline" onClick={() => setIsAutoGenerateOpen(true)}>
             <Wand2 className="h-4 w-4 mr-2" />
             Génération Auto
+          </Button>
+          <Button variant="outline" onClick={() => setIsDuplicateDialogOpen(true)}>
+            <Copy className="h-4 w-4 mr-2" />
+            Dupliquer
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -879,6 +885,17 @@ const EmploisDuTemps = () => {
         schedule={schedule}
         classes={mockClasses}
         subjectColors={subjectColors}
+      />
+
+      <ScheduleDuplicator
+        open={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        schedule={schedule}
+        classes={mockClasses}
+        teachers={mockTeachers}
+        rooms={mockRooms}
+        subjectColors={subjectColors}
+        onScheduleUpdated={setSchedule}
       />
     </div>
   );
