@@ -276,8 +276,8 @@ const App = () => (
           <Route path="/parascolaire/evenements" element={<MainLayout><EvenementsParascolaire /></MainLayout>} />
           
           {/* Stocks Routes */}
-          <Route path="/stocks/seuils" element={<MainLayout><GenericPlaceholder title="Seuils d'Alerte" description="Configuration des seuils de stock" /></MainLayout>} />
-          <Route path="/stocks/inventaire" element={<MainLayout><GenericPlaceholder title="Inventaire Auto" description="Inventaire automatique" /></MainLayout>} />
+          <Route path="/stocks/seuils" element={<MainLayout><SeuilsAlerte /></MainLayout>} />
+          <Route path="/stocks/inventaire" element={<MainLayout><InventaireAuto /></MainLayout>} />
           
           {/* Partenariats Routes */}
           <Route path="/partenariats/reunions" element={<MainLayout><ReunionsPV /></MainLayout>} />
