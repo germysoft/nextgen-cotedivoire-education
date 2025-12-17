@@ -71,6 +71,10 @@ import Logs from "./pages/parametrage/Logs";
 import Utilisateurs from "./pages/parametrage/Utilisateurs";
 import Securite from "./pages/parametrage/Securite";
 import AuditActivite from "./pages/parametrage/AuditActivite";
+import TableauxCroises from "./pages/statistiques/TableauxCroises";
+import ExportMultiformat from "./pages/statistiques/ExportMultiformat";
+import RapportsPlanifies from "./pages/statistiques/RapportsPlanifies";
+import RapportsGlobaux from "./pages/statistiques/RapportsGlobaux";
 import Contrats from "./pages/hr/Contrats";
 import Entretiens from "./pages/hr/Entretiens";
 import Formations from "./pages/hr/Formations";
@@ -282,9 +286,10 @@ const App = () => (
           <Route path="/outils/cloud" element={<MainLayout><GenericPlaceholder title="Cloud Sécurisé" description="Stockage cloud sécurisé" /></MainLayout>} />
           
           {/* Statistiques Routes */}
-          <Route path="/statistiques/tableaux" element={<MainLayout><GenericPlaceholder title="Tableaux Croisés" description="Tableaux croisés dynamiques" /></MainLayout>} />
-          <Route path="/statistiques/export" element={<MainLayout><GenericPlaceholder title="Export Multi-format" description="Export des rapports" /></MainLayout>} />
-          <Route path="/statistiques/planifies" element={<MainLayout><GenericPlaceholder title="Rapports Planifiés" description="Rapports automatiques planifiés" /></MainLayout>} />
+          <Route path="/statistiques/rapports" element={<MainLayout><RapportsGlobaux /></MainLayout>} />
+          <Route path="/statistiques/tableaux" element={<MainLayout><TableauxCroises /></MainLayout>} />
+          <Route path="/statistiques/export" element={<MainLayout><ExportMultiformat /></MainLayout>} />
+          <Route path="/statistiques/planifies" element={<MainLayout><RapportsPlanifies /></MainLayout>} />
           
           {/* Modules Optionnels Routes */}
           <Route path="/modules/elearning" element={<MainLayout><ElearningAvance /></MainLayout>} />
