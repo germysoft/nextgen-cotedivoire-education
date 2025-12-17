@@ -118,6 +118,10 @@ import ElearningAvance from "./pages/modules/ElearningAvance";
 import AppMobile from "./pages/modules/AppMobile";
 import QRCodeScolaire from "./pages/modules/QRCodeScolaire";
 import PaiementMobile from "./pages/modules/PaiementMobile";
+import SuiteBureautique from "./pages/outils/SuiteBureautique";
+import SignatureElectronique from "./pages/outils/SignatureElectronique";
+import ModelesCourriers from "./pages/outils/ModelesCourriers";
+import CloudSecurise from "./pages/outils/CloudSecurise";
 import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
 
 const queryClient = new QueryClient();
@@ -280,10 +284,10 @@ const App = () => (
           <Route path="/mena/decisions" element={<MainLayout><GenericPlaceholder title="Décisions & Bilans" description="Décisions et bilans MENA" /></MainLayout>} />
           
           {/* Outils Routes */}
-          <Route path="/outils/bureautique" element={<MainLayout><GenericPlaceholder title="Suite Bureautique" description="Outils de bureautique en ligne" /></MainLayout>} />
-          <Route path="/outils/signature" element={<MainLayout><GenericPlaceholder title="Signature Électronique" description="Signature électronique de documents" /></MainLayout>} />
-          <Route path="/outils/modeles" element={<MainLayout><GenericPlaceholder title="Modèles de Courriers" description="Bibliothèque de modèles" /></MainLayout>} />
-          <Route path="/outils/cloud" element={<MainLayout><GenericPlaceholder title="Cloud Sécurisé" description="Stockage cloud sécurisé" /></MainLayout>} />
+          <Route path="/outils/bureautique" element={<MainLayout><SuiteBureautique /></MainLayout>} />
+          <Route path="/outils/signature" element={<MainLayout><SignatureElectronique /></MainLayout>} />
+          <Route path="/outils/modeles" element={<MainLayout><ModelesCourriers /></MainLayout>} />
+          <Route path="/outils/cloud" element={<MainLayout><CloudSecurise /></MainLayout>} />
           
           {/* Statistiques Routes */}
           <Route path="/statistiques/rapports" element={<MainLayout><RapportsGlobaux /></MainLayout>} />
