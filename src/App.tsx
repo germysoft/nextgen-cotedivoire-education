@@ -69,6 +69,8 @@ import Sauvegarde from "./pages/parametrage/Sauvegarde";
 import Langues from "./pages/parametrage/Langues";
 import Logs from "./pages/parametrage/Logs";
 import Utilisateurs from "./pages/parametrage/Utilisateurs";
+import Securite from "./pages/parametrage/Securite";
+import AuditActivite from "./pages/parametrage/AuditActivite";
 import Contrats from "./pages/hr/Contrats";
 import Entretiens from "./pages/hr/Entretiens";
 import Formations from "./pages/hr/Formations";
@@ -298,6 +300,8 @@ const App = () => (
           <Route path="/parametrage/sauvegarde" element={<MainLayout><Sauvegarde /></MainLayout>} />
           <Route path="/parametrage/langues" element={<MainLayout><Langues /></MainLayout>} />
           <Route path="/parametrage/logs" element={<MainLayout><Logs /></MainLayout>} />
+          <Route path="/parametrage/securite" element={<MainLayout><Securite /></MainLayout>} />
+          <Route path="/parametrage/audit" element={<MainLayout><AuditActivite /></MainLayout>} />
           
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />

@@ -277,6 +277,8 @@ const menuStructure: MenuItem[] = [
     subItems: [
       { title: "Utilisateurs", url: "/settings" },
       { title: "Rôles & Droits", url: "/parametrage/roles" },
+      { title: "Sécurité Avancée", url: "/parametrage/securite" },
+      { title: "Audit & Traçabilité", url: "/parametrage/audit" },
       { title: "Sauvegarde", url: "/parametrage/sauvegarde" },
       { title: "Multilingue", url: "/parametrage/langues" },
       { title: "Logs Système", url: "/parametrage/logs" },
