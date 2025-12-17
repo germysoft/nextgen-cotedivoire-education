@@ -265,7 +265,7 @@ const menuStructure: MenuItem[] = [
     title: "Statistiques & Rapports",
     icon: BarChart3,
     subItems: [
-      { title: "Rapports Globaux", url: "/statistics" },
+      { title: "Rapports Globaux", url: "/statistiques/rapports" },
       { title: "Tableaux Croisés", url: "/statistiques/tableaux" },
       { title: "Export Multi-format", url: "/statistiques/export" },
       { title: "Rapports Planifiés", url: "/statistiques/planifies" },
