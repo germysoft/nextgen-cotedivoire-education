@@ -122,6 +122,10 @@ import SuiteBureautique from "./pages/outils/SuiteBureautique";
 import SignatureElectronique from "./pages/outils/SignatureElectronique";
 import ModelesCourriers from "./pages/outils/ModelesCourriers";
 import CloudSecurise from "./pages/outils/CloudSecurise";
+import Synchronisation from "./pages/mena/Synchronisation";
+import FichierNational from "./pages/mena/FichierNational";
+import Preinscriptions from "./pages/mena/Preinscriptions";
+import DecisionsBilans from "./pages/mena/DecisionsBilans";
 import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
 
 const queryClient = new QueryClient();
@@ -278,10 +282,10 @@ const App = () => (
           <Route path="/partenariats/sponsors" element={<MainLayout><GenericPlaceholder title="Sponsors" description="Gestion des sponsors et partenaires" /></MainLayout>} />
           
           {/* MENA Routes */}
-          <Route path="/mena/sync" element={<MainLayout><GenericPlaceholder title="Synchronisation MENA" description="Synchronisation avec le système MENA" /></MainLayout>} />
-          <Route path="/mena/fichier" element={<MainLayout><GenericPlaceholder title="Fichier National" description="Gestion du fichier national" /></MainLayout>} />
-          <Route path="/mena/preinscriptions" element={<MainLayout><GenericPlaceholder title="Préinscriptions" description="Gestion des préinscriptions MENA" /></MainLayout>} />
-          <Route path="/mena/decisions" element={<MainLayout><GenericPlaceholder title="Décisions & Bilans" description="Décisions et bilans MENA" /></MainLayout>} />
+          <Route path="/mena/sync" element={<MainLayout><Synchronisation /></MainLayout>} />
+          <Route path="/mena/fichier" element={<MainLayout><FichierNational /></MainLayout>} />
+          <Route path="/mena/preinscriptions" element={<MainLayout><Preinscriptions /></MainLayout>} />
+          <Route path="/mena/decisions" element={<MainLayout><DecisionsBilans /></MainLayout>} />
           
           {/* Outils Routes */}
           <Route path="/outils/bureautique" element={<MainLayout><SuiteBureautique /></MainLayout>} />
