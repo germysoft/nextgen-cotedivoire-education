@@ -58,6 +58,9 @@ import Bulletins from "./pages/pedagogie/Bulletins";
 import EmploisDuTemps from "./pages/pedagogie/EmploisDuTemps";
 import Emprunts from "./pages/bibliotheque/Emprunts";
 import Consultations from "./pages/infirmerie/Consultations";
+import HistoriqueMedical from "./pages/infirmerie/Historique";
+import AlertesMedicales from "./pages/infirmerie/Alertes";
+import FichesSante from "./pages/infirmerie/FichesSante";
 import Bilan from "./pages/comptabilite/Bilan";
 import Baremes from "./pages/notes/Baremes";
 import Validation from "./pages/notes/Validation";
@@ -262,8 +265,9 @@ const App = () => (
           
           {/* Infirmerie Routes */}
           <Route path="/infirmerie/consultations" element={<MainLayout><Consultations /></MainLayout>} />
-          <Route path="/infirmerie/historique" element={<MainLayout><GenericPlaceholder title="Historique Médical" description="Historique des consultations médicales" /></MainLayout>} />
-          <Route path="/infirmerie/alertes" element={<MainLayout><GenericPlaceholder title="Alertes Urgentes" description="Gestion des urgences médicales" /></MainLayout>} />
+          <Route path="/infirmerie/historique" element={<MainLayout><HistoriqueMedical /></MainLayout>} />
+          <Route path="/infirmerie/alertes" element={<MainLayout><AlertesMedicales /></MainLayout>} />
+          <Route path="/infirmerie/fiches" element={<MainLayout><FichesSante /></MainLayout>} />
           
           {/* Comptabilité Routes */}
           <Route path="/comptabilite/bilan" element={<MainLayout><Bilan /></MainLayout>} />
