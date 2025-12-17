@@ -8,10 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, AlertTriangle, Download, Plus, Users, BookOpen, MapPin, Search, Eye, Trash2, Edit, Check, X } from "lucide-react";
+import { Calendar, Clock, AlertTriangle, Download, Plus, Users, BookOpen, MapPin, Search, Eye, Trash2, Edit, Check, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { AutoScheduleGenerator } from "@/components/schedule/AutoScheduleGenerator";
 
 interface TimeSlot {
   id: string;
@@ -112,6 +113,7 @@ const EmploisDuTemps = () => {
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"class" | "teacher" | "room">("class");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAutoGenerateOpen, setIsAutoGenerateOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -363,6 +365,10 @@ const EmploisDuTemps = () => {
           <Button variant="outline" onClick={exportToPDF}>
             <Download className="h-4 w-4 mr-2" />
             Export PDF
+          </Button>
+          <Button variant="outline" onClick={() => setIsAutoGenerateOpen(true)}>
+            <Wand2 className="h-4 w-4 mr-2" />
+            Génération Auto
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -849,6 +855,17 @@ const EmploisDuTemps = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <AutoScheduleGenerator
+        open={isAutoGenerateOpen}
+        onOpenChange={setIsAutoGenerateOpen}
+        classes={mockClasses}
+        teachers={mockTeachers}
+        rooms={mockRooms}
+        subjectColors={subjectColors}
+        existingSchedule={schedule}
+        onScheduleGenerated={setSchedule}
+      />
     </div>
   );
 };
