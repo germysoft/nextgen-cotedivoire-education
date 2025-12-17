@@ -26,6 +26,8 @@ import Extracurricular from "./pages/Extracurricular";
 import ParticipationParascolaire from "./pages/parascolaire/Participation";
 import EvenementsParascolaire from "./pages/parascolaire/Evenements";
 import Inventory from "./pages/Inventory";
+import SeuilsAlerte from "./pages/stocks/SeuilsAlerte";
+import InventaireAuto from "./pages/stocks/InventaireAuto";
 import Partnerships from "./pages/Partnerships";
 import ParentPortal from "./pages/ParentPortal";
 import ParentLogin from "./pages/ParentLogin";
