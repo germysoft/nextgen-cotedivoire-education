@@ -220,6 +220,8 @@ const menuStructure: MenuItem[] = [
       { title: "Fiches Médicales", url: "/infirmary" },
       { title: "Consultations", url: "/infirmerie/consultations" },
       { title: "Historique Médical", url: "/infirmerie/historique" },
+      { title: "Fiches Santé", url: "/infirmerie/fiches" },
+      { title: "Stock Médicaments", url: "/infirmerie/stock" },
       { title: "Alertes Urgentes", url: "/infirmerie/alertes" },
     ],
   },
