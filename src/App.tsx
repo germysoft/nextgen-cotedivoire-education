@@ -90,6 +90,9 @@ import PointageEnseignants from "./pages/enseignants/Pointage";
 import Assiduite from "./pages/enseignants/Assiduite";
 import FicheService from "./pages/enseignants/FicheService";
 import Caisse from "./pages/comptabilite/Caisse";
+import JournauxComptables from "./pages/comptabilite/JournauxComptables";
+import PaiementsScolaires from "./pages/comptabilite/PaiementsScolaires";
+import Quittances from "./pages/comptabilite/Quittances";
 import BulletinsNotes from "./pages/notes/Bulletins";
 import PlanningInfrastructures from "./pages/infrastructures/Planning";
 import Convocations from "./pages/Convocations";
@@ -265,9 +268,9 @@ const App = () => (
           {/* Comptabilité Routes */}
           <Route path="/comptabilite/bilan" element={<MainLayout><Bilan /></MainLayout>} />
           <Route path="/comptabilite/caisse" element={<MainLayout><Caisse /></MainLayout>} />
-          <Route path="/comptabilite/journaux" element={<MainLayout><GenericPlaceholder title="Journaux Comptables" description="Journaux comptables et écritures" /></MainLayout>} />
-          <Route path="/comptabilite/paiements" element={<MainLayout><GenericPlaceholder title="Paiements Scolaires" description="Gestion des paiements" /></MainLayout>} />
-          <Route path="/comptabilite/quittances" element={<MainLayout><GenericPlaceholder title="Quittances" description="Génération de quittances" /></MainLayout>} />
+          <Route path="/comptabilite/journaux" element={<MainLayout><JournauxComptables /></MainLayout>} />
+          <Route path="/comptabilite/paiements" element={<MainLayout><PaiementsScolaires /></MainLayout>} />
+          <Route path="/comptabilite/quittances" element={<MainLayout><Quittances /></MainLayout>} />
           
           {/* Infrastructures Routes */}
           <Route path="/infrastructures/maintenance" element={<MainLayout><Maintenance /></MainLayout>} />
