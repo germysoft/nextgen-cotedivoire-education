@@ -108,6 +108,11 @@ import AbsencesParents from "./pages/portail/AbsencesParents";
 import PaiementsParents from "./pages/portail/PaiementsParents";
 import ChatParents from "./pages/portail/ChatParents";
 import CalendrierParents from "./pages/portail/CalendrierParents";
+import ElearningAvance from "./pages/modules/ElearningAvance";
+import AppMobile from "./pages/modules/AppMobile";
+import QRCodeScolaire from "./pages/modules/QRCodeScolaire";
+import PaiementMobile from "./pages/modules/PaiementMobile";
+import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
 
 const queryClient = new QueryClient();
 
@@ -280,11 +285,11 @@ const App = () => (
           <Route path="/statistiques/planifies" element={<MainLayout><GenericPlaceholder title="Rapports Planifiés" description="Rapports automatiques planifiés" /></MainLayout>} />
           
           {/* Modules Optionnels Routes */}
-          <Route path="/modules/elearning" element={<MainLayout><GenericPlaceholder title="E-learning Avancé" description="Plateforme e-learning" /></MainLayout>} />
-          <Route path="/modules/mobile" element={<MainLayout><GenericPlaceholder title="Application Mobile" description="App mobile native" /></MainLayout>} />
-          <Route path="/modules/qrcode" element={<MainLayout><GenericPlaceholder title="QR Code Scolaire" description="Gestion par QR codes" /></MainLayout>} />
-          <Route path="/modules/paiement-mobile" element={<MainLayout><GenericPlaceholder title="Paiement Mobile" description="Paiement mobile money" /></MainLayout>} />
-          <Route path="/modules/ia" element={<MainLayout><GenericPlaceholder title="Intelligence Artificielle" description="Outils IA pour l'éducation" /></MainLayout>} />
+          <Route path="/modules/elearning" element={<MainLayout><ElearningAvance /></MainLayout>} />
+          <Route path="/modules/mobile" element={<MainLayout><AppMobile /></MainLayout>} />
+          <Route path="/modules/qrcode" element={<MainLayout><QRCodeScolaire /></MainLayout>} />
+          <Route path="/modules/paiement-mobile" element={<MainLayout><PaiementMobile /></MainLayout>} />
+          <Route path="/modules/ia" element={<MainLayout><IntelligenceArtificielle /></MainLayout>} />
           
           {/* Paramétrage Routes */}
           <Route path="/settings" element={<MainLayout><Utilisateurs /></MainLayout>} />
