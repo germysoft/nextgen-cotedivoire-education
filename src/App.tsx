@@ -126,6 +126,8 @@ import Synchronisation from "./pages/mena/Synchronisation";
 import FichierNational from "./pages/mena/FichierNational";
 import Preinscriptions from "./pages/mena/Preinscriptions";
 import DecisionsBilans from "./pages/mena/DecisionsBilans";
+import ReunionsPV from "./pages/partenariats/Reunions";
+import SponsorsPage from "./pages/partenariats/Sponsors";
 import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
 
 const queryClient = new QueryClient();
@@ -278,8 +280,8 @@ const App = () => (
           <Route path="/stocks/inventaire" element={<MainLayout><GenericPlaceholder title="Inventaire Auto" description="Inventaire automatique" /></MainLayout>} />
           
           {/* Partenariats Routes */}
-          <Route path="/partenariats/reunions" element={<MainLayout><GenericPlaceholder title="Réunions & PV" description="Gestion des réunions et procès-verbaux" /></MainLayout>} />
-          <Route path="/partenariats/sponsors" element={<MainLayout><GenericPlaceholder title="Sponsors" description="Gestion des sponsors et partenaires" /></MainLayout>} />
+          <Route path="/partenariats/reunions" element={<MainLayout><ReunionsPV /></MainLayout>} />
+          <Route path="/partenariats/sponsors" element={<MainLayout><SponsorsPage /></MainLayout>} />
           
           {/* MENA Routes */}
           <Route path="/mena/sync" element={<MainLayout><Synchronisation /></MainLayout>} />
