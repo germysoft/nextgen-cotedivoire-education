@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, AlertTriangle, Download, Plus, Users, BookOpen, MapPin, Search, Eye, Trash2, Edit, Check, X, Wand2 } from "lucide-react";
+import { Calendar, Clock, AlertTriangle, Download, Plus, Users, BookOpen, MapPin, Search, Eye, Trash2, Edit, Check, X, Wand2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AutoScheduleGenerator } from "@/components/schedule/AutoScheduleGenerator";
+import { SchedulePrintGenerator } from "@/components/schedule/SchedulePrintGenerator";
 
 interface TimeSlot {
   id: string;
@@ -114,6 +115,7 @@ const EmploisDuTemps = () => {
   const [viewMode, setViewMode] = useState<"class" | "teacher" | "room">("class");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAutoGenerateOpen, setIsAutoGenerateOpen] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -362,6 +364,10 @@ const EmploisDuTemps = () => {
           <p className="text-muted-foreground">Planification, détection des conflits et export</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsPrintDialogOpen(true)}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimer
+          </Button>
           <Button variant="outline" onClick={exportToPDF}>
             <Download className="h-4 w-4 mr-2" />
             Export PDF
@@ -865,6 +871,14 @@ const EmploisDuTemps = () => {
         subjectColors={subjectColors}
         existingSchedule={schedule}
         onScheduleGenerated={setSchedule}
+      />
+
+      <SchedulePrintGenerator
+        open={isPrintDialogOpen}
+        onOpenChange={setIsPrintDialogOpen}
+        schedule={schedule}
+        classes={mockClasses}
+        subjectColors={subjectColors}
       />
     </div>
   );
