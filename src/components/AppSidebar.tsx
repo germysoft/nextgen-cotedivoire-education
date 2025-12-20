@@ -222,6 +222,8 @@ const menuStructure: MenuItem[] = [
       { title: "Historique Médical", url: "/infirmerie/historique" },
       { title: "Fiches Santé", url: "/infirmerie/fiches" },
       { title: "Stock Médicaments", url: "/infirmerie/stock" },
+      { title: "Rapports Périodiques", url: "/infirmerie/rapports" },
+      { title: "Ordonnances", url: "/infirmerie/ordonnances" },
       { title: "Alertes Urgentes", url: "/infirmerie/alertes" },
     ],
   },
