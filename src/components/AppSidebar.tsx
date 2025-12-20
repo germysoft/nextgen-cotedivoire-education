@@ -224,6 +224,7 @@ const menuStructure: MenuItem[] = [
       { title: "Stock Médicaments", url: "/infirmerie/stock" },
       { title: "Rapports Périodiques", url: "/infirmerie/rapports" },
       { title: "Ordonnances", url: "/infirmerie/ordonnances" },
+      { title: "Rappels SMS/Email", url: "/infirmerie/rappels" },
       { title: "Alertes Urgentes", url: "/infirmerie/alertes" },
     ],
   },
