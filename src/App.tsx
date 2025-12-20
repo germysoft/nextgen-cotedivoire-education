@@ -64,6 +64,7 @@ import FichesSante from "./pages/infirmerie/FichesSante";
 import StockMedicaments from "./pages/infirmerie/StockMedicaments";
 import RapportsMedicaux from "./pages/infirmerie/RapportsMedicaux";
 import Ordonnances from "./pages/infirmerie/Ordonnances";
+import RappelsMedicaux from "./pages/infirmerie/Rappels";
 import Bilan from "./pages/comptabilite/Bilan";
 import Baremes from "./pages/notes/Baremes";
 import Validation from "./pages/notes/Validation";
@@ -274,6 +275,7 @@ const App = () => (
           <Route path="/infirmerie/stock" element={<MainLayout><StockMedicaments /></MainLayout>} />
           <Route path="/infirmerie/rapports" element={<MainLayout><RapportsMedicaux /></MainLayout>} />
           <Route path="/infirmerie/ordonnances" element={<MainLayout><Ordonnances /></MainLayout>} />
+          <Route path="/infirmerie/rappels" element={<MainLayout><RappelsMedicaux /></MainLayout>} />
           
           {/* Comptabilité Routes */}
           <Route path="/comptabilite/bilan" element={<MainLayout><Bilan /></MainLayout>} />
