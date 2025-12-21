@@ -57,6 +57,12 @@ import Discipline from "./pages/pedagogie/Discipline";
 import Bulletins from "./pages/pedagogie/Bulletins";
 import EmploisDuTemps from "./pages/pedagogie/EmploisDuTemps";
 import Emprunts from "./pages/bibliotheque/Emprunts";
+import Catalogue from "./pages/bibliotheque/Catalogue";
+import Reservations from "./pages/bibliotheque/Reservations";
+import AlertesRetard from "./pages/bibliotheque/AlertesRetard";
+import Inventaire from "./pages/bibliotheque/Inventaire";
+import StatistiquesBibliotheque from "./pages/bibliotheque/Statistiques";
+import CartesLecteur from "./pages/bibliotheque/CartesLecteur";
 import Consultations from "./pages/infirmerie/Consultations";
 import HistoriqueMedical from "./pages/infirmerie/Historique";
 import AlertesMedicales from "./pages/infirmerie/Alertes";
@@ -263,10 +269,14 @@ const App = () => (
           <Route path="/services/internat" element={<MainLayout><Internat /></MainLayout>} />
           
           {/* Bibliothèque Routes */}
+          <Route path="/bibliotheque/catalogue" element={<MainLayout><Catalogue /></MainLayout>} />
           <Route path="/bibliotheque/emprunts" element={<MainLayout><Emprunts /></MainLayout>} />
-          <Route path="/bibliotheque/alertes" element={<MainLayout><GenericPlaceholder title="Alertes Retard" description="Gestion des alertes de retour de livres" /></MainLayout>} />
-          <Route path="/bibliotheque/inventaire" element={<MainLayout><GenericPlaceholder title="Inventaire Bibliothèque" description="Inventaire des livres et ressources" /></MainLayout>} />
-          
+          <Route path="/bibliotheque/reservations" element={<MainLayout><Reservations /></MainLayout>} />
+          <Route path="/bibliotheque/alertes" element={<MainLayout><AlertesRetard /></MainLayout>} />
+          <Route path="/bibliotheque/inventaire" element={<MainLayout><Inventaire /></MainLayout>} />
+          <Route path="/bibliotheque/statistiques" element={<MainLayout><StatistiquesBibliotheque /></MainLayout>} />
+          <Route path="/bibliotheque/cartes" element={<MainLayout><CartesLecteur /></MainLayout>} />
+
           {/* Infirmerie Routes */}
           <Route path="/infirmerie/consultations" element={<MainLayout><Consultations /></MainLayout>} />
           <Route path="/infirmerie/historique" element={<MainLayout><HistoriqueMedical /></MainLayout>} />

@@ -198,10 +198,14 @@ const menuStructure: MenuItem[] = [
     title: "Bibliothèque",
     icon: Library,
     subItems: [
-      { title: "Gestion Livres", url: "/library" },
+      { title: "Tableau de Bord", url: "/library" },
+      { title: "Catalogue", url: "/bibliotheque/catalogue" },
       { title: "Emprunts & Retours", url: "/bibliotheque/emprunts" },
+      { title: "Réservations", url: "/bibliotheque/reservations" },
       { title: "Alertes Retard", url: "/bibliotheque/alertes" },
       { title: "Inventaire", url: "/bibliotheque/inventaire" },
+      { title: "Cartes Lecteur", url: "/bibliotheque/cartes" },
+      { title: "Statistiques", url: "/bibliotheque/statistiques" },
     ],
   },
   {
