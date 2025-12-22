@@ -65,6 +65,7 @@ import StatistiquesBibliotheque from "./pages/bibliotheque/Statistiques";
 import CartesLecteur from "./pages/bibliotheque/CartesLecteur";
 import ScanQRCode from "./pages/bibliotheque/ScanQRCode";
 import Suggestions from "./pages/bibliotheque/Suggestions";
+import Acquisitions from "./pages/bibliotheque/Acquisitions";
 import Consultations from "./pages/infirmerie/Consultations";
 import HistoriqueMedical from "./pages/infirmerie/Historique";
 import AlertesMedicales from "./pages/infirmerie/Alertes";
@@ -280,6 +281,7 @@ const App = () => (
           <Route path="/bibliotheque/cartes" element={<MainLayout><CartesLecteur /></MainLayout>} />
           <Route path="/bibliotheque/scan" element={<MainLayout><ScanQRCode /></MainLayout>} />
           <Route path="/bibliotheque/suggestions" element={<MainLayout><Suggestions /></MainLayout>} />
+          <Route path="/bibliotheque/acquisitions" element={<MainLayout><Acquisitions /></MainLayout>} />
 
           {/* Infirmerie Routes */}
           <Route path="/infirmerie/consultations" element={<MainLayout><Consultations /></MainLayout>} />
