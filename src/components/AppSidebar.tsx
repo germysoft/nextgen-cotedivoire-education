@@ -203,6 +203,7 @@ const menuStructure: MenuItem[] = [
       { title: "Emprunts & Retours", url: "/bibliotheque/emprunts" },
       { title: "Scan QR Code", url: "/bibliotheque/scan" },
       { title: "Suggestions Lecture", url: "/bibliotheque/suggestions" },
+      { title: "Acquisitions", url: "/bibliotheque/acquisitions" },
       { title: "Réservations", url: "/bibliotheque/reservations" },
       { title: "Alertes Retard", url: "/bibliotheque/alertes" },
       { title: "Inventaire", url: "/bibliotheque/inventaire" },
