@@ -201,6 +201,8 @@ const menuStructure: MenuItem[] = [
       { title: "Tableau de Bord", url: "/library" },
       { title: "Catalogue", url: "/bibliotheque/catalogue" },
       { title: "Emprunts & Retours", url: "/bibliotheque/emprunts" },
+      { title: "Scan QR Code", url: "/bibliotheque/scan" },
+      { title: "Suggestions Lecture", url: "/bibliotheque/suggestions" },
       { title: "Réservations", url: "/bibliotheque/reservations" },
       { title: "Alertes Retard", url: "/bibliotheque/alertes" },
       { title: "Inventaire", url: "/bibliotheque/inventaire" },

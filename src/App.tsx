@@ -63,6 +63,8 @@ import AlertesRetard from "./pages/bibliotheque/AlertesRetard";
 import Inventaire from "./pages/bibliotheque/Inventaire";
 import StatistiquesBibliotheque from "./pages/bibliotheque/Statistiques";
 import CartesLecteur from "./pages/bibliotheque/CartesLecteur";
+import ScanQRCode from "./pages/bibliotheque/ScanQRCode";
+import Suggestions from "./pages/bibliotheque/Suggestions";
 import Consultations from "./pages/infirmerie/Consultations";
 import HistoriqueMedical from "./pages/infirmerie/Historique";
 import AlertesMedicales from "./pages/infirmerie/Alertes";
@@ -276,6 +278,8 @@ const App = () => (
           <Route path="/bibliotheque/inventaire" element={<MainLayout><Inventaire /></MainLayout>} />
           <Route path="/bibliotheque/statistiques" element={<MainLayout><StatistiquesBibliotheque /></MainLayout>} />
           <Route path="/bibliotheque/cartes" element={<MainLayout><CartesLecteur /></MainLayout>} />
+          <Route path="/bibliotheque/scan" element={<MainLayout><ScanQRCode /></MainLayout>} />
+          <Route path="/bibliotheque/suggestions" element={<MainLayout><Suggestions /></MainLayout>} />
 
           {/* Infirmerie Routes */}
           <Route path="/infirmerie/consultations" element={<MainLayout><Consultations /></MainLayout>} />
