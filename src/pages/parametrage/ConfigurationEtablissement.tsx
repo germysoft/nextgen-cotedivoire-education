@@ -893,6 +893,21 @@ const ConfigurationEtablissement = () => {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="moyenneConduite" className="text-base">Moyenne de conduite prise en compte</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Inclure la moyenne de conduite dans le calcul des moyennes générales
+                  </p>
+                </div>
+                <Switch
+                  id="moyenneConduite"
+                  checked={configuration.parametresPedagogiques.moyenneConduitePriseEnCompte || false}
+                  onCheckedChange={(checked) => updateSection('parametresPedagogiques', { moyenneConduitePriseEnCompte: checked })}
+                  disabled={isLocked}
+                />
+              </div>
+
               <Separator />
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1048,6 +1063,59 @@ const ConfigurationEtablissement = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Signataire des documents pédagogiques */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Signataire des bulletins et documents pédagogiques</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nomSignataire">Nom complet du signataire</Label>
+                    <Input
+                      id="nomSignataire"
+                      value={configuration.signataire?.nomSignataire || ""}
+                      onChange={(e) => updateSection('signataire', { nomSignataire: e.target.value })}
+                      placeholder="M. KOUASSI Jean-Pierre"
+                      disabled={isLocked}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fonctionSignataire">Fonction du signataire</Label>
+                    <Select
+                      value={configuration.signataire?.fonctionSignataire || "directeur"}
+                      onValueChange={(value: FonctionResponsable) => updateSection('signataire', { fonctionSignataire: value })}
+                      disabled={isLocked}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner la fonction" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fondateur">Fondateur</SelectItem>
+                        <SelectItem value="directeur">Directeur</SelectItem>
+                        <SelectItem value="proviseur">Proviseur</SelectItem>
+                        <SelectItem value="directeur_etudes">Directeur des Études</SelectItem>
+                        <SelectItem value="principal">Principal</SelectItem>
+                        <SelectItem value="censeur">Censeur</SelectItem>
+                        <SelectItem value="surveillant_general">Surveillant Général</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ministereTutelleDocuments">Ministère de tutelle (sur documents)</Label>
+                    <Input
+                      id="ministereTutelleDocuments"
+                      value={configuration.signataire?.ministereTutelleDocuments || ""}
+                      onChange={(e) => updateSection('signataire', { ministereTutelleDocuments: e.target.value })}
+                      placeholder="Ministère de l'Éducation Nationale et de l'Alphabétisation"
+                      disabled={isLocked}
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Ces informations seront utilisées sur les bulletins, attestations et autres documents pédagogiques officiels.
+                </p>
               </div>
             </CardContent>
           </Card>
