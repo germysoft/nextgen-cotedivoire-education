@@ -287,6 +287,7 @@ const menuStructure: MenuItem[] = [
     title: "Paramétrage & Sécurité",
     icon: Settings,
     subItems: [
+      { title: "Configuration Établissement", url: "/parametrage/etablissement" },
       { title: "Utilisateurs", url: "/settings" },
       { title: "Rôles & Droits", url: "/parametrage/roles" },
       { title: "Sécurité Avancée", url: "/parametrage/securite" },

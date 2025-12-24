@@ -89,6 +89,8 @@ import Logs from "./pages/parametrage/Logs";
 import Utilisateurs from "./pages/parametrage/Utilisateurs";
 import Securite from "./pages/parametrage/Securite";
 import AuditActivite from "./pages/parametrage/AuditActivite";
+import ConfigurationEtablissement from "./pages/parametrage/ConfigurationEtablissement";
+import { EtablissementProvider } from "./contexts/EtablissementContext";
 import TableauxCroises from "./pages/statistiques/TableauxCroises";
 import ExportMultiformat from "./pages/statistiques/ExportMultiformat";
 import RapportsPlanifies from "./pages/statistiques/RapportsPlanifies";
@@ -159,10 +161,11 @@ const App = () => (
       <FavoritesProvider>
         <NotificationsProvider>
           <RoleProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+            <EtablissementProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -350,6 +353,7 @@ const App = () => (
           <Route path="/parametrage/logs" element={<MainLayout><Logs /></MainLayout>} />
           <Route path="/parametrage/securite" element={<MainLayout><Securite /></MainLayout>} />
           <Route path="/parametrage/audit" element={<MainLayout><AuditActivite /></MainLayout>} />
+          <Route path="/parametrage/etablissement" element={<MainLayout><ConfigurationEtablissement /></MainLayout>} />
           
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
@@ -358,7 +362,8 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-            </TooltipProvider>
+              </TooltipProvider>
+            </EtablissementProvider>
           </RoleProvider>
         </NotificationsProvider>
       </FavoritesProvider>
