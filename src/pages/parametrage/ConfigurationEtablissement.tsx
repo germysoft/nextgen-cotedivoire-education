@@ -14,8 +14,9 @@ import { toast } from "sonner";
 import { 
   Building2, MapPin, User, BookOpen, Palette, Shield, Save, 
   Upload, Lock, Unlock, History, AlertTriangle, Check, Image,
-  Phone, Mail, Globe, Calendar, Clock, FileSignature
+  Phone, Mail, Globe, Calendar, Clock, FileSignature, FileDown
 } from "lucide-react";
+import { generateConfigurationPDF } from "@/components/etablissement/ConfigurationPDFGenerator";
 import {
   Dialog,
   DialogContent,
@@ -124,6 +125,20 @@ const ConfigurationEtablissement = () => {
     toast.success("Configuration sauvegardée avec succès");
   };
 
+  const handleExportPDF = async () => {
+    if (!configuration.identite.nom) {
+      toast.error("Veuillez d'abord configurer le nom de l'établissement");
+      return;
+    }
+    try {
+      await generateConfigurationPDF(configuration);
+      toast.success("PDF généré avec succès");
+    } catch (error) {
+      toast.error("Erreur lors de la génération du PDF");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -199,6 +214,11 @@ const ConfigurationEtablissement = () => {
               </DialogContent>
             </Dialog>
           )}
+
+          <Button variant="outline" size="sm" onClick={handleExportPDF}>
+            <FileDown className="h-4 w-4 mr-2" />
+            Exporter PDF
+          </Button>
 
           <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
             <DialogTrigger asChild>
