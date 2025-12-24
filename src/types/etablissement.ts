@@ -91,6 +91,7 @@ export interface ParametresPedagogiques {
   noteMaximale: number;
   noteEliminatoire?: number;
   moyennePassage?: number;
+  moyenneConduitePriseEnCompte: boolean;
   gestionLV2: ('espagnol' | 'allemand' | 'chinois' | 'arabe')[];
   options: ('art_plastique' | 'musique' | 'theatre' | 'informatique' | 'eps')[];
   cyclesPrisEnCharge: Cycle[];
@@ -99,6 +100,12 @@ export interface ParametresPedagogiques {
   heureFinCours: string;
   dureeRecreation: number; // en minutes
   joursOuvrables: ('lundi' | 'mardi' | 'mercredi' | 'jeudi' | 'vendredi' | 'samedi')[];
+}
+
+export interface SignataireDocuments {
+  nomSignataire: string;
+  fonctionSignataire: FonctionResponsable;
+  ministereTutelleDocuments: string;
 }
 
 export interface ParametresVisuels {
@@ -137,6 +144,7 @@ export interface ConfigurationEtablissement {
   responsable: ResponsableEtablissement;
   parametresPedagogiques: ParametresPedagogiques;
   parametresVisuels: ParametresVisuels;
+  signataire: SignataireDocuments;
   securite: SecuriteTracabilite;
 }
 
@@ -170,6 +178,7 @@ export const defaultConfiguration: ConfigurationEtablissement = {
     typeEvaluation: 'trimestre',
     noteMaximale: 20,
     moyennePassage: 10,
+    moyenneConduitePriseEnCompte: false,
     gestionLV2: [],
     options: [],
     cyclesPrisEnCharge: [],
@@ -178,6 +187,11 @@ export const defaultConfiguration: ConfigurationEtablissement = {
     heureFinCours: '17:00',
     dureeRecreation: 15,
     joursOuvrables: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
+  },
+  signataire: {
+    nomSignataire: '',
+    fonctionSignataire: 'directeur',
+    ministereTutelleDocuments: "Ministère de l'Éducation Nationale et de l'Alphabétisation",
   },
   parametresVisuels: {
     couleurPrincipale: '#1e40af',
