@@ -24,8 +24,17 @@ export function generateBulletinPDF(
   // En-tête avec informations de l'établissement
   let yPos = 12;
   
+  // Logo de l'établissement (à gauche)
+  if (config?.identite?.logo) {
+    try {
+      doc.addImage(config.identite.logo, 'JPEG', 15, 8, 25, 25);
+    } catch (e) {
+      console.warn('Impossible de charger le logo:', e);
+    }
+  }
+  
   // Ministère de tutelle (depuis config ou valeur par défaut)
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   const ministereTutelle = config?.signataire?.ministereTutelleDocuments || 
     'MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE L\'ALPHABÉTISATION';
@@ -35,27 +44,37 @@ export function generateBulletinPDF(
   
   // Nom de l'établissement
   if (config?.identite?.nom) {
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text(config.identite.nom.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
-    yPos += 5;
+    yPos += 4;
     
     // Sigle si présent
     if (config.identite.sigle) {
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.text(`(${config.identite.sigle})`, pageWidth / 2, yPos, { align: 'center' });
       yPos += 4;
     }
+    
+    // Devise si présente
+    if (config.identite.devise) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      doc.text(`"${config.identite.devise}"`, pageWidth / 2, yPos, { align: 'center' });
+      yPos += 3;
+    }
   }
   
-  yPos += 3;
-  doc.setFontSize(18);
+  yPos = Math.max(yPos, 35); // S'assurer qu'on est sous le logo
+  
+  yPos += 2;
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('BULLETIN SCOLAIRE', pageWidth / 2, yPos, { align: 'center' });
   
-  yPos += 6;
-  doc.setFontSize(12);
+  yPos += 5;
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   const trimesterText = bulletin.trimester === 1 ? '1er' : bulletin.trimester === 2 ? '2ème' : '3ème';
   doc.text(`${trimesterText} Trimestre - Année ${bulletin.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
@@ -230,6 +249,15 @@ export function generateBulletinPDF(
     doc.text(config.parametresVisuels.piedDePage, pageWidth / 2, pageHeight - 50, { align: 'center' });
   }
   
+  // Cachet scanné si disponible (en bas à droite avant la signature)
+  if (config?.parametresVisuels?.cachetScane) {
+    try {
+      doc.addImage(config.parametresVisuels.cachetScane, 'PNG', pageWidth - 55, pageHeight - 60, 30, 30);
+    } catch (e) {
+      console.warn('Impossible de charger le cachet:', e);
+    }
+  }
+  
   // Signatures
   yPos = pageHeight - 40;
   doc.setFontSize(10);
@@ -241,13 +269,23 @@ export function generateBulletinPDF(
   const nomSignataire = config?.signataire?.nomSignataire || 'Le Directeur';
   const fonctionSignataire = config?.signataire?.fonctionSignataire || '';
   
-  if (fonctionSignataire) {
-    doc.text(fonctionSignataire, pageWidth - 40, yPos - 4, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
-    doc.text(nomSignataire, pageWidth - 40, yPos + 2, { align: 'center' });
-  } else {
-    doc.text(nomSignataire, pageWidth - 40, yPos, { align: 'center' });
-  }
+  // Fonction mappée vers un label lisible
+  const fonctionLabels: Record<string, string> = {
+    'fondateur': 'Le Fondateur',
+    'directeur': 'Le Directeur',
+    'proviseur': 'Le Proviseur',
+    'directeur_etudes': 'Le Directeur des Études',
+    'principal': 'Le Principal',
+    'censeur': 'Le Censeur',
+    'surveillant_general': 'Le Surveillant Général'
+  };
+  
+  const fonctionLabel = fonctionLabels[fonctionSignataire] || fonctionSignataire || 'Le Directeur';
+  
+  doc.setFontSize(9);
+  doc.text(fonctionLabel, pageWidth - 40, yPos - 4, { align: 'center' });
+  doc.setFont('helvetica', 'bold');
+  doc.text(nomSignataire, pageWidth - 40, yPos + 2, { align: 'center' });
   
   doc.setFont('helvetica', 'normal');
   doc.line(15, yPos + 15, 65, yPos + 15);
@@ -278,9 +316,18 @@ export function generateMultipleBulletinsPDF(
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
+    // Logo en haut à gauche
+    if (config?.identite?.logo) {
+      try {
+        doc.addImage(config.identite.logo, 'JPEG', 15, 8, 20, 20);
+      } catch (e) {
+        console.warn('Impossible de charger le logo:', e);
+      }
+    }
+    
     // En-tête avec ministère de tutelle
     let yPos = 12;
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     const ministereTutelle = config?.signataire?.ministereTutelleDocuments || 
       'MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE L\'ALPHABÉTISATION';
@@ -290,19 +337,21 @@ export function generateMultipleBulletinsPDF(
     
     // Nom de l'établissement
     if (config?.identite?.nom) {
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text(config.identite.nom.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
       yPos += 4;
     }
     
+    yPos = Math.max(yPos, 30);
+    
     yPos += 2;
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text('BULLETIN SCOLAIRE', pageWidth / 2, yPos, { align: 'center' });
     
-    yPos += 6;
-    doc.setFontSize(12);
+    yPos += 5;
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     const trimesterText = bulletin.trimester === 1 ? '1er' : bulletin.trimester === 2 ? '2ème' : '3ème';
     doc.text(`${trimesterText} Trimestre - Année ${bulletin.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
@@ -401,6 +450,15 @@ export function generateMultipleBulletinsPDF(
       doc.text(config.parametresVisuels.piedDePage, pageWidth / 2, pageHeight - 38, { align: 'center' });
     }
     
+    // Cachet scanné
+    if (config?.parametresVisuels?.cachetScane) {
+      try {
+        doc.addImage(config.parametresVisuels.cachetScane, 'PNG', pageWidth - 50, pageHeight - 50, 25, 25);
+      } catch (e) {
+        console.warn('Impossible de charger le cachet:', e);
+      }
+    }
+    
     // Signatures avec nom du signataire
     yPos = pageHeight - 30;
     doc.setFontSize(10);
@@ -410,15 +468,23 @@ export function generateMultipleBulletinsPDF(
     const nomSignataire = config?.signataire?.nomSignataire || 'Le Directeur';
     const fonctionSignataire = config?.signataire?.fonctionSignataire || '';
     
-    if (fonctionSignataire) {
-      doc.setFontSize(8);
-      doc.text(fonctionSignataire, pageWidth - 40, yPos - 3, { align: 'center' });
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(nomSignataire, pageWidth - 40, yPos + 3, { align: 'center' });
-    } else {
-      doc.text(nomSignataire, pageWidth - 40, yPos, { align: 'center' });
-    }
+    const fonctionLabels: Record<string, string> = {
+      'fondateur': 'Le Fondateur',
+      'directeur': 'Le Directeur',
+      'proviseur': 'Le Proviseur',
+      'directeur_etudes': 'Le Directeur des Études',
+      'principal': 'Le Principal',
+      'censeur': 'Le Censeur',
+      'surveillant_general': 'Le Surveillant Général'
+    };
+    
+    const fonctionLabel = fonctionLabels[fonctionSignataire] || 'Le Directeur';
+    
+    doc.setFontSize(8);
+    doc.text(fonctionLabel, pageWidth - 40, yPos - 3, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(nomSignataire, pageWidth - 40, yPos + 3, { align: 'center' });
     
     doc.setFont('helvetica', 'normal');
     doc.line(15, yPos + 10, 65, yPos + 10);

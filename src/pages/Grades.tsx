@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, Calculator, TrendingUp, AlertCircle } from "lucide-react";
+import { Download, FileText, Calculator, TrendingUp, AlertCircle, UserCheck } from "lucide-react";
 import { GradeEntryWizard } from "@/components/grades/GradeEntryWizard";
+import { ConduiteEditor } from "@/components/grades/ConduiteEditor";
 import { useGradeCalculation } from "@/hooks/useGradeCalculation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -51,11 +52,17 @@ export default function Grades() {
   const [selectedClass, setSelectedClass] = useState("6èmeA");
   const [selectedTrimester, setSelectedTrimester] = useState("1");
   const [isGradeWizardOpen, setIsGradeWizardOpen] = useState(false);
+  const [isConduiteEditorOpen, setIsConduiteEditorOpen] = useState(false);
+  const [studentGrades, setStudentGrades] = useState(mockStudentGrades);
   
   const { getDisplayAverage, includeConduite } = useGradeCalculation();
 
-  const getStudentAverage = (student: typeof mockStudentGrades[0]) => {
+  const getStudentAverage = (student: typeof studentGrades[0]) => {
     return getDisplayAverage(student.subjects, student.conduiteNote);
+  };
+
+  const handleConduiteUpdate = (updatedStudents: typeof studentGrades) => {
+    setStudentGrades(updatedStudents);
   };
 
   const getGradeColor = (avg: number) => {
@@ -77,6 +84,12 @@ export default function Grades() {
             <Download className="mr-2 h-4 w-4" />
             Exporter
           </Button>
+          {includeConduite && (
+            <Button variant="outline" onClick={() => setIsConduiteEditorOpen(true)}>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Notes de Conduite
+            </Button>
+          )}
           <Button onClick={() => setIsGradeWizardOpen(true)}>
             <Calculator className="mr-2 h-4 w-4" />
             Saisir Notes
@@ -86,6 +99,15 @@ export default function Grades() {
 
       {/* Grade Entry Wizard */}
       <GradeEntryWizard open={isGradeWizardOpen} onOpenChange={setIsGradeWizardOpen} />
+      
+      {/* Conduite Editor */}
+      <ConduiteEditor
+        open={isConduiteEditorOpen}
+        onOpenChange={setIsConduiteEditorOpen}
+        students={studentGrades}
+        onSave={handleConduiteUpdate}
+        className={selectedClass}
+      />
       
       {/* Indicateur moyenne de conduite */}
       {includeConduite && (
@@ -202,7 +224,7 @@ export default function Grades() {
               <TabsTrigger value="stats">Statistiques</TabsTrigger>
             </TabsList>
             <TabsContent value="list" className="space-y-4">
-              {mockStudentGrades.map((student) => {
+              {studentGrades.map((student) => {
                 const studentAverage = getStudentAverage(student);
                 return (
                   <div key={student.id} className="border rounded-lg p-4">
