@@ -1,28 +1,72 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { StudentBulletin } from '@/types/bulletin';
+import { ConfigurationEtablissement } from '@/types/etablissement';
 
-export function generateBulletinPDF(bulletin: StudentBulletin, template: string = 'classic') {
+interface BulletinPDFOptions {
+  bulletin: StudentBulletin;
+  template?: string;
+  config?: ConfigurationEtablissement | null;
+  moyenneConduite?: number;
+  includeConduite?: boolean;
+}
+
+export function generateBulletinPDF(
+  bulletin: StudentBulletin, 
+  template: string = 'classic',
+  config?: ConfigurationEtablissement | null,
+  moyenneConduite?: number
+) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
-  // En-tête
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text('BULLETIN SCOLAIRE', pageWidth / 2, 20, { align: 'center' });
+  // En-tête avec informations de l'établissement
+  let yPos = 12;
   
+  // Ministère de tutelle (depuis config ou valeur par défaut)
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  const ministereTutelle = config?.signataire?.ministereTutelleDocuments || 
+    'MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE L\'ALPHABÉTISATION';
+  doc.text(ministereTutelle.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 5;
+  
+  // Nom de l'établissement
+  if (config?.identite?.nom) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(config.identite.nom.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
+    
+    // Sigle si présent
+    if (config.identite.sigle) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`(${config.identite.sigle})`, pageWidth / 2, yPos, { align: 'center' });
+      yPos += 4;
+    }
+  }
+  
+  yPos += 3;
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BULLETIN SCOLAIRE', pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 6;
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   const trimesterText = bulletin.trimester === 1 ? '1er' : bulletin.trimester === 2 ? '2ème' : '3ème';
-  doc.text(`${trimesterText} Trimestre - Année ${bulletin.academicYear}`, pageWidth / 2, 28, { align: 'center' });
+  doc.text(`${trimesterText} Trimestre - Année ${bulletin.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
   
+  yPos += 4;
   // Ligne de séparation
   doc.setLineWidth(0.5);
-  doc.line(20, 32, pageWidth - 20, 32);
+  doc.line(20, yPos, pageWidth - 20, yPos);
   
   // Informations de l'élève
-  let yPos = 40;
+  yPos += 8;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text('Informations de l\'élève', 20, yPos);
@@ -53,11 +97,32 @@ export function generateBulletinPDF(bulletin: StudentBulletin, template: string 
     subject.comment || ''
   ]);
   
+  // Ajouter la moyenne de conduite si configurée
+  const includeConduite = config?.parametresPedagogiques?.moyenneConduitePriseEnCompte && moyenneConduite !== undefined;
+  let generalAverageDisplay = bulletin.generalAverage;
+  
+  if (includeConduite && moyenneConduite !== undefined) {
+    // Recalculer la moyenne avec la conduite (coefficient 1)
+    const totalPoints = bulletin.subjects.reduce((acc, s) => acc + s.average * s.coefficient, 0);
+    const totalCoef = bulletin.subjects.reduce((acc, s) => acc + s.coefficient, 0);
+    generalAverageDisplay = (totalPoints + moyenneConduite) / (totalCoef + 1);
+    
+    // Ajouter la conduite aux données du tableau
+    tableData.push([
+      'Conduite',
+      '1',
+      moyenneConduite.toFixed(2),
+      '-',
+      '-',
+      moyenneConduite >= 15 ? 'Excellent' : moyenneConduite >= 12 ? 'Bien' : moyenneConduite >= 10 ? 'Passable' : 'À améliorer'
+    ]);
+  }
+
   autoTable(doc, {
     startY: yPos,
     head: [['Matière', 'Coef.', 'Note', 'Moy. Classe', 'Enseignant', 'Appréciation']],
     body: tableData,
-    foot: [['MOYENNE GÉNÉRALE', '', bulletin.generalAverage.toFixed(2), bulletin.classGeneralAverage.toFixed(2), '', '']],
+    foot: [['MOYENNE GÉNÉRALE', '', generalAverageDisplay.toFixed(2), bulletin.classGeneralAverage.toFixed(2), '', '']],
     theme: 'striped',
     headStyles: { 
       fillColor: [41, 128, 185],
@@ -158,14 +223,33 @@ export function generateBulletinPDF(bulletin: StudentBulletin, template: string 
     }
   }
   
+  // Pied de page officiel si configuré
+  if (config?.parametresVisuels?.piedDePage) {
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'italic');
+    doc.text(config.parametresVisuels.piedDePage, pageWidth / 2, pageHeight - 50, { align: 'center' });
+  }
+  
   // Signatures
   yPos = pageHeight - 40;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   
   doc.text('Signature du parent', 40, yPos, { align: 'center' });
-  doc.text('Le Directeur', pageWidth - 40, yPos, { align: 'center' });
   
+  // Nom et fonction du signataire depuis config
+  const nomSignataire = config?.signataire?.nomSignataire || 'Le Directeur';
+  const fonctionSignataire = config?.signataire?.fonctionSignataire || '';
+  
+  if (fonctionSignataire) {
+    doc.text(fonctionSignataire, pageWidth - 40, yPos - 4, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.text(nomSignataire, pageWidth - 40, yPos + 2, { align: 'center' });
+  } else {
+    doc.text(nomSignataire, pageWidth - 40, yPos, { align: 'center' });
+  }
+  
+  doc.setFont('helvetica', 'normal');
   doc.line(15, yPos + 15, 65, yPos + 15);
   doc.line(pageWidth - 65, yPos + 15, pageWidth - 15, yPos + 15);
   
@@ -178,7 +262,12 @@ export function generateBulletinPDF(bulletin: StudentBulletin, template: string 
   doc.save(fileName);
 }
 
-export function generateMultipleBulletinsPDF(bulletins: StudentBulletin[], template: string = 'classic') {
+export function generateMultipleBulletinsPDF(
+  bulletins: StudentBulletin[], 
+  template: string = 'classic',
+  config?: ConfigurationEtablissement | null,
+  moyennesConduite?: Map<string, number>
+) {
   const doc = new jsPDF();
   
   bulletins.forEach((bulletin, index) => {
@@ -189,21 +278,41 @@ export function generateMultipleBulletinsPDF(bulletins: StudentBulletin[], templ
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
-    // En-tête
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BULLETIN SCOLAIRE', pageWidth / 2, 20, { align: 'center' });
+    // En-tête avec ministère de tutelle
+    let yPos = 12;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const ministereTutelle = config?.signataire?.ministereTutelleDocuments || 
+      'MINISTÈRE DE L\'ÉDUCATION NATIONALE ET DE L\'ALPHABÉTISATION';
+    doc.text(ministereTutelle.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
     
+    yPos += 5;
+    
+    // Nom de l'établissement
+    if (config?.identite?.nom) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(config.identite.nom.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+      yPos += 4;
+    }
+    
+    yPos += 2;
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BULLETIN SCOLAIRE', pageWidth / 2, yPos, { align: 'center' });
+    
+    yPos += 6;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     const trimesterText = bulletin.trimester === 1 ? '1er' : bulletin.trimester === 2 ? '2ème' : '3ème';
-    doc.text(`${trimesterText} Trimestre - Année ${bulletin.academicYear}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`${trimesterText} Trimestre - Année ${bulletin.academicYear}`, pageWidth / 2, yPos, { align: 'center' });
     
+    yPos += 3;
     doc.setLineWidth(0.5);
-    doc.line(20, 32, pageWidth - 20, 32);
+    doc.line(20, yPos, pageWidth - 20, yPos);
     
     // Informations de l'élève
-    let yPos = 40;
+    yPos += 8;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Informations de l\'élève', 20, yPos);
@@ -231,11 +340,30 @@ export function generateMultipleBulletinsPDF(bulletins: StudentBulletin[], templ
       subject.comment || ''
     ]);
     
+    // Ajouter la moyenne de conduite si configurée
+    const moyenneConduite = moyennesConduite?.get(bulletin.studentId);
+    const includeConduite = config?.parametresPedagogiques?.moyenneConduitePriseEnCompte && moyenneConduite !== undefined;
+    let generalAverageDisplay = bulletin.generalAverage;
+    
+    if (includeConduite && moyenneConduite !== undefined) {
+      const totalPoints = bulletin.subjects.reduce((acc, s) => acc + s.average * s.coefficient, 0);
+      const totalCoef = bulletin.subjects.reduce((acc, s) => acc + s.coefficient, 0);
+      generalAverageDisplay = (totalPoints + moyenneConduite) / (totalCoef + 1);
+      
+      tableData.push([
+        'Conduite',
+        '1',
+        moyenneConduite.toFixed(2),
+        '-',
+        moyenneConduite >= 15 ? 'Excellent' : moyenneConduite >= 12 ? 'Bien' : 'À améliorer'
+      ]);
+    }
+    
     autoTable(doc, {
       startY: yPos,
       head: [['Matière', 'Coef.', 'Note', 'Moy. Classe', 'Appréciation']],
       body: tableData,
-      foot: [['MOYENNE GÉNÉRALE', '', bulletin.generalAverage.toFixed(2), bulletin.classGeneralAverage.toFixed(2), '']],
+      foot: [['MOYENNE GÉNÉRALE', '', generalAverageDisplay.toFixed(2), bulletin.classGeneralAverage.toFixed(2), '']],
       theme: 'striped',
       headStyles: { 
         fillColor: [41, 128, 185],
@@ -266,11 +394,33 @@ export function generateMultipleBulletinsPDF(bulletins: StudentBulletin[], templ
     doc.setFont('helvetica', 'normal');
     doc.text(`Absences: ${bulletin.absences} | Retards: ${bulletin.tardiness} | Discipline: ${bulletin.disciplinePoints}/100`, 20, yPos);
     
-    // Signatures
+    // Pied de page officiel
+    if (config?.parametresVisuels?.piedDePage) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'italic');
+      doc.text(config.parametresVisuels.piedDePage, pageWidth / 2, pageHeight - 38, { align: 'center' });
+    }
+    
+    // Signatures avec nom du signataire
     yPos = pageHeight - 30;
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.text('Signature du parent', 40, yPos, { align: 'center' });
-    doc.text('Le Directeur', pageWidth - 40, yPos, { align: 'center' });
+    
+    const nomSignataire = config?.signataire?.nomSignataire || 'Le Directeur';
+    const fonctionSignataire = config?.signataire?.fonctionSignataire || '';
+    
+    if (fonctionSignataire) {
+      doc.setFontSize(8);
+      doc.text(fonctionSignataire, pageWidth - 40, yPos - 3, { align: 'center' });
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(nomSignataire, pageWidth - 40, yPos + 3, { align: 'center' });
+    } else {
+      doc.text(nomSignataire, pageWidth - 40, yPos, { align: 'center' });
+    }
+    
+    doc.setFont('helvetica', 'normal');
     doc.line(15, yPos + 10, 65, yPos + 10);
     doc.line(pageWidth - 65, yPos + 10, pageWidth - 15, yPos + 10);
   });

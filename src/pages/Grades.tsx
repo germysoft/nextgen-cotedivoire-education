@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, Calculator, TrendingUp } from "lucide-react";
+import { Download, FileText, Calculator, TrendingUp, AlertCircle } from "lucide-react";
 import { GradeEntryWizard } from "@/components/grades/GradeEntryWizard";
+import { useGradeCalculation } from "@/hooks/useGradeCalculation";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Mock data
+// Mock data avec note de conduite
 const mockStudentGrades = [
   {
     id: 1,
@@ -17,6 +19,7 @@ const mockStudentGrades = [
     matricule: "66800001A",
     class: "6èmeA",
     trimester: "1er Trimestre",
+    conduiteNote: 16,
     subjects: [
       { name: "Français", grade: 14.5, coef: 4, teacher: "M. Traoré" },
       { name: "Mathématiques", grade: 16, coef: 4, teacher: "Mme Bamba" },
@@ -32,6 +35,7 @@ const mockStudentGrades = [
     matricule: "66800002A",
     class: "6èmeA",
     trimester: "1er Trimestre",
+    conduiteNote: 14,
     subjects: [
       { name: "Français", grade: 16, coef: 4, teacher: "M. Traoré" },
       { name: "Mathématiques", grade: 15.5, coef: 4, teacher: "Mme Bamba" },
@@ -47,11 +51,11 @@ export default function Grades() {
   const [selectedClass, setSelectedClass] = useState("6èmeA");
   const [selectedTrimester, setSelectedTrimester] = useState("1");
   const [isGradeWizardOpen, setIsGradeWizardOpen] = useState(false);
+  
+  const { getDisplayAverage, includeConduite } = useGradeCalculation();
 
-  const calculateAverage = (subjects: any[]) => {
-    const totalPoints = subjects.reduce((acc, s) => acc + s.grade * s.coef, 0);
-    const totalCoef = subjects.reduce((acc, s) => acc + s.coef, 0);
-    return (totalPoints / totalCoef).toFixed(2);
+  const getStudentAverage = (student: typeof mockStudentGrades[0]) => {
+    return getDisplayAverage(student.subjects, student.conduiteNote);
   };
 
   const getGradeColor = (avg: number) => {
@@ -82,6 +86,16 @@ export default function Grades() {
 
       {/* Grade Entry Wizard */}
       <GradeEntryWizard open={isGradeWizardOpen} onOpenChange={setIsGradeWizardOpen} />
+      
+      {/* Indicateur moyenne de conduite */}
+      {includeConduite && (
+        <Alert className="border-primary/50 bg-primary/5">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            La moyenne de conduite est prise en compte dans le calcul des moyennes générales (coefficient 1).
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -188,55 +202,74 @@ export default function Grades() {
               <TabsTrigger value="stats">Statistiques</TabsTrigger>
             </TabsList>
             <TabsContent value="list" className="space-y-4">
-              {mockStudentGrades.map((student) => (
-                <div key={student.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg">{student.studentName}</h3>
-                      <p className="text-sm text-muted-foreground">Matricule: {student.matricule}</p>
+              {mockStudentGrades.map((student) => {
+                const studentAverage = getStudentAverage(student);
+                return (
+                  <div key={student.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-semibold text-lg">{student.studentName}</h3>
+                        <p className="text-sm text-muted-foreground">Matricule: {student.matricule}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={getGradeColor(studentAverage)} className="text-lg px-3 py-1">
+                          Moyenne: {studentAverage.toFixed(2)}
+                        </Badge>
+                        {includeConduite && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            (avec conduite: {student.conduiteNote}/20)
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <Badge variant={getGradeColor(parseFloat(calculateAverage(student.subjects)))} className="text-lg px-3 py-1">
-                        Moyenne: {calculateAverage(student.subjects)}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Matière</TableHead>
-                        <TableHead>Enseignant</TableHead>
-                        <TableHead className="text-center">Note /20</TableHead>
-                        <TableHead className="text-center">Coef.</TableHead>
-                        <TableHead className="text-center">Total Points</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {student.subjects.map((subject, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="font-medium">{subject.name}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{subject.teacher}</TableCell>
-                          <TableCell className="text-center font-semibold">{subject.grade}</TableCell>
-                          <TableCell className="text-center">{subject.coef}</TableCell>
-                          <TableCell className="text-center font-semibold">
-                            {(subject.grade * subject.coef).toFixed(2)}
-                          </TableCell>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Matière</TableHead>
+                          <TableHead>Enseignant</TableHead>
+                          <TableHead className="text-center">Note /20</TableHead>
+                          <TableHead className="text-center">Coef.</TableHead>
+                          <TableHead className="text-center">Total Points</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" size="sm">
-                      <FileText className="mr-2 h-4 w-4" />
-                      Générer Bulletin
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Télécharger PDF
-                    </Button>
+                      </TableHeader>
+                      <TableBody>
+                        {student.subjects.map((subject, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{subject.name}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{subject.teacher}</TableCell>
+                            <TableCell className="text-center font-semibold">{subject.grade}</TableCell>
+                            <TableCell className="text-center">{subject.coef}</TableCell>
+                            <TableCell className="text-center font-semibold">
+                              {(subject.grade * subject.coef).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {includeConduite && (
+                          <TableRow className="bg-muted/50">
+                            <TableCell className="font-medium">Conduite</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">-</TableCell>
+                            <TableCell className="text-center font-semibold">{student.conduiteNote}</TableCell>
+                            <TableCell className="text-center">1</TableCell>
+                            <TableCell className="text-center font-semibold">
+                              {student.conduiteNote.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button variant="outline" size="sm">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Générer Bulletin
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Télécharger PDF
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </TabsContent>
             <TabsContent value="stats">
               <div className="text-center py-12 text-muted-foreground">
