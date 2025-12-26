@@ -329,9 +329,9 @@ const ConfigurationEtablissement = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Logo */}
                 <div className="flex flex-col items-center space-y-4">
-                  <Label>Logo de l'établissement</Label>
+                  <Label className="text-base font-semibold">Logo de l'établissement</Label>
                   <div 
-                    className="w-40 h-40 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden"
+                    className="w-40 h-40 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden bg-muted/20"
                     onClick={() => !isLocked && logoInputRef.current?.click()}
                   >
                     {configuration.identite.logo ? (
@@ -342,8 +342,8 @@ const ConfigurationEtablissement = () => {
                       />
                     ) : (
                       <div className="text-center text-muted-foreground">
-                        <Image className="h-10 w-10 mx-auto mb-2" />
-                        <span className="text-sm">Cliquez pour ajouter</span>
+                        <Upload className="h-10 w-10 mx-auto mb-2" />
+                        <span className="text-sm">Cliquez pour télécharger</span>
                       </div>
                     )}
                   </div>
@@ -355,7 +355,29 @@ const ConfigurationEtablissement = () => {
                     onChange={(e) => handleImageUpload(e, 'logo')}
                     disabled={isLocked}
                   />
-                  <p className="text-xs text-muted-foreground">PNG ou JPG, max 2 Mo</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isLocked}
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      {configuration.identite.logo ? 'Modifier' : 'Télécharger'}
+                    </Button>
+                    {configuration.identite.logo && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => updateSection('identite', { logo: undefined })}
+                        disabled={isLocked}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Supprimer
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">PNG ou JPG, max 2 Mo<br/>Format carré recommandé</p>
                 </div>
 
                 {/* Infos principales */}
@@ -1178,9 +1200,9 @@ const ConfigurationEtablissement = () => {
 
                 {/* Cachet */}
                 <div className="flex flex-col items-center space-y-4">
-                  <Label>Cachet de l'établissement</Label>
+                  <Label className="text-base font-semibold">Cachet scanné de l'établissement</Label>
                   <div 
-                    className="w-40 h-40 border-2 border-dashed rounded-full flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden bg-muted/30"
+                    className="w-40 h-40 border-2 border-dashed rounded-full flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden bg-muted/20"
                     onClick={() => !isLocked && cachetInputRef.current?.click()}
                   >
                     {configuration.parametresVisuels.cachetScane ? (
@@ -1191,8 +1213,8 @@ const ConfigurationEtablissement = () => {
                       />
                     ) : (
                       <div className="text-center text-muted-foreground">
-                        <Shield className="h-10 w-10 mx-auto mb-2" />
-                        <span className="text-sm">Ajouter cachet</span>
+                        <Upload className="h-10 w-10 mx-auto mb-2" />
+                        <span className="text-sm">Cliquez pour télécharger</span>
                       </div>
                     )}
                   </div>
@@ -1204,7 +1226,29 @@ const ConfigurationEtablissement = () => {
                     onChange={(e) => handleImageUpload(e, 'cachetScane')}
                     disabled={isLocked}
                   />
-                  <p className="text-xs text-muted-foreground">PNG avec transparence recommandé</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => cachetInputRef.current?.click()}
+                      disabled={isLocked}
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      {configuration.parametresVisuels.cachetScane ? 'Modifier' : 'Télécharger'}
+                    </Button>
+                    {configuration.parametresVisuels.cachetScane && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => updateSection('parametresVisuels', { cachetScane: undefined })}
+                        disabled={isLocked}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Supprimer
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">PNG avec transparence recommandé<br/>Sera affiché sur les bulletins et documents</p>
                 </div>
               </div>
 
