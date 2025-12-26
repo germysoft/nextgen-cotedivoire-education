@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Save, UserCheck } from "lucide-react";
+import { Save, UserCheck, Calculator } from "lucide-react";
+import { ConduiteAutoCalculator } from "./ConduiteAutoCalculator";
 
 interface Student {
   id: number;
@@ -45,6 +46,7 @@ export function ConduiteEditor({
   className = "",
 }: ConduiteEditorProps) {
   const [editedStudents, setEditedStudents] = useState<Student[]>(students);
+  const [showAutoCalculator, setShowAutoCalculator] = useState(false);
 
   const handleNoteChange = (studentId: number, value: string) => {
     const note = parseFloat(value);
@@ -85,6 +87,15 @@ export function ConduiteEditor({
     setEditedStudents(prev => prev.map(s => ({ ...s, conduiteNote: note })));
   };
 
+  const handleApplyAutoNotes = (updatedNotes: { id: number; conduiteNote: number }[]) => {
+    setEditedStudents(prev => 
+      prev.map(student => {
+        const update = updatedNotes.find(u => u.id === student.id);
+        return update ? { ...student, conduiteNote: update.conduiteNote } : student;
+      })
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -100,21 +111,31 @@ export function ConduiteEditor({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Application en masse */}
-          <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-            <Label className="whitespace-nowrap">Appliquer à tous :</Label>
-            <Input
-              type="number"
-              min={0}
-              max={20}
-              step={0.5}
-              placeholder="Note /20"
-              className="w-24"
-              onChange={(e) => handleApplyAll(e.target.value)}
-            />
-            <span className="text-sm text-muted-foreground">
-              (Modifiera toutes les notes ci-dessous)
-            </span>
+          {/* Application en masse et calcul automatique */}
+          <div className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-4">
+              <Label className="whitespace-nowrap">Appliquer à tous :</Label>
+              <Input
+                type="number"
+                min={0}
+                max={20}
+                step={0.5}
+                placeholder="Note /20"
+                className="w-24"
+                onChange={(e) => handleApplyAll(e.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">
+                (Modifiera toutes les notes ci-dessous)
+              </span>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAutoCalculator(true)}
+              className="gap-2"
+            >
+              <Calculator className="h-4 w-4" />
+              Calcul Automatique
+            </Button>
           </div>
 
           {/* Tableau des élèves */}
@@ -164,6 +185,15 @@ export function ConduiteEditor({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal de calcul automatique */}
+      <ConduiteAutoCalculator
+        open={showAutoCalculator}
+        onOpenChange={setShowAutoCalculator}
+        students={editedStudents}
+        onApplyNotes={handleApplyAutoNotes}
+        className={className}
+      />
     </Dialog>
   );
 }

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { BulletinTemplateSelector } from "@/components/bulletins/BulletinTemplateSelector";
 import { BulletinPreview } from "@/components/bulletins/BulletinPreview";
+import { BulletinPDFPreview } from "@/components/bulletins/BulletinPDFPreview";
 import { CommentManager } from "@/components/bulletins/CommentManager";
 import { generateBulletinPDF, generateMultipleBulletinsPDF } from "@/components/bulletins/BulletinPDFGenerator";
 import { mockBulletins } from "@/data/mockBulletins";
@@ -35,6 +36,7 @@ export default function BulletinsNotesPage() {
     sendToParents: false,
     sendMethod: 'email'
   });
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
 
   const handleGenerateSingle = () => {
     generateBulletinPDF(selectedStudent, selectedTemplate);
@@ -285,10 +287,14 @@ export default function BulletinsNotesPage() {
               </div>
 
               {/* Boutons d'action */}
-              <div className="grid md:grid-cols-2 gap-4 pt-4">
+              <div className="grid md:grid-cols-3 gap-4 pt-4">
+                <Button onClick={() => setShowPDFPreview(true)} variant="outline" size="lg">
+                  <Eye className="mr-2 h-4 w-4" />
+                  Aperçu PDF
+                </Button>
                 <Button onClick={handleGenerateSingle} variant="outline" size="lg">
                   <Download className="mr-2 h-4 w-4" />
-                  Générer 1 bulletin (aperçu)
+                  Générer 1 bulletin
                 </Button>
                 <Button onClick={handleGenerateMultiple} size="lg">
                   <Users className="mr-2 h-4 w-4" />
@@ -326,6 +332,14 @@ export default function BulletinsNotesPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Modal d'aperçu PDF */}
+      <BulletinPDFPreview
+        open={showPDFPreview}
+        onOpenChange={setShowPDFPreview}
+        bulletin={selectedStudent}
+        template={selectedTemplate}
+      />
     </div>
   );
 }
