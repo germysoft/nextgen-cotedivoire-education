@@ -4,6 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { RoleSelector } from "@/components/layout/RoleSelector";
+import { ArchiveBanner } from "@/components/layout/ArchiveBanner";
 import { MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -89,6 +90,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
+          <ArchiveBanner />
           <main className="flex-1 p-6 bg-background">
             {children}
           </main>
