@@ -152,6 +152,8 @@ import DecisionsBilans from "./pages/mena/DecisionsBilans";
 import ReunionsPV from "./pages/partenariats/Reunions";
 import SponsorsPage from "./pages/partenariats/Sponsors";
 import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
+import Archives from "./pages/parametrage/Archives";
+import { ArchivesProvider } from "./contexts/ArchivesContext";
 
 const queryClient = new QueryClient();
 
@@ -162,6 +164,7 @@ const App = () => (
         <NotificationsProvider>
           <RoleProvider>
             <EtablissementProvider>
+              <ArchivesProvider>
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
@@ -354,6 +357,7 @@ const App = () => (
           <Route path="/parametrage/securite" element={<MainLayout><Securite /></MainLayout>} />
           <Route path="/parametrage/audit" element={<MainLayout><AuditActivite /></MainLayout>} />
           <Route path="/parametrage/etablissement" element={<MainLayout><ConfigurationEtablissement /></MainLayout>} />
+          <Route path="/parametrage/archives" element={<MainLayout><Archives /></MainLayout>} />
           
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
@@ -363,6 +367,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
               </TooltipProvider>
+              </ArchivesProvider>
             </EtablissementProvider>
           </RoleProvider>
         </NotificationsProvider>
