@@ -36,6 +36,7 @@ const permissionLabels: Record<keyof RolePermissions, string> = {
   statistiques: "Statistiques & Rapports",
   parametrage: "Paramétrage & Sécurité",
   modulesOptionnels: "Modules Optionnels",
+  archives: "Archives & Années Antérieures",
 };
 
 export default function RolesPage() {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   Archive, Database, Calendar, Users, GraduationCap, Building2, 
   Download, Eye, Lock, Unlock, Plus, FileText, Search, History,
-  AlertTriangle, CheckCircle, Clock, HardDrive
+  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useArchives } from '@/contexts/ArchivesContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useRole } from '@/contexts/RoleContext';
+import { roleLabels } from '@/types/roles';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 export default function ArchivesPage() {
   const { 
@@ -30,6 +35,11 @@ export default function ArchivesPage() {
     creerNouvelleAnnee 
   } = useArchives();
   const { toast } = useToast();
+  const { canAccess } = usePermissions();
+  const { currentRole } = useRole();
+  const navigate = useNavigate();
+  
+  const hasArchiveAccess = canAccess('archives');
   
   const [searchEleve, setSearchEleve] = useState('');
   const [nouvelleAnnee, setNouvelleAnnee] = useState({
@@ -38,6 +48,46 @@ export default function ArchivesPage() {
     dateFin: '',
   });
   const [showNewYearDialog, setShowNewYearDialog] = useState(false);
+
+  // Afficher un message d'accès refusé si l'utilisateur n'a pas la permission
+  if (!hasArchiveAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="max-w-lg w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-4 rounded-full bg-destructive/10">
+              <ShieldAlert className="h-12 w-12 text-destructive" />
+            </div>
+            <CardTitle className="text-2xl text-destructive">Accès Refusé</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Vous n'avez pas les droits nécessaires pour accéder aux archives.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Restriction d'accès</AlertTitle>
+              <AlertDescription>
+                L'accès aux archives est réservé aux rôles suivants :
+                <ul className="mt-2 list-disc list-inside">
+                  <li><strong>Administrateur</strong></li>
+                  <li><strong>Directeur</strong></li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            <div className="text-center text-sm text-muted-foreground">
+              Votre rôle actuel : <Badge variant="outline">{roleLabels[currentRole]}</Badge>
+            </div>
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                Retour au tableau de bord
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleConnexion = (anneeId: string) => {
     const annee = anneesScolaires.find(a => a.id === anneeId);

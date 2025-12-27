@@ -34,6 +34,7 @@ export interface RolePermissions {
   statistiques: boolean;
   parametrage: boolean;
   modulesOptionnels: boolean;
+  archives: boolean; // Accès aux archives - Admin et Directeur uniquement
 }
 
 export const rolePermissions: Record<UserRole, RolePermissions> = {
@@ -59,6 +60,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: true,
     parametrage: true,
     modulesOptionnels: true,
+    archives: true,
   },
   directeur: {
     dashboards: true,
@@ -82,6 +84,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: true,
     parametrage: false,
     modulesOptionnels: true,
+    archives: true,
   },
   enseignant: {
     dashboards: true,
@@ -105,6 +108,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: false,
     parametrage: false,
     modulesOptionnels: false,
+    archives: false,
   },
   comptable: {
     dashboards: true,
@@ -128,6 +132,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: true,
     parametrage: false,
     modulesOptionnels: false,
+    archives: false,
   },
   secretaire: {
     dashboards: true,
@@ -151,6 +156,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: false,
     parametrage: false,
     modulesOptionnels: false,
+    archives: false,
   },
   surveillant: {
     dashboards: true,
@@ -174,6 +180,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: false,
     parametrage: false,
     modulesOptionnels: false,
+    archives: false,
   },
   infirmier: {
     dashboards: true,
@@ -197,6 +204,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: false,
     parametrage: false,
     modulesOptionnels: false,
+    archives: false,
   },
   bibliothecaire: {
     dashboards: true,
@@ -220,6 +228,7 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     statistiques: false,
     parametrage: false,
     modulesOptionnels: false,
+    archives: false,
   },
 };
 
