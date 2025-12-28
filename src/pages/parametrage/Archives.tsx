@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { 
   Archive, Database, Calendar, Users, GraduationCap, Building2, 
   Download, Eye, Lock, Unlock, Plus, FileText, Search, History,
-  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert, Printer, ScrollText
+  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert, Printer, ScrollText, FolderArchive
 } from 'lucide-react';
 import {
   generateArchiveBulletinPDF,
   generateArchiveCertificatPDF,
   generateArchiveAttestationPDF,
-  generateArchiveRelevePDF
+  generateArchiveRelevePDF,
+  generateArchiveZIP,
+  type ArchiveEleve,
+  type ArchiveBulletinData
 } from '@/components/archives/ArchivePDFGenerator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -219,6 +222,21 @@ export default function ArchivesPage() {
     toast({
       title: "Relevé généré",
       description: `Le relevé de notes archivé de ${eleve.prenom} ${eleve.nom} a été téléchargé.`,
+    });
+  };
+
+  const handleExportZIP = async (eleve: typeof mockElevesArchive[0]) => {
+    toast({
+      title: "Génération en cours...",
+      description: "Préparation du dossier ZIP avec tous les documents.",
+    });
+    
+    const bulletinData = getMockBulletinData(eleve);
+    await generateArchiveZIP(eleve, bulletinData);
+    
+    toast({
+      title: "Dossier ZIP téléchargé",
+      description: `Tous les documents de ${eleve.prenom} ${eleve.nom} ont été exportés en ZIP.`,
     });
   };
 
@@ -513,15 +531,24 @@ export default function ArchivesPage() {
                           <Badge variant="secondary">{eleve.annee}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={() => handleExportZIP(eleve)}
+                              title="Télécharger tous les documents en ZIP"
+                              className="bg-primary"
+                            >
+                              <FolderArchive className="h-4 w-4 mr-1" />
+                              Tout exporter
+                            </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handleGenerateBulletin(eleve)}
                               title="Générer le bulletin avec filigrane ARCHIVE"
                             >
-                              <FileText className="h-4 w-4 mr-1" />
-                              Bulletin
+                              <FileText className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="outline" 
@@ -529,8 +556,7 @@ export default function ArchivesPage() {
                               onClick={() => handleGenerateCertificat(eleve)}
                               title="Générer le certificat avec filigrane ARCHIVE"
                             >
-                              <Download className="h-4 w-4 mr-1" />
-                              Certificat
+                              <Download className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="outline" 
@@ -538,8 +564,7 @@ export default function ArchivesPage() {
                               onClick={() => handleGenerateAttestation(eleve)}
                               title="Générer l'attestation avec filigrane ARCHIVE"
                             >
-                              <ScrollText className="h-4 w-4 mr-1" />
-                              Attestation
+                              <ScrollText className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="outline" 
@@ -547,8 +572,7 @@ export default function ArchivesPage() {
                               onClick={() => handleGenerateReleve(eleve)}
                               title="Générer le relevé de notes avec filigrane ARCHIVE"
                             >
-                              <Printer className="h-4 w-4 mr-1" />
-                              Relevé
+                              <Printer className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
