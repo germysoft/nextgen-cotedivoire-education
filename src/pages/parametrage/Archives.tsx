@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { 
   Archive, Database, Calendar, Users, GraduationCap, Building2, 
   Download, Eye, Lock, Unlock, Plus, FileText, Search, History,
-  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert
+  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert, Printer, ScrollText
 } from 'lucide-react';
+import {
+  generateArchiveBulletinPDF,
+  generateArchiveCertificatPDF,
+  generateArchiveAttestationPDF,
+  generateArchiveRelevePDF
+} from '@/components/archives/ArchivePDFGenerator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -158,10 +164,63 @@ export default function ArchivesPage() {
 
   // Mock élèves pour la recherche en mode archive
   const mockElevesArchive = [
-    { id: '1', matricule: 'MAT-2023-001', nom: 'KONE', prenom: 'Amadou', classe: '6ème A', annee: '2023-2024' },
-    { id: '2', matricule: 'MAT-2023-002', nom: 'DIALLO', prenom: 'Fatou', classe: 'CM2 B', annee: '2023-2024' },
-    { id: '3', matricule: 'MAT-2022-015', nom: 'TRAORE', prenom: 'Ibrahim', classe: '5ème C', annee: '2022-2023' },
+    { id: '1', matricule: 'MAT-2023-001', nom: 'KONE', prenom: 'Amadou', classe: '6ème A', annee: '2023-2024', dateNaissance: '15/03/2012', lieuNaissance: 'Abidjan' },
+    { id: '2', matricule: 'MAT-2023-002', nom: 'DIALLO', prenom: 'Fatou', classe: 'CM2 B', annee: '2023-2024', dateNaissance: '22/07/2013', lieuNaissance: 'Bouaké' },
+    { id: '3', matricule: 'MAT-2022-015', nom: 'TRAORE', prenom: 'Ibrahim', classe: '5ème C', annee: '2022-2023', dateNaissance: '10/01/2011', lieuNaissance: 'Yamoussoukro' },
   ];
+
+  // Mock données bulletin pour génération PDF
+  const getMockBulletinData = (eleve: typeof mockElevesArchive[0]) => ({
+    eleve,
+    trimestre: 1,
+    matieres: [
+      { nom: 'Français', coefficient: 4, note: 14.5, moyenneClasse: 12.3, appreciation: 'Bon travail' },
+      { nom: 'Mathématiques', coefficient: 4, note: 13.0, moyenneClasse: 11.8, appreciation: 'Peut mieux faire' },
+      { nom: 'Histoire-Géographie', coefficient: 2, note: 15.5, moyenneClasse: 13.2, appreciation: 'Excellent' },
+      { nom: 'Sciences', coefficient: 2, note: 12.0, moyenneClasse: 12.5, appreciation: 'Satisfaisant' },
+      { nom: 'Anglais', coefficient: 2, note: 11.5, moyenneClasse: 11.0, appreciation: 'En progrès' },
+    ],
+    moyenneGenerale: 13.5,
+    rang: 5,
+    effectif: 35,
+    absences: 2,
+    retards: 1,
+    appreciationGenerale: 'Élève sérieux avec de bons résultats. Continue ainsi.'
+  });
+
+  const handleGenerateBulletin = (eleve: typeof mockElevesArchive[0]) => {
+    const bulletinData = getMockBulletinData(eleve);
+    generateArchiveBulletinPDF(bulletinData);
+    toast({
+      title: "Bulletin généré",
+      description: `Le bulletin archivé de ${eleve.prenom} ${eleve.nom} a été téléchargé avec la mention ARCHIVE.`,
+    });
+  };
+
+  const handleGenerateCertificat = (eleve: typeof mockElevesArchive[0]) => {
+    generateArchiveCertificatPDF(eleve);
+    toast({
+      title: "Certificat généré",
+      description: `Le certificat archivé de ${eleve.prenom} ${eleve.nom} a été téléchargé.`,
+    });
+  };
+
+  const handleGenerateAttestation = (eleve: typeof mockElevesArchive[0]) => {
+    generateArchiveAttestationPDF(eleve);
+    toast({
+      title: "Attestation générée",
+      description: `L'attestation archivée de ${eleve.prenom} ${eleve.nom} a été téléchargée.`,
+    });
+  };
+
+  const handleGenerateReleve = (eleve: typeof mockElevesArchive[0]) => {
+    const bulletinData = getMockBulletinData(eleve);
+    generateArchiveRelevePDF(bulletinData);
+    toast({
+      title: "Relevé généré",
+      description: `Le relevé de notes archivé de ${eleve.prenom} ${eleve.nom} a été téléchargé.`,
+    });
+  };
 
   const elevesFiltres = mockElevesArchive.filter(e => 
     searchEleve && (
@@ -454,14 +513,42 @@ export default function ArchivesPage() {
                           <Badge variant="secondary">{eleve.annee}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="outline" size="sm">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleGenerateBulletin(eleve)}
+                              title="Générer le bulletin avec filigrane ARCHIVE"
+                            >
                               <FileText className="h-4 w-4 mr-1" />
                               Bulletin
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleGenerateCertificat(eleve)}
+                              title="Générer le certificat avec filigrane ARCHIVE"
+                            >
                               <Download className="h-4 w-4 mr-1" />
                               Certificat
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleGenerateAttestation(eleve)}
+                              title="Générer l'attestation avec filigrane ARCHIVE"
+                            >
+                              <ScrollText className="h-4 w-4 mr-1" />
+                              Attestation
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleGenerateReleve(eleve)}
+                              title="Générer le relevé de notes avec filigrane ARCHIVE"
+                            >
+                              <Printer className="h-4 w-4 mr-1" />
+                              Relevé
                             </Button>
                           </div>
                         </TableCell>
