@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   Archive, Database, Calendar, Users, GraduationCap, Building2, 
   Download, Eye, Lock, Unlock, Plus, FileText, Search, History,
-  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert, Printer, ScrollText, FolderArchive
+  AlertTriangle, CheckCircle, Clock, HardDrive, ShieldAlert, Printer, ScrollText, FolderArchive, Droplets
 } from 'lucide-react';
 import {
   generateArchiveBulletinPDF,
@@ -10,9 +10,11 @@ import {
   generateArchiveAttestationPDF,
   generateArchiveRelevePDF,
   generateArchiveZIP,
+  setFiligraneConfig,
   type ArchiveEleve,
   type ArchiveBulletinData
 } from '@/components/archives/ArchivePDFGenerator';
+import FiligraneSettings from '@/components/archives/FiligraneSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -384,6 +386,10 @@ export default function ArchivesPage() {
         <TabsList>
           <TabsTrigger value="annees">Années Scolaires</TabsTrigger>
           <TabsTrigger value="recherche">Recherche Archives</TabsTrigger>
+          <TabsTrigger value="filigrane" className="flex items-center gap-1">
+            <Droplets className="h-4 w-4" />
+            Filigrane
+          </TabsTrigger>
           <TabsTrigger value="journal">Journal d'Accès</TabsTrigger>
         </TabsList>
 
@@ -596,6 +602,10 @@ export default function ArchivesPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="filigrane">
+          <FiligraneSettings />
         </TabsContent>
 
         <TabsContent value="journal">
