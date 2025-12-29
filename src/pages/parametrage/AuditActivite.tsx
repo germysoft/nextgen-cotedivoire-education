@@ -6,10 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Activity, Download, Search, Filter, Calendar, User, Database,
   FileText, Eye, Edit, Trash2, LogIn, LogOut, Settings, RefreshCw,
-  Clock, TrendingUp, Users, Shield
+  Clock, TrendingUp, Users, Shield, Archive
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useArchives } from "@/contexts/ArchivesContext";
 import {
   Table,
   TableBody,
@@ -78,10 +79,27 @@ interface DataAccessLog {
 
 export default function AuditActivitePage() {
   const { toast } = useToast();
+  const { journalAcces, syncWithAudit } = useArchives();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [dateRange, setDateRange] = useState('today');
+
+  // Convertir les accès archives en logs d'audit
+  const archiveLogs = useMemo(() => {
+    return journalAcces.map(acces => ({
+      id: acces.id,
+      timestamp: new Date(acces.dateAcces).toLocaleString('fr-FR'),
+      user: acces.utilisateur,
+      userRole: acces.role,
+      action: acces.action.charAt(0).toUpperCase() + acces.action.slice(1),
+      category: 'Archives',
+      resource: acces.anneeScolaire,
+      details: acces.details || '',
+      ip: '192.168.1.100',
+      success: true,
+    }));
+  }, [journalAcces]);
 
   const [activityLogs] = useState<ActivityLog[]>([
     { id: '1', timestamp: '2025-11-29 15:45:23', user: 'admin@ecole.ma', userRole: 'Admin', action: 'Modification', category: 'Utilisateurs', resource: 'User #45', details: 'Changement de rôle: enseignant → comptable', ip: '192.168.1.100', success: true },
@@ -372,10 +390,14 @@ export default function AuditActivitePage() {
       </div>
 
       <Tabs defaultValue="activity" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="activity">Journal d'Activité</TabsTrigger>
-          <TabsTrigger value="logins">Historique Connexions</TabsTrigger>
-          <TabsTrigger value="data">Accès aux Données</TabsTrigger>
+          <TabsTrigger value="archives" className="flex items-center gap-1">
+            <Archive className="h-4 w-4" />
+            Archives
+          </TabsTrigger>
+          <TabsTrigger value="logins">Connexions</TabsTrigger>
+          <TabsTrigger value="data">Accès Données</TabsTrigger>
           <TabsTrigger value="ranking">Top Utilisateurs</TabsTrigger>
         </TabsList>
 
@@ -472,6 +494,56 @@ export default function AuditActivitePage() {
                         ) : (
                           <Badge variant="destructive">Échec</Badge>
                         )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="archives" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Archive className="h-5 w-5" />
+                Journal d'Accès aux Archives
+              </CardTitle>
+              <CardDescription>
+                Traçabilité des consultations et actions sur les archives ({archiveLogs.length} entrées)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Heure</TableHead>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Année Scolaire</TableHead>
+                    <TableHead>Détails</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {archiveLogs.slice(0, 20).map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm">{log.timestamp}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{log.user}</div>
+                            <div className="text-xs text-muted-foreground">{log.userRole}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{log.action}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{log.resource}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[250px] truncate">
+                        {log.details}
                       </TableCell>
                     </TableRow>
                   ))}

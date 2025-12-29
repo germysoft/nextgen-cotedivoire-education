@@ -7,6 +7,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { RoleProvider } from "./contexts/RoleContext";
+import { AuditProvider } from "./contexts/AuditContext";
 import { MainLayout } from "./components/layout/MainLayout";
 import CustomDashboard from "./pages/CustomDashboard";
 import Index from "./pages/Index";
@@ -162,10 +163,11 @@ const App = () => (
     <LanguageProvider>
       <FavoritesProvider>
         <NotificationsProvider>
-          <RoleProvider>
-            <EtablissementProvider>
-              <ArchivesProvider>
-              <TooltipProvider>
+            <RoleProvider>
+              <AuditProvider>
+              <EtablissementProvider>
+                <ArchivesProvider>
+                <TooltipProvider>
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
@@ -369,6 +371,7 @@ const App = () => (
               </TooltipProvider>
               </ArchivesProvider>
             </EtablissementProvider>
+              </AuditProvider>
           </RoleProvider>
         </NotificationsProvider>
       </FavoritesProvider>
