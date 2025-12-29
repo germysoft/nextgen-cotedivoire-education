@@ -108,6 +108,30 @@ export interface SignataireDocuments {
   ministereTutelleDocuments: string;
 }
 
+export interface FiligraneArchive {
+  texte: string;
+  couleur: string; // Format HSL ou HEX
+  opacite: number; // 0-100
+  taille: number; // Taille de police
+  angle: number; // Angle de rotation
+  afficherBandeau: boolean;
+  couleurBandeau: string;
+}
+
+export interface ParametresSauvegarde {
+  sauvegardeAutoActive: boolean;
+  frequence: 'quotidienne' | 'hebdomadaire' | 'mensuelle';
+  heureExecution: string;
+  jourExecution?: number; // 0-6 pour hebdo, 1-31 pour mensuel
+  retentionJours: number;
+  notificationEmail: boolean;
+  emailsNotification: string[];
+  inclureMedias: boolean;
+  compressionActivee: boolean;
+  derniereExecution?: string;
+  prochainExecution?: string;
+}
+
 export interface ParametresVisuels {
   couleurPrincipale: string;
   couleurSecondaire?: string;
@@ -115,6 +139,7 @@ export interface ParametresVisuels {
   cachetScane?: string; // Base64 ou URL
   filigrane?: string;
   policeDocuments?: string;
+  filigraneArchive: FiligraneArchive;
 }
 
 export interface HistoriqueModification {
@@ -146,6 +171,7 @@ export interface ConfigurationEtablissement {
   parametresVisuels: ParametresVisuels;
   signataire: SignataireDocuments;
   securite: SecuriteTracabilite;
+  parametresSauvegarde: ParametresSauvegarde;
 }
 
 // Configuration par défaut pour la Côte d'Ivoire
@@ -196,6 +222,25 @@ export const defaultConfiguration: ConfigurationEtablissement = {
   parametresVisuels: {
     couleurPrincipale: '#1e40af',
     piedDePage: '',
+    filigraneArchive: {
+      texte: 'ARCHIVE',
+      couleur: '#c8c8c8',
+      opacite: 30,
+      taille: 60,
+      angle: 45,
+      afficherBandeau: true,
+      couleurBandeau: '#dc3545',
+    },
+  },
+  parametresSauvegarde: {
+    sauvegardeAutoActive: true,
+    frequence: 'quotidienne',
+    heureExecution: '14:30',
+    retentionJours: 30,
+    notificationEmail: false,
+    emailsNotification: [],
+    inclureMedias: true,
+    compressionActivee: true,
   },
   securite: {
     dateCreationConfig: new Date().toISOString(),

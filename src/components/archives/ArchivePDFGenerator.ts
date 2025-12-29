@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { FiligraneArchive } from '@/types/etablissement';
 
 export interface ArchiveEleve {
   id: string;
@@ -32,41 +33,81 @@ export interface ArchiveBulletinData {
   appreciationGenerale: string;
 }
 
-// Ajouter le filigrane "ARCHIVE" sur le document
-function addArchiveWatermark(doc: jsPDF) {
+// Configuration par défaut du filigrane
+export const defaultFiligraneConfig: FiligraneArchive = {
+  texte: 'ARCHIVE',
+  couleur: '#c8c8c8',
+  opacite: 30,
+  taille: 60,
+  angle: 45,
+  afficherBandeau: true,
+  couleurBandeau: '#dc3545',
+};
+
+// Convertir couleur hex en RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : { r: 200, g: 200, b: 200 };
+}
+
+// Variable globale pour stocker la configuration du filigrane
+let currentFiligraneConfig: FiligraneArchive = defaultFiligraneConfig;
+
+// Fonction pour mettre à jour la configuration du filigrane
+export function setFiligraneConfig(config: FiligraneArchive) {
+  currentFiligraneConfig = config;
+}
+
+// Fonction pour récupérer la configuration actuelle
+export function getFiligraneConfig(): FiligraneArchive {
+  return currentFiligraneConfig;
+}
+
+// Ajouter le filigrane "ARCHIVE" sur le document avec paramètres personnalisables
+function addArchiveWatermark(doc: jsPDF, config: FiligraneArchive = currentFiligraneConfig) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   
   doc.saveGraphicsState();
   
-  // Configuration du filigrane
-  doc.setTextColor(200, 200, 200);
-  doc.setFontSize(60);
+  // Configuration du filigrane avec opacité
+  const rgb = hexToRgb(config.couleur);
+  const opacity = config.opacite / 100;
+  doc.setTextColor(rgb.r, rgb.g, rgb.b);
+  doc.setFontSize(config.taille);
   doc.setFont('helvetica', 'bold');
   
-  // Rotation et positionnement du filigrane en diagonale
-  const text = 'ARCHIVE';
-  const textWidth = doc.getTextWidth(text);
+  // Appliquer l'opacité via GState
+  doc.setGState(doc.GState({ opacity: opacity }));
   
   // Calculer le centre de la page
   const centerX = pageWidth / 2;
   const centerY = pageHeight / 2;
   
-  // Appliquer la rotation (45 degrés)
-  doc.text(text, centerX, centerY, {
+  // Appliquer la rotation
+  doc.text(config.texte, centerX, centerY, {
     align: 'center',
-    angle: 45
+    angle: config.angle
   });
   
   doc.restoreGraphicsState();
 }
 
 // Ajouter le bandeau "DOCUMENT ARCHIVE" en haut
-function addArchiveBanner(doc: jsPDF) {
+function addArchiveBanner(doc: jsPDF, config: FiligraneArchive = currentFiligraneConfig) {
+  if (!config.afficherBandeau) return;
+  
   const pageWidth = doc.internal.pageSize.getWidth();
   
-  // Bandeau rouge en haut
-  doc.setFillColor(220, 53, 69);
+  // Bandeau coloré en haut
+  const bannerRgb = hexToRgb(config.couleurBandeau);
+  doc.setFillColor(bannerRgb.r, bannerRgb.g, bannerRgb.b);
   doc.rect(0, 0, pageWidth, 12, 'F');
   
   doc.setTextColor(255, 255, 255);
