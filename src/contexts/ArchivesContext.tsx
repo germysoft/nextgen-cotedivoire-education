@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { AnneeScolaire, AccesArchive, mockAnneesScolaires, mockAccesArchives } from '@/types/archives';
 
 interface ArchivesContextType {
@@ -12,11 +12,13 @@ interface ArchivesContextType {
   archiverAnnee: (anneeId: string) => void;
   creerNouvelleAnnee: (libelle: string, dateDebut: string, dateFin: string) => void;
   enregistrerAcces: (action: AccesArchive['action'], details?: string) => void;
+  syncWithAudit: () => AccesArchive[];
 }
 
 const ArchivesContext = createContext<ArchivesContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'archives_state';
+const JOURNAL_STORAGE_KEY = 'archives_journal';
 
 export function ArchivesProvider({ children }: { children: ReactNode }) {
   const [anneesScolaires, setAnneesScolaires] = useState<AnneeScolaire[]>(() => {
@@ -33,7 +35,17 @@ export function ArchivesProvider({ children }: { children: ReactNode }) {
   });
 
   const [anneeConsultee, setAnneeConsultee] = useState<AnneeScolaire | null>(null);
-  const [journalAcces, setJournalAcces] = useState<AccesArchive[]>(mockAccesArchives);
+  const [journalAcces, setJournalAcces] = useState<AccesArchive[]>(() => {
+    const saved = localStorage.getItem(JOURNAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return mockAccesArchives;
+      }
+    }
+    return mockAccesArchives;
+  });
 
   const anneeActive = anneesScolaires.find(a => a.statut === 'active') || null;
   const isArchiveMode = anneeConsultee !== null && anneeConsultee.statut === 'archivee';
@@ -41,6 +53,10 @@ export function ArchivesProvider({ children }: { children: ReactNode }) {
   const saveState = (annees: AnneeScolaire[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ anneesScolaires: annees }));
   };
+
+  const saveJournal = useCallback((journal: AccesArchive[]) => {
+    localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journal));
+  }, []);
 
   const connecterAnnee = (anneeId: string) => {
     const annee = anneesScolaires.find(a => a.id === anneeId);
@@ -95,7 +111,7 @@ export function ArchivesProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const enregistrerAcces = (action: AccesArchive['action'], details?: string) => {
+  const enregistrerAcces = useCallback((action: AccesArchive['action'], details?: string) => {
     const nouvelAcces: AccesArchive = {
       id: `acc-${Date.now()}`,
       utilisateur: 'Utilisateur actuel',
@@ -105,8 +121,18 @@ export function ArchivesProvider({ children }: { children: ReactNode }) {
       action,
       details,
     };
-    setJournalAcces(prev => [nouvelAcces, ...prev]);
-  };
+    setJournalAcces(prev => {
+      const updated = [nouvelAcces, ...prev];
+      saveJournal(updated);
+      return updated;
+    });
+  }, [anneeConsultee, anneeActive, saveJournal]);
+
+  // Fonction pour synchroniser avec le système d'audit général
+  const syncWithAudit = useCallback(() => {
+    // Retourne le journal pour l'intégration avec AuditContext
+    return journalAcces;
+  }, [journalAcces]);
 
   return (
     <ArchivesContext.Provider
@@ -121,6 +147,7 @@ export function ArchivesProvider({ children }: { children: ReactNode }) {
         archiverAnnee,
         creerNouvelleAnnee,
         enregistrerAcces,
+        syncWithAudit,
       }}
     >
       {children}

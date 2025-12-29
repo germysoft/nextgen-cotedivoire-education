@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Upload, Database, HardDrive, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Download, Upload, Database, HardDrive, Clock, CheckCircle2, AlertCircle, FileText } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -15,6 +15,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BackupScheduler from "@/components/sauvegarde/BackupScheduler";
+import { generateBackupReportPDF, BackupReportData } from "@/components/sauvegarde/BackupReportPDFGenerator";
+import { useEtablissement } from "@/contexts/EtablissementContext";
 
 interface Backup {
   id: string;
@@ -26,6 +28,7 @@ interface Backup {
 
 export default function SauvegardePage() {
   const { toast } = useToast();
+  const { configuration } = useEtablissement();
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -67,13 +70,67 @@ export default function SauvegardePage() {
     });
   };
 
+  const handleGenerateReport = () => {
+    const reportData: BackupReportData = {
+      etablissement: configuration.identite.nom || 'Établissement Scolaire',
+      dateGeneration: new Date().toISOString(),
+      periode: {
+        debut: '25/12/2025',
+        fin: '29/12/2025',
+      },
+      backups: backups.map(b => ({
+        ...b,
+        duration: b.status === 'completed' ? `${Math.floor(Math.random() * 10) + 5} min` : undefined,
+        filesCount: b.status === 'completed' ? Math.floor(Math.random() * 5000) + 10000 : undefined,
+      })),
+      stats: {
+        totalSpace: 50,
+        usedSpace: 12.4,
+        backupsCount: 42,
+        manualBackupsCount: 7,
+        autoBackupsCount: 35,
+        successRate: 95.2,
+        averageSize: '2.3 GB',
+        lastBackupDate: '29/12/2025 14:30',
+        retentionDays: configuration.parametresSauvegarde?.retentionJours || 30,
+      },
+      parametresSauvegarde: {
+        frequence: configuration.parametresSauvegarde?.frequence || 'quotidienne',
+        heureExecution: configuration.parametresSauvegarde?.heureExecution || '14:30',
+        retentionJours: configuration.parametresSauvegarde?.retentionJours || 30,
+        notificationEmail: configuration.parametresSauvegarde?.notificationEmail || false,
+        emailsNotification: configuration.parametresSauvegarde?.emailsNotification || [],
+      },
+    };
+
+    try {
+      generateBackupReportPDF(reportData);
+      toast({
+        title: "Rapport généré",
+        description: "Le rapport de sauvegarde PDF a été téléchargé.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Sauvegarde & Restauration</h1>
-        <p className="text-muted-foreground mt-2">
-          Gestion des sauvegardes automatiques et manuelles de la base de données
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Sauvegarde & Restauration</h1>
+          <p className="text-muted-foreground mt-2">
+            Gestion des sauvegardes automatiques et manuelles de la base de données
+          </p>
+        </div>
+        <Button onClick={handleGenerateReport} variant="outline">
+          <FileText className="mr-2 h-4 w-4" />
+          Rapport PDF
+        </Button>
       </div>
 
       <Alert>
