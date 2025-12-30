@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Upload, Database, HardDrive, Clock, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { Download, Upload, Database, HardDrive, Clock, CheckCircle2, AlertCircle, FileText, Activity, Mail } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BackupScheduler from "@/components/sauvegarde/BackupScheduler";
 import { generateBackupReportPDF, BackupReportData } from "@/components/sauvegarde/BackupReportPDFGenerator";
 import { useEtablissement } from "@/contexts/EtablissementContext";
+import { BackupMonitoringDashboard } from "@/components/sauvegarde/BackupMonitoringDashboard";
+import { EmailReportConfig } from "@/components/sauvegarde/EmailReportConfig";
 
 interface Backup {
   id: string;
@@ -191,12 +193,24 @@ export default function SauvegardePage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="manual" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="monitoring" className="space-y-4">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="monitoring">
+            <Activity className="h-4 w-4 mr-2" />
+            Monitoring
+          </TabsTrigger>
           <TabsTrigger value="manual">Sauvegarde Manuelle</TabsTrigger>
-          <TabsTrigger value="scheduler">Planification & Notifications</TabsTrigger>
+          <TabsTrigger value="scheduler">Planification</TabsTrigger>
+          <TabsTrigger value="email">
+            <Mail className="h-4 w-4 mr-2" />
+            Rapports Email
+          </TabsTrigger>
           <TabsTrigger value="history">Historique</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="monitoring">
+          <BackupMonitoringDashboard />
+        </TabsContent>
 
         <TabsContent value="manual">
           <Card>
@@ -232,6 +246,10 @@ export default function SauvegardePage() {
 
         <TabsContent value="scheduler">
           <BackupScheduler />
+        </TabsContent>
+
+        <TabsContent value="email">
+          <EmailReportConfig />
         </TabsContent>
 
         <TabsContent value="history">
