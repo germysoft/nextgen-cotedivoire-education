@@ -1,17 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Upload, Database, HardDrive, Clock, CheckCircle2, AlertCircle, FileText, Activity, Mail } from "lucide-react";
+import { Download, Database, HardDrive, CheckCircle2, FileText, Activity, Mail } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BackupScheduler from "@/components/sauvegarde/BackupScheduler";
@@ -19,6 +11,7 @@ import { generateBackupReportPDF, BackupReportData } from "@/components/sauvegar
 import { useEtablissement } from "@/contexts/EtablissementContext";
 import { BackupMonitoringDashboard } from "@/components/sauvegarde/BackupMonitoringDashboard";
 import { EmailReportConfig } from "@/components/sauvegarde/EmailReportConfig";
+import { BackupHistoryExport } from "@/components/sauvegarde/BackupHistoryExport";
 
 interface Backup {
   id: string;
@@ -253,78 +246,12 @@ export default function SauvegardePage() {
         </TabsContent>
 
         <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Historique des Sauvegardes</CardTitle>
-              <CardDescription>
-                Liste des sauvegardes disponibles pour restauration
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date & Heure</TableHead>
-                    <TableHead>Taille</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {backups.map((backup) => (
-                    <TableRow key={backup.id}>
-                      <TableCell className="font-medium">
-                        {backup.date}
-                      </TableCell>
-                      <TableCell>{backup.size}</TableCell>
-                      <TableCell>
-                        <Badge variant={backup.type === 'auto' ? 'secondary' : 'default'}>
-                          {backup.type === 'auto' ? 'Automatique' : 'Manuelle'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {backup.status === 'completed' ? (
-                          <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            Réussie
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            <AlertCircle className="mr-1 h-3 w-3" />
-                            Échouée
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        {backup.status === 'completed' && (
-                          <>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleRestore(backup.id)}
-                              disabled={isRestoring}
-                            >
-                              <Upload className="mr-1 h-3 w-3" />
-                              Restaurer
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={handleExport}
-                            >
-                              <Download className="mr-1 h-3 w-3" />
-                              Télécharger
-                            </Button>
-                          </>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <BackupHistoryExport 
+            backups={backups}
+            onRestore={handleRestore}
+            onDownload={handleExport}
+            isRestoring={isRestoring}
+          />
         </TabsContent>
       </Tabs>
     </div>
