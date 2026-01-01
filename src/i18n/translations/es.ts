@@ -63,6 +63,7 @@ export const es = {
   'sidebar.menaImportExport': 'Importar/Exportar MENA',
   'sidebar.documents': 'Documentos',
   'sidebar.alerts': 'Alertas de Pago',
+  'sidebar.printLists': 'Imprimir Listas',
   'sidebar.gradesEvaluations': 'Notas y Evaluaciones',
   'sidebar.gradeEntry': 'Ingreso de Notas',
   'sidebar.scaleConfiguration': 'Configuración de Escalas',

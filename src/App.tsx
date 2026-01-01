@@ -44,6 +44,7 @@ import Matricule from "./pages/scolarite/Matricule";
 import Historique from "./pages/scolarite/Historique";
 import AlertesImpayes from "./pages/scolarite/Alertes";
 import DocumentsEleves from "./pages/scolarite/Documents";
+import ImprimerListes from "./pages/scolarite/ImprimerListes";
 import SMSPro from "./pages/messaging/SMS";
 import Forum from "./pages/messaging/Forum";
 import NotificationsAuto from "./pages/messaging/Notifications";
@@ -264,6 +265,7 @@ const App = () => (
           <Route path="/scolarite/mena" element={<MainLayout><MENAImportExport /></MainLayout>} />
           <Route path="/scolarite/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
           <Route path="/scolarite/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
+          <Route path="/scolarite/listes" element={<MainLayout><ImprimerListes /></MainLayout>} />
           
           {/* Portail Parents Routes */}
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
