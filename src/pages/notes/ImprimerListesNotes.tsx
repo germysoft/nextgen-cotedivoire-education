@@ -3,15 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { 
-  Printer, FileText, FileSpreadsheet, Eye, Filter, Download,
+  Printer, FileText, FileSpreadsheet, Eye, Filter,
   ClipboardList, Calculator, Award, BookOpen, Settings, CheckCircle,
-  FileQuestion, BarChart3, History, AlertTriangle
+  FileQuestion, History, Layers, X, CheckSquare
 } from 'lucide-react';
 import { useEtablissement } from '@/contexts/EtablissementContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -167,6 +168,13 @@ const ImprimerListesNotes = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   
+  // Impression groupée
+  const [selectedListes, setSelectedListes] = useState<string[]>([]);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [batchFormat, setBatchFormat] = useState<'pdf' | 'excel' | 'print'>('pdf');
+  
   // Filtres
   const [filters, setFilters] = useState({
     anneeScolaire: '2024-2025',
@@ -239,6 +247,76 @@ const ImprimerListesNotes = () => {
     toast.success('Impression lancée');
   };
 
+  // Fonctions pour impression groupée
+  const toggleListeSelection = (listeId: string) => {
+    setSelectedListes(prev => 
+      prev.includes(listeId) 
+        ? prev.filter(id => id !== listeId)
+        : [...prev, listeId]
+    );
+  };
+
+  const selectAllInCategory = (categoryId: string) => {
+    const listes = getAccessibleListes(categoryId);
+    const allSelected = listes.every(l => selectedListes.includes(l.id));
+    if (allSelected) {
+      setSelectedListes(prev => prev.filter(id => !listes.map(l => l.id).includes(id)));
+    } else {
+      setSelectedListes(prev => [...new Set([...prev, ...listes.map(l => l.id)])]);
+    }
+  };
+
+  const selectAll = () => {
+    const allAccessible = accessibleCategories.flatMap(c => getAccessibleListes(c.id).map(l => l.id));
+    if (selectedListes.length === allAccessible.length) {
+      setSelectedListes([]);
+    } else {
+      setSelectedListes(allAccessible);
+    }
+  };
+
+  const handleBatchProcess = async () => {
+    if (selectedListes.length === 0) {
+      toast.error('Veuillez sélectionner au moins une liste');
+      return;
+    }
+
+    setIsBatchProcessing(true);
+    setBatchProgress(0);
+
+    for (let i = 0; i < selectedListes.length; i++) {
+      const listeId = selectedListes[i];
+      const liste = categories.flatMap(c => c.listes).find(l => l.id === listeId);
+      const category = categories.find(c => c.listes.some(l => l.id === listeId));
+
+      if (liste && category) {
+        // Simuler le traitement
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const action = batchFormat === 'pdf' ? 'export_pdf' : 
+                       batchFormat === 'excel' ? 'export_excel' : 'impression';
+        logAction(action, listeId, liste.nom, category.nom, filters, Math.floor(Math.random() * 100) + 10);
+      }
+
+      setBatchProgress(Math.round(((i + 1) / selectedListes.length) * 100));
+    }
+
+    setIsBatchProcessing(false);
+    setShowBatchDialog(false);
+    setSelectedListes([]);
+    
+    const formatLabel = batchFormat === 'pdf' ? 'PDF' : batchFormat === 'excel' ? 'Excel' : 'impression';
+    toast.success(`${selectedListes.length} liste(s) exportée(s) en ${formatLabel}`);
+  };
+
+  const getSelectedListesInfo = () => {
+    return selectedListes.map(id => {
+      const liste = categories.flatMap(c => c.listes).find(l => l.id === id);
+      const category = categories.find(c => c.listes.some(l => l.id === id));
+      return { id, nom: liste?.nom || '', categorie: category?.nom || '' };
+    });
+  };
+
   const stats = getStats();
   const accessibleCategories = getAccessibleCategories();
 
@@ -252,6 +330,117 @@ const ImprimerListesNotes = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {/* Bouton Impression Groupée */}
+          <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
+            <DialogTrigger asChild>
+              <Button variant="default" className="relative">
+                <Layers className="h-4 w-4 mr-2" />
+                Impression groupée
+                {selectedListes.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 bg-white text-primary">
+                    {selectedListes.length}
+                  </Badge>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5" />
+                  Impression groupée - {selectedListes.length} liste(s) sélectionnée(s)
+                </DialogTitle>
+              </DialogHeader>
+              
+              {selectedListes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Layers className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Aucune liste sélectionnée</p>
+                  <p className="text-sm mt-2">Cochez les listes à imprimer dans les catégories ci-dessous</p>
+                </div>
+              ) : (
+                <>
+                  <ScrollArea className="h-[300px] border rounded-lg p-4">
+                    <div className="space-y-2">
+                      {getSelectedListesInfo().map((liste) => (
+                        <div key={liste.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <div>
+                            <p className="font-medium text-sm">{liste.nom}</p>
+                            <p className="text-xs text-muted-foreground">{liste.categorie}</p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => toggleListeSelection(liste.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  <div className="space-y-4 pt-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Format d'export</label>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant={batchFormat === 'pdf' ? 'default' : 'outline'}
+                          onClick={() => setBatchFormat('pdf')}
+                          className="flex-1"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          PDF
+                        </Button>
+                        <Button 
+                          variant={batchFormat === 'excel' ? 'default' : 'outline'}
+                          onClick={() => setBatchFormat('excel')}
+                          className="flex-1"
+                        >
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />
+                          Excel
+                        </Button>
+                        <Button 
+                          variant={batchFormat === 'print' ? 'default' : 'outline'}
+                          onClick={() => setBatchFormat('print')}
+                          className="flex-1"
+                        >
+                          <Printer className="h-4 w-4 mr-2" />
+                          Imprimer
+                        </Button>
+                      </div>
+                    </div>
+
+                    {isBatchProcessing && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Traitement en cours...</span>
+                          <span>{batchProgress}%</span>
+                        </div>
+                        <Progress value={batchProgress} />
+                      </div>
+                    )}
+
+                    <div className="flex justify-between">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedListes([])}
+                        disabled={isBatchProcessing}
+                      >
+                        Tout désélectionner
+                      </Button>
+                      <Button 
+                        onClick={handleBatchProcess}
+                        disabled={isBatchProcessing || selectedListes.length === 0}
+                      >
+                        {isBatchProcessing ? 'Traitement...' : `Générer ${selectedListes.length} liste(s)`}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={showAudit} onOpenChange={setShowAudit}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -328,7 +517,26 @@ const ImprimerListesNotes = () => {
         </div>
       </div>
 
-      {/* Filtres */}
+      {/* Barre de sélection rapide */}
+      {selectedListes.length > 0 && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <CheckSquare className="h-5 w-5 text-primary" />
+              <span className="font-medium">{selectedListes.length} liste(s) sélectionnée(s)</span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedListes([])}>
+                Désélectionner tout
+              </Button>
+              <Button size="sm" onClick={() => setShowBatchDialog(true)}>
+                <Layers className="h-4 w-4 mr-2" />
+                Générer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -503,18 +711,41 @@ const ImprimerListesNotes = () => {
           <TabsContent key={category.id} value={category.id}>
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <category.icon className="h-5 w-5" />
-                  {category.nom}
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <category.icon className="h-5 w-5" />
+                    {category.nom}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => selectAllInCategory(category.id)}
+                  >
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    {getAccessibleListes(category.id).every(l => selectedListes.includes(l.id)) 
+                      ? 'Tout désélectionner' 
+                      : 'Tout sélectionner'}
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {getAccessibleListes(category.id).map((liste) => (
-                    <Card key={liste.id} className="hover:shadow-md transition-shadow">
+                    <Card 
+                      key={liste.id} 
+                      className={`hover:shadow-md transition-shadow ${
+                        selectedListes.includes(liste.id) ? 'ring-2 ring-primary bg-primary/5' : ''
+                      }`}
+                    >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
-                          <h4 className="font-medium text-sm">{liste.nom}</h4>
+                          <div className="flex items-center gap-2">
+                            <Checkbox 
+                              checked={selectedListes.includes(liste.id)}
+                              onCheckedChange={() => toggleListeSelection(liste.id)}
+                            />
+                            <h4 className="font-medium text-sm">{liste.nom}</h4>
+                          </div>
                           <Badge variant="outline" className="text-xs">
                             {liste.roles.includes('enseignant') ? 'Enseignant+' : 'Direction'}
                           </Badge>
