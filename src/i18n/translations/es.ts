@@ -780,6 +780,8 @@ export const es = {
   'toast.languageChanged': 'Idioma cambiado',
   'toast.languageReset': 'Idioma restablecido por defecto',
   'language.resetToDefault': 'Restablecer al idioma del establecimiento',
+  'language.institutionDefault': 'Idioma del establecimiento',
+  'language.default': 'Por defecto',
   'toast.configLocked': 'Configuración bloqueada',
   'toast.configUnlocked': 'Configuración desbloqueada',
   'toast.pdfGenerated': 'PDF generado exitosamente',
