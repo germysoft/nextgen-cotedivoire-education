@@ -53,6 +53,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useRole } from "@/contexts/RoleContext";
+import { useEtablissement } from "@/contexts/EtablissementContext";
 import { UserRole, roleLabels } from "@/types/roles";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -480,7 +481,11 @@ const mockEleves = generateMockEleves();
 export default function ImprimerListes() {
   const { toast } = useToast();
   const { currentRole } = useRole();
+  const { configuration } = useEtablissement();
   const { logAction, getFilteredEntries, getStats, clearJournal } = useAuditListes();
+  
+  // Nom de l'établissement depuis la configuration
+  const nomEtablissement = configuration.identite.nom || "Établissement Scolaire";
 
   const [activeTab, setActiveTab] = useState("eleves");
   const [selectedListe, setSelectedListe] = useState<ListeConfig | null>(null);
@@ -703,7 +708,7 @@ export default function ImprimerListes() {
 
     // En-tête
     doc.setFontSize(12);
-    doc.text("Établissement Scolaire", 14, 15);
+    doc.text(nomEtablissement, 14, 15);
     doc.setFontSize(10);
     doc.text(`Année scolaire: ${filtres.anneeScolaire}`, 14, 22);
 
@@ -1425,7 +1430,7 @@ export default function ImprimerListes() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold">
-                    Établissement Scolaire
+                    {nomEtablissement}
                   </h2>
                   <p className="text-sm text-muted-foreground">
                     Année scolaire: {filtres.anneeScolaire}
