@@ -53,10 +53,47 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useRole } from "@/contexts/RoleContext";
-import { DataTableExport } from "@/components/data-table/DataTableExport";
+import { UserRole, roleLabels } from "@/types/roles";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Shield, Lock } from "lucide-react";
+
+// Types pour les permissions de listes
+type CategoriePermission = {
+  rolesAutorises: UserRole[];
+  description: string;
+};
+
+// Configuration des permissions par catégorie de listes
+const categoriePermissions: Record<string, CategoriePermission> = {
+  eleves: {
+    rolesAutorises: ["admin", "directeur", "secretaire", "enseignant", "surveillant"],
+    description: "Listes des élèves",
+  },
+  financieres: {
+    rolesAutorises: ["admin", "directeur", "comptable", "secretaire"],
+    description: "Listes financières",
+  },
+  administratives: {
+    rolesAutorises: ["admin", "directeur", "secretaire"],
+    description: "Listes administratives",
+  },
+  statistiques: {
+    rolesAutorises: ["admin", "directeur", "comptable"],
+    description: "Listes statistiques",
+  },
+};
+
+// Permissions spécifiques pour certaines listes sensibles
+const listesRestreintes: Record<string, UserRole[]> = {
+  "eleves-boursiers": ["admin", "directeur", "comptable", "secretaire"],
+  "finance-impayes": ["admin", "directeur", "comptable"],
+  "finance-tranches": ["admin", "directeur", "comptable"],
+  "admin-mena": ["admin", "directeur", "secretaire"],
+  "stats-paiement": ["admin", "directeur", "comptable"],
+};
 
 // Types
 interface ListeConfig {
@@ -441,7 +478,7 @@ const mockEleves = generateMockEleves();
 
 export default function ImprimerListes() {
   const { toast } = useToast();
-  const { hasPermission } = useRole();
+  const { currentRole } = useRole();
 
   const [activeTab, setActiveTab] = useState("eleves");
   const [selectedListe, setSelectedListe] = useState<ListeConfig | null>(null);
@@ -466,6 +503,44 @@ export default function ImprimerListes() {
   const cycles = ["tous", "Collège", "Lycée"];
   const niveaux = ["tous", "6ème", "5ème", "4ème", "3ème", "2nde", "1ère", "Tle"];
   const classes = ["tous", "6ème A", "6ème B", "5ème A", "5ème B", "4ème A", "4ème B", "3ème A", "3ème B"];
+
+  // Vérifier si l'utilisateur a accès à une catégorie
+  const hasAccessToCategorie = (categorie: string): boolean => {
+    const permission = categoriePermissions[categorie];
+    if (!permission) return false;
+    return permission.rolesAutorises.includes(currentRole);
+  };
+
+  // Vérifier si l'utilisateur a accès à une liste spécifique
+  const hasAccessToListe = (liste: ListeConfig): boolean => {
+    // Vérifier d'abord l'accès à la catégorie
+    if (!hasAccessToCategorie(liste.categorie)) return false;
+    
+    // Vérifier les restrictions spécifiques
+    const restrictedRoles = listesRestreintes[liste.id];
+    if (restrictedRoles) {
+      return restrictedRoles.includes(currentRole);
+    }
+    
+    return true;
+  };
+
+  // Filtrer les listes accessibles
+  const getAccessibleListes = (categorie: string): ListeConfig[] => {
+    return listesConfig
+      .filter((l) => l.categorie === categorie)
+      .filter((l) => hasAccessToListe(l));
+  };
+
+  // Compter les listes accessibles par catégorie
+  const countAccessibleListes = (categorie: string): number => {
+    return getAccessibleListes(categorie).length;
+  };
+
+  // Obtenir les catégories accessibles
+  const categoriesAccessibles = Object.keys(categoriePermissions).filter(
+    (cat) => hasAccessToCategorie(cat)
+  );
 
   // Filtrer les données selon les critères
   const applyFilters = () => {
@@ -753,13 +828,29 @@ export default function ImprimerListes() {
             Génération et impression des listes scolaires
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4">
+          <Badge variant="outline" className="flex items-center gap-2 py-1.5 px-3">
+            <Shield className="h-4 w-4" />
+            <span>Connecté en tant que: <strong>{roleLabels[currentRole]}</strong></span>
+          </Badge>
           <Button variant="outline" onClick={resetFiltres}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Réinitialiser
           </Button>
         </div>
       </div>
+
+      {/* Alerte d'accès restreint si nécessaire */}
+      {categoriesAccessibles.length < 4 && (
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertTitle>Accès selon votre rôle</AlertTitle>
+          <AlertDescription>
+            En tant que <strong>{roleLabels[currentRole]}</strong>, vous avez accès à {categoriesAccessibles.length} catégorie(s) de listes. 
+            Certaines listes peuvent être restreintes selon vos permissions.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Panneau gauche - Sélection de liste */}
@@ -771,95 +862,159 @@ export default function ImprimerListes() {
             <CardContent className="p-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-2 lg:grid-cols-1 w-full h-auto p-1">
-                  <TabsTrigger value="eleves" className="justify-start gap-2">
+                  <TabsTrigger 
+                    value="eleves" 
+                    className="justify-start gap-2"
+                    disabled={!hasAccessToCategorie("eleves")}
+                  >
                     <Users className="h-4 w-4" />
                     <span className="hidden lg:inline">Élèves</span>
+                    {!hasAccessToCategorie("eleves") && <Lock className="h-3 w-3 ml-1" />}
                   </TabsTrigger>
-                  <TabsTrigger value="financieres" className="justify-start gap-2">
+                  <TabsTrigger 
+                    value="financieres" 
+                    className="justify-start gap-2"
+                    disabled={!hasAccessToCategorie("financieres")}
+                  >
                     <Wallet className="h-4 w-4" />
                     <span className="hidden lg:inline">Financières</span>
+                    {!hasAccessToCategorie("financieres") && <Lock className="h-3 w-3 ml-1" />}
                   </TabsTrigger>
-                  <TabsTrigger value="administratives" className="justify-start gap-2">
+                  <TabsTrigger 
+                    value="administratives" 
+                    className="justify-start gap-2"
+                    disabled={!hasAccessToCategorie("administratives")}
+                  >
                     <FileText className="h-4 w-4" />
                     <span className="hidden lg:inline">Administratives</span>
+                    {!hasAccessToCategorie("administratives") && <Lock className="h-3 w-3 ml-1" />}
                   </TabsTrigger>
-                  <TabsTrigger value="statistiques" className="justify-start gap-2">
+                  <TabsTrigger 
+                    value="statistiques" 
+                    className="justify-start gap-2"
+                    disabled={!hasAccessToCategorie("statistiques")}
+                  >
                     <BarChart3 className="h-4 w-4" />
                     <span className="hidden lg:inline">Statistiques</span>
+                    {!hasAccessToCategorie("statistiques") && <Lock className="h-3 w-3 ml-1" />}
                   </TabsTrigger>
                 </TabsList>
 
                 <ScrollArea className="h-[400px] p-4">
                   <TabsContent value="eleves" className="mt-0 space-y-2">
-                    {getListesByCategorie("eleves").map((liste) => (
-                      <Button
-                        key={liste.id}
-                        variant={selectedListe?.id === liste.id ? "default" : "ghost"}
-                        className="w-full justify-start text-left h-auto py-3"
-                        onClick={() => handleSelectListe(liste)}
-                      >
-                        <div>
-                          <p className="font-medium text-sm">{liste.nom}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {liste.description}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
+                    {!hasAccessToCategorie("eleves") ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Accès non autorisé</p>
+                      </div>
+                    ) : getAccessibleListes("eleves").length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-sm">Aucune liste disponible</p>
+                      </div>
+                    ) : (
+                      getAccessibleListes("eleves").map((liste) => (
+                        <Button
+                          key={liste.id}
+                          variant={selectedListe?.id === liste.id ? "default" : "ghost"}
+                          className="w-full justify-start text-left h-auto py-3"
+                          onClick={() => handleSelectListe(liste)}
+                        >
+                          <div>
+                            <p className="font-medium text-sm">{liste.nom}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {liste.description}
+                            </p>
+                          </div>
+                        </Button>
+                      ))
+                    )}
                   </TabsContent>
 
                   <TabsContent value="financieres" className="mt-0 space-y-2">
-                    {getListesByCategorie("financieres").map((liste) => (
-                      <Button
-                        key={liste.id}
-                        variant={selectedListe?.id === liste.id ? "default" : "ghost"}
-                        className="w-full justify-start text-left h-auto py-3"
-                        onClick={() => handleSelectListe(liste)}
-                      >
-                        <div>
-                          <p className="font-medium text-sm">{liste.nom}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {liste.description}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
+                    {!hasAccessToCategorie("financieres") ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Accès réservé aux rôles: Admin, Directeur, Comptable, Secrétaire</p>
+                      </div>
+                    ) : getAccessibleListes("financieres").length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-sm">Aucune liste disponible</p>
+                      </div>
+                    ) : (
+                      getAccessibleListes("financieres").map((liste) => (
+                        <Button
+                          key={liste.id}
+                          variant={selectedListe?.id === liste.id ? "default" : "ghost"}
+                          className="w-full justify-start text-left h-auto py-3"
+                          onClick={() => handleSelectListe(liste)}
+                        >
+                          <div>
+                            <p className="font-medium text-sm">{liste.nom}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {liste.description}
+                            </p>
+                          </div>
+                        </Button>
+                      ))
+                    )}
                   </TabsContent>
 
                   <TabsContent value="administratives" className="mt-0 space-y-2">
-                    {getListesByCategorie("administratives").map((liste) => (
-                      <Button
-                        key={liste.id}
-                        variant={selectedListe?.id === liste.id ? "default" : "ghost"}
-                        className="w-full justify-start text-left h-auto py-3"
-                        onClick={() => handleSelectListe(liste)}
-                      >
-                        <div>
-                          <p className="font-medium text-sm">{liste.nom}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {liste.description}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
+                    {!hasAccessToCategorie("administratives") ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Accès réservé aux rôles: Admin, Directeur, Secrétaire</p>
+                      </div>
+                    ) : getAccessibleListes("administratives").length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-sm">Aucune liste disponible</p>
+                      </div>
+                    ) : (
+                      getAccessibleListes("administratives").map((liste) => (
+                        <Button
+                          key={liste.id}
+                          variant={selectedListe?.id === liste.id ? "default" : "ghost"}
+                          className="w-full justify-start text-left h-auto py-3"
+                          onClick={() => handleSelectListe(liste)}
+                        >
+                          <div>
+                            <p className="font-medium text-sm">{liste.nom}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {liste.description}
+                            </p>
+                          </div>
+                        </Button>
+                      ))
+                    )}
                   </TabsContent>
 
                   <TabsContent value="statistiques" className="mt-0 space-y-2">
-                    {getListesByCategorie("statistiques").map((liste) => (
-                      <Button
-                        key={liste.id}
-                        variant={selectedListe?.id === liste.id ? "default" : "ghost"}
-                        className="w-full justify-start text-left h-auto py-3"
-                        onClick={() => handleSelectListe(liste)}
-                      >
-                        <div>
-                          <p className="font-medium text-sm">{liste.nom}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {liste.description}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
+                    {!hasAccessToCategorie("statistiques") ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Accès réservé aux rôles: Admin, Directeur, Comptable</p>
+                      </div>
+                    ) : getAccessibleListes("statistiques").length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-sm">Aucune liste disponible</p>
+                      </div>
+                    ) : (
+                      getAccessibleListes("statistiques").map((liste) => (
+                        <Button
+                          key={liste.id}
+                          variant={selectedListe?.id === liste.id ? "default" : "ghost"}
+                          className="w-full justify-start text-left h-auto py-3"
+                          onClick={() => handleSelectListe(liste)}
+                        >
+                          <div>
+                            <p className="font-medium text-sm">{liste.nom}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {liste.description}
+                            </p>
+                          </div>
+                        </Button>
+                      ))
+                    )}
                   </TabsContent>
                 </ScrollArea>
               </Tabs>
