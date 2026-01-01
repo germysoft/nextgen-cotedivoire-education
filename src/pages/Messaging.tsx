@@ -3,21 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   MessageSquare, Send, Mail, Phone, Users, Bell, CheckCircle2, Clock,
-  TrendingUp, Calendar, FileText, Settings, Eye, MousePointer, Zap,
-  BarChart3, PieChart, ArrowUpRight, AlertTriangle
+  TrendingUp, Calendar, FileText,
+  BarChart3, ArrowUpRight
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart as RechartPie, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartPie, Pie, Cell } from "recharts";
 import { toast } from "sonner";
 import { contactGroups } from "@/data/mockMessaging";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const quickStats = {
   smsToday: 156,
@@ -55,6 +55,7 @@ const channelDistribution = [
 ];
 
 export default function Messaging() {
+  const { t } = useLanguage();
   const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
   const [messageType, setMessageType] = useState("");
   const [recipient, setRecipient] = useState("");
@@ -63,10 +64,10 @@ export default function Messaging() {
 
   const handleSendMessage = () => {
     if (!messageType || !recipient || !content) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
+      toast.error(t('messaging.fillAllFields'));
       return;
     }
-    toast.success(`${messageType} envoyé avec succès à ${recipient}`);
+    toast.success(`${messageType} ${t('messaging.sentSuccess')} ${recipient}`);
     setIsNewMessageOpen(false);
     setMessageType("");
     setRecipient("");
@@ -79,41 +80,41 @@ export default function Messaging() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Centre de Messagerie</h1>
-          <p className="text-muted-foreground">Tableau de bord centralisé pour tous vos envois</p>
+          <h1 className="text-3xl font-bold">{t('messaging.title')}</h1>
+          <p className="text-muted-foreground">{t('messaging.subtitle')}</p>
         </div>
         <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
           <DialogTrigger asChild>
             <Button size="lg">
               <Send className="mr-2 h-4 w-4" />
-              Nouveau Message
+              {t('messaging.newMessage')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Envoyer un message</DialogTitle>
-              <DialogDescription>Choisissez le type et les destinataires</DialogDescription>
+              <DialogTitle>{t('messaging.sendMessage')}</DialogTitle>
+              <DialogDescription>{t('messaging.chooseTypeAndRecipients')}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Type de message *</Label>
+                  <Label>{t('messaging.messageType')} *</Label>
                   <Select value={messageType} onValueChange={setMessageType}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <SelectValue placeholder={t('common.select')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="notification">Notification Push</SelectItem>
+                      <SelectItem value="sms">{t('messaging.sms')}</SelectItem>
+                      <SelectItem value="email">{t('messaging.email')}</SelectItem>
+                      <SelectItem value="notification">{t('messaging.notifications')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Destinataires *</Label>
+                  <Label>{t('messaging.recipients')} *</Label>
                   <Select value={recipient} onValueChange={setRecipient}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <SelectValue placeholder={t('common.select')} />
                     </SelectTrigger>
                     <SelectContent>
                       {contactGroups.map((group) => (
@@ -127,25 +128,25 @@ export default function Messaging() {
               </div>
               {messageType === "email" && (
                 <div className="space-y-2">
-                  <Label>Sujet</Label>
+                  <Label>{t('messaging.subject')}</Label>
                   <Input 
-                    placeholder="Objet du message" 
+                    placeholder={t('messaging.subject')} 
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                   />
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Message *</Label>
+                <Label>{t('messaging.message')} *</Label>
                 <Textarea 
-                  placeholder="Votre message..." 
+                  placeholder={t('messaging.message')}
                   rows={6}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                 />
                 {messageType === "sms" && (
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{content.length}/160 caractères</span>
+                    <span>{content.length}/160 {t('messaging.characters')}</span>
                     <span>{Math.ceil(content.length / 160) || 1} SMS</span>
                   </div>
                 )}
@@ -153,11 +154,11 @@ export default function Messaging() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsNewMessageOpen(false)}>
-                Annuler
+                {t('common.cancel')}
               </Button>
               <Button onClick={handleSendMessage}>
                 <Send className="mr-2 h-4 w-4" />
-                Envoyer
+                {t('messaging.send')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -168,7 +169,7 @@ export default function Messaging() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">SMS Aujourd'hui</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('messaging.smsToday')}</CardTitle>
             <Phone className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -184,7 +185,7 @@ export default function Messaging() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Emails Aujourd'hui</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('messaging.emailsToday')}</CardTitle>
             <Mail className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -200,7 +201,7 @@ export default function Messaging() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Notifications</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('messaging.notifications')}</CardTitle>
             <Bell className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
@@ -216,7 +217,7 @@ export default function Messaging() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux de Lecture</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('messaging.readRate')}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -238,9 +239,9 @@ export default function Messaging() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Messages Récents</CardTitle>
+              <CardTitle>{t('messaging.recentMessages')}</CardTitle>
               <Button variant="outline" size="sm" asChild>
-                <Link to="/messaging/sms">Voir tout</Link>
+                <Link to="/messaging/sms">{t('messaging.seeAll')}</Link>
               </Button>
             </div>
           </CardHeader>
@@ -263,15 +264,15 @@ export default function Messaging() {
                       <Badge variant="outline" className="shrink-0">{message.type}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {message.recipient} • {message.count} destinataires
+                      {message.recipient} • {message.count} {t('messaging.recipients').toLowerCase()}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     <Badge variant={message.status === "sent" ? "default" : "secondary"}>
                       {message.status === "sent" ? (
-                        <><CheckCircle2 className="h-3 w-3 mr-1" /> Envoyé</>
+                        <><CheckCircle2 className="h-3 w-3 mr-1" /> {t('messaging.sent')}</>
                       ) : (
-                        <><Clock className="h-3 w-3 mr-1" /> Programmé</>
+                        <><Clock className="h-3 w-3 mr-1" /> {t('messaging.scheduled')}</>
                       )}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">{message.date}</p>
@@ -286,34 +287,34 @@ export default function Messaging() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Accès Rapide</CardTitle>
+              <CardTitle className="text-lg">{t('messaging.quickAccess')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" className="w-full justify-start" asChild>
                 <Link to="/messaging/sms">
                   <Phone className="mr-2 h-4 w-4 text-blue-500" />
-                  Envoi SMS Pro
+                  {t('messaging.proSms')}
                   <ArrowUpRight className="ml-auto h-4 w-4" />
                 </Link>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
                 <Link to="/messaging/emails">
                   <Mail className="mr-2 h-4 w-4 text-green-500" />
-                  Gestion Emails
+                  {t('messaging.emailManagement')}
                   <ArrowUpRight className="ml-auto h-4 w-4" />
                 </Link>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
                 <Link to="/messaging/notifications">
                   <Bell className="mr-2 h-4 w-4 text-purple-500" />
-                  Notifications Auto
+                  {t('messaging.autoNotifications')}
                   <ArrowUpRight className="ml-auto h-4 w-4" />
                 </Link>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
                 <Link to="/messaging/forum">
                   <MessageSquare className="mr-2 h-4 w-4 text-orange-500" />
-                  Forum Interne
+                  {t('messaging.internalForum')}
                   <ArrowUpRight className="ml-auto h-4 w-4" />
                 </Link>
               </Button>
@@ -322,7 +323,7 @@ export default function Messaging() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Répartition des Canaux</CardTitle>
+              <CardTitle className="text-lg">{t('messaging.channelDistribution')}</CardTitle>
             </CardHeader>
             <CardContent className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -351,8 +352,8 @@ export default function Messaging() {
       {/* Weekly Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Activité de la Semaine</CardTitle>
-          <CardDescription>Volume d'envois par type et par jour</CardDescription>
+          <CardTitle>{t('messaging.weeklyActivity')}</CardTitle>
+          <CardDescription>{t('messaging.sendVolumeByType')}</CardDescription>
         </CardHeader>
         <CardContent className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -362,9 +363,9 @@ export default function Messaging() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="sms" fill="hsl(var(--primary))" name="SMS" />
-              <Bar dataKey="email" fill="hsl(var(--chart-2))" name="Email" />
-              <Bar dataKey="notification" fill="hsl(var(--chart-3))" name="Notification" />
+              <Bar dataKey="sms" fill="hsl(var(--primary))" name={t('messaging.sms')} />
+              <Bar dataKey="email" fill="hsl(var(--chart-2))" name={t('messaging.email')} />
+              <Bar dataKey="notification" fill="hsl(var(--chart-3))" name={t('messaging.notifications')} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -372,54 +373,54 @@ export default function Messaging() {
 
       {/* Feature Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info("Fonctionnalité: Groupes de Contact")}>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info(t('messaging.contactGroups'))}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold">Groupes de Contact</h3>
-                <p className="text-sm text-muted-foreground">{contactGroups.length} groupes configurés</p>
+                <h3 className="font-semibold">{t('messaging.contactGroups')}</h3>
+                <p className="text-sm text-muted-foreground">{contactGroups.length} {t('messaging.groupsConfigured')}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info("Fonctionnalité: Modèles de Messages")}>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info(t('messaging.messageTemplates'))}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
                 <FileText className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <h3 className="font-semibold">Modèles de Messages</h3>
-                <p className="text-sm text-muted-foreground">5 modèles disponibles</p>
+                <h3 className="font-semibold">{t('messaging.messageTemplates')}</h3>
+                <p className="text-sm text-muted-foreground">5 {t('messaging.templatesAvailable')}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info("Fonctionnalité: Messages Programmés")}>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info(t('messaging.scheduledMessages'))}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold">Messages Programmés</h3>
-                <p className="text-sm text-muted-foreground">3 en attente</p>
+                <h3 className="font-semibold">{t('messaging.scheduledMessages')}</h3>
+                <p className="text-sm text-muted-foreground">3 {t('messaging.pending')}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info("Fonctionnalité: Statistiques Avancées")}>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => toast.info(t('messaging.statistics'))}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-semibold">Statistiques</h3>
-                <p className="text-sm text-muted-foreground">Rapports détaillés</p>
+                <h3 className="font-semibold">{t('messaging.statistics')}</h3>
+                <p className="text-sm text-muted-foreground">{t('messaging.detailedReports')}</p>
               </div>
             </div>
           </CardContent>
