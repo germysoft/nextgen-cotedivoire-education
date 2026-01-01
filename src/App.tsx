@@ -155,11 +155,13 @@ import SponsorsPage from "./pages/partenariats/Sponsors";
 import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
 import Archives from "./pages/parametrage/Archives";
 import { ArchivesProvider } from "./contexts/ArchivesContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <LanguageProvider>
       <FavoritesProvider>
         <NotificationsProvider>
@@ -376,6 +378,7 @@ const App = () => (
         </NotificationsProvider>
       </FavoritesProvider>
     </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

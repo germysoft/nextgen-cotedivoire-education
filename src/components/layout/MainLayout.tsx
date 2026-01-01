@@ -5,6 +5,7 @@ import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { RoleSelector } from "@/components/layout/RoleSelector";
 import { ArchiveBanner } from "@/components/layout/ArchiveBanner";
+import { ThemeSelector } from "@/components/layout/ThemeSelector";
 import { MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,6 +65,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                <ThemeSelector />
 
                 <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
                   <Maximize className="h-5 w-5" />
