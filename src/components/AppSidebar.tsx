@@ -140,6 +140,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.decoReconciliation", url: "/examens/rapprochement" },
       { titleKey: "sidebar.examDashboard", url: "/examens/tableau-bord" },
       { titleKey: "sidebar.alertsMonitoring", url: "/examens/alertes-monitoring" },
+      { titleKey: "sidebar.printListsExams", url: "/examens/listes" },
     ],
   },
   {

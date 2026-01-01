@@ -136,6 +136,7 @@ import AuditExamens from "./pages/examens/Audit";
 import RapprochementDECO from "./pages/examens/RapprochementDECO";
 import TableauBordExamens from "./pages/examens/TableauBordExamens";
 import AlertesMonitoring from "./pages/examens/AlertesMonitoring";
+import ImprimerListesExamens from "./pages/examens/ImprimerListesExamens";
 import VerificationConvocation from "./pages/VerificationConvocation";
 import NotesParents from "./pages/portail/NotesParents";
 import AbsencesParents from "./pages/portail/AbsencesParents";
@@ -259,6 +260,7 @@ const App = () => (
           <Route path="/examens/rapprochement" element={<MainLayout><RapprochementDECO /></MainLayout>} />
           <Route path="/examens/tableau-bord" element={<MainLayout><TableauBordExamens /></MainLayout>} />
           <Route path="/examens/alertes-monitoring" element={<MainLayout><AlertesMonitoring /></MainLayout>} />
+          <Route path="/examens/listes" element={<MainLayout><ImprimerListesExamens /></MainLayout>} />
           
           {/* Verification Route (public) */}
           <Route path="/verification-convocation" element={<VerificationConvocation />} />
