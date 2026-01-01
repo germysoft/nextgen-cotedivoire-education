@@ -70,6 +70,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.training", url: "/hr/formations" },
       { titleKey: "sidebar.skills", url: "/hr/competences" },
       { titleKey: "sidebar.recruitment", url: "/hr/recrutement" },
+      { titleKey: "sidebar.printListsHR", url: "/hr/listes" },
     ],
   },
   {
