@@ -935,4 +935,32 @@ export const es = {
   'exams.radar.progression': 'Progresión',
   'exams.radar.equity': 'Equidad',
   'exams.radar.efficiency': 'Eficiencia',
+
+  // Additional Students keys
+  'students.addStudent': 'Agregar estudiante',
+  'students.firstName': 'Nombre',
+  'students.lastName': 'Apellido',
+  'students.birthDate': 'Fecha de Nacimiento',
+  'students.gender': 'Género',
+  'students.male': 'Masculino',
+  'students.female': 'Femenino',
+  'students.parentName': 'Nombre del Padre/Madre',
+  'students.parentPhone': 'Teléfono del Padre/Madre',
+  'students.address': 'Dirección',
+  'students.photo': 'Foto',
+  'students.years': 'años',
+
+  // Additional Teachers keys
+  'teachers.search': 'Buscar profesor...',
+  'teachers.addTeacher': 'Agregar profesor',
+  'teachers.firstName': 'Nombre',
+  'teachers.lastName': 'Apellido',
+  'teachers.email': 'Correo',
+  'teachers.phone': 'Teléfono',
+  'teachers.specialization': 'Especialización',
+
+  // Additional Classes keys
+  'classes.successRate': 'Tasa de Éxito',
+  'classes.occupancy': 'Tasa de Ocupación',
+  'classes.hoursPerWeek': 'horas/semana',
 };

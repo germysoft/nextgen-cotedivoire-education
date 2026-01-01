@@ -935,4 +935,32 @@ export const en = {
   'exams.radar.progression': 'Progression',
   'exams.radar.equity': 'Equity',
   'exams.radar.efficiency': 'Efficiency',
+
+  // Additional Students keys
+  'students.addStudent': 'Add student',
+  'students.firstName': 'First Name',
+  'students.lastName': 'Last Name',
+  'students.birthDate': 'Birth Date',
+  'students.gender': 'Gender',
+  'students.male': 'Male',
+  'students.female': 'Female',
+  'students.parentName': 'Parent Name',
+  'students.parentPhone': 'Parent Phone',
+  'students.address': 'Address',
+  'students.photo': 'Photo',
+  'students.years': 'years',
+
+  // Additional Teachers keys
+  'teachers.search': 'Search teacher...',
+  'teachers.addTeacher': 'Add teacher',
+  'teachers.firstName': 'First Name',
+  'teachers.lastName': 'Last Name',
+  'teachers.email': 'Email',
+  'teachers.phone': 'Phone',
+  'teachers.specialization': 'Specialization',
+
+  // Additional Classes keys
+  'classes.successRate': 'Success Rate',
+  'classes.occupancy': 'Occupancy Rate',
+  'classes.hoursPerWeek': 'hours/week',
 };
