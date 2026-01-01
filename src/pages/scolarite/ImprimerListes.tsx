@@ -58,7 +58,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Shield, Lock } from "lucide-react";
+import { Shield, Lock, History, Trash2, Clock } from "lucide-react";
+import { useAuditListes, AuditEntry } from "@/hooks/useAuditListes";
 
 // Types pour les permissions de listes
 type CategoriePermission = {
@@ -479,10 +480,12 @@ const mockEleves = generateMockEleves();
 export default function ImprimerListes() {
   const { toast } = useToast();
   const { currentRole } = useRole();
+  const { logAction, getFilteredEntries, getStats, clearJournal } = useAuditListes();
 
   const [activeTab, setActiveTab] = useState("eleves");
   const [selectedListe, setSelectedListe] = useState<ListeConfig | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showAuditLog, setShowAuditLog] = useState(false);
   const [filteredData, setFilteredData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -676,6 +679,19 @@ export default function ImprimerListes() {
     if (selectedListe?.categorie !== "statistiques") {
       applyFilters();
     }
+    
+    // Log audit pour génération
+    if (selectedListe) {
+      logAction(
+        "generation",
+        selectedListe.id,
+        selectedListe.nom,
+        selectedListe.categorie,
+        filtres as unknown as Record<string, string | boolean>,
+        filteredData.length
+      );
+    }
+    
     setShowPreview(true);
   };
 
@@ -735,9 +751,19 @@ export default function ImprimerListes() {
 
     doc.save(`${selectedListe.nom.replace(/ /g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
 
+    // Log audit pour export PDF
+    logAction(
+      "export_pdf",
+      selectedListe.id,
+      selectedListe.nom,
+      selectedListe.categorie,
+      filtres as unknown as Record<string, string | boolean>,
+      filteredData.length
+    );
+
     toast({
       title: "Export PDF réussi",
-      description: `Le fichier a été téléchargé.`,
+      description: `Le fichier a été téléchargé. Action enregistrée dans le journal.`,
     });
   };
 
@@ -768,14 +794,35 @@ export default function ImprimerListes() {
       `${selectedListe.nom.replace(/ /g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`
     );
 
+    // Log audit pour export Excel
+    logAction(
+      "export_excel",
+      selectedListe.id,
+      selectedListe.nom,
+      selectedListe.categorie,
+      filtres as unknown as Record<string, string | boolean>,
+      filteredData.length
+    );
+
     toast({
       title: "Export Excel réussi",
-      description: `Le fichier a été téléchargé.`,
+      description: `Le fichier a été téléchargé. Action enregistrée dans le journal.`,
     });
   };
 
   // Imprimer
   const handlePrint = () => {
+    // Log audit pour impression
+    if (selectedListe) {
+      logAction(
+        "impression",
+        selectedListe.id,
+        selectedListe.nom,
+        selectedListe.categorie,
+        filtres as unknown as Record<string, string | boolean>,
+        filteredData.length
+      );
+    }
     window.print();
   };
 
@@ -828,11 +875,15 @@ export default function ImprimerListes() {
             Génération et impression des listes scolaires
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="flex items-center gap-2 py-1.5 px-3">
             <Shield className="h-4 w-4" />
             <span>Connecté en tant que: <strong>{roleLabels[currentRole]}</strong></span>
           </Badge>
+          <Button variant="outline" onClick={() => setShowAuditLog(true)}>
+            <History className="h-4 w-4 mr-2" />
+            Journal d'audit
+          </Button>
           <Button variant="outline" onClick={resetFiltres}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Réinitialiser
@@ -1441,6 +1492,150 @@ export default function ImprimerListes() {
             <Button onClick={handlePrint} className="gap-2">
               <Printer className="h-4 w-4" />
               Imprimer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Journal d'audit */}
+      <Dialog open={showAuditLog} onOpenChange={setShowAuditLog}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Journal d'audit - Historique des impressions
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+            {/* Statistiques */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold">{getStats().total}</div>
+                  <p className="text-xs text-muted-foreground">Total actions</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-green-600">{getStats().today}</div>
+                  <p className="text-xs text-muted-foreground">Aujourd'hui</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-blue-600">{getStats().thisWeek}</div>
+                  <p className="text-xs text-muted-foreground">Cette semaine</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {Object.keys(getStats().byUser).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Utilisateurs actifs</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tableau du journal */}
+            <ScrollArea className="flex-1 border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Date/Heure</TableHead>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Liste</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead className="text-right">Résultats</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getFilteredEntries().length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>Aucune action enregistrée</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    getFilteredEntries().slice(0, 50).map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-mono text-xs">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(entry.timestamp).toLocaleDateString("fr-FR")}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {new Date(entry.timestamp).toLocaleTimeString("fr-FR")}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{entry.userRoleLabel}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              entry.action === "export_pdf"
+                                ? "default"
+                                : entry.action === "export_excel"
+                                ? "secondary"
+                                : entry.action === "impression"
+                                ? "destructive"
+                                : "outline"
+                            }
+                          >
+                            {entry.action === "generation" && "Génération"}
+                            {entry.action === "export_pdf" && "Export PDF"}
+                            {entry.action === "export_excel" && "Export Excel"}
+                            {entry.action === "impression" && "Impression"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={entry.listeNom}>
+                          {entry.listeNom}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {entry.categorie}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {entry.nombreResultats}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+
+            {getFilteredEntries().length > 50 && (
+              <p className="text-sm text-muted-foreground text-center">
+                Affichage des 50 dernières actions sur {getFilteredEntries().length}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-between mt-4">
+            {currentRole === "admin" && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  clearJournal();
+                  toast({
+                    title: "Journal effacé",
+                    description: "L'historique a été supprimé.",
+                  });
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Effacer le journal
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowAuditLog(false)} className="ml-auto">
+              Fermer
             </Button>
           </div>
         </DialogContent>
