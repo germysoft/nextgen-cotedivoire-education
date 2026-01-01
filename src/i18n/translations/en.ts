@@ -778,6 +778,8 @@ export const en = {
   'toast.smsSent': 'SMS sent',
   'toast.notificationSent': 'Notification sent',
   'toast.languageChanged': 'Language changed',
+  'toast.languageReset': 'Language reset to default',
+  'language.resetToDefault': 'Reset to institution language',
   'toast.configLocked': 'Configuration locked',
   'toast.configUnlocked': 'Configuration unlocked',
   'toast.pdfGenerated': 'PDF generated successfully',
