@@ -6,6 +6,7 @@ import { NotificationPanel } from "@/components/notifications/NotificationPanel"
 import { RoleSelector } from "@/components/layout/RoleSelector";
 import { ArchiveBanner } from "@/components/layout/ArchiveBanner";
 import { ThemeSelector } from "@/components/layout/ThemeSelector";
+import { LanguageSelector } from "@/components/layout/LanguageSelector";
 import { MessageSquare, Maximize, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,9 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
+  
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -44,27 +48,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 
                 <NotificationPanel />
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-10 w-10">
-                      <span className="text-xl">🇺🇸</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <span className="mr-2">🇫🇷</span>
-                      Français
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span className="mr-2">🇺🇸</span>
-                      English
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span className="mr-2">🇪🇸</span>
-                      Español
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <LanguageSelector />
 
                 <ThemeSelector />
 
@@ -83,10 +67,10 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem>Mon Profil</DropdownMenuItem>
-                    <DropdownMenuItem>Paramètres</DropdownMenuItem>
+                    <DropdownMenuItem>{t('nav.profile')}</DropdownMenuItem>
+                    <DropdownMenuItem>{t('common.settings')}</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive">
-                      Déconnexion
+                      {t('nav.logout')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
