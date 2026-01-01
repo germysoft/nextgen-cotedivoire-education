@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { 
-  Printer, FileText, FileSpreadsheet, Download, Eye, Filter, 
+  Printer, FileText, FileSpreadsheet, Eye, Filter, 
   GraduationCap, Users, Calendar, BookOpen, ClipboardList, 
   FileCheck, AlertTriangle, MessageSquare, Monitor, History,
-  Search, RefreshCw, Building, Layers
+  Search, RefreshCw, Layers, X, CheckSquare
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEtablissement } from '@/contexts/EtablissementContext';
@@ -235,6 +237,12 @@ export default function ImprimerListesPedagogie() {
   const [showAudit, setShowAudit] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Impression groupée
+  const [selectedListes, setSelectedListes] = useState<string[]>([]);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [batchFormat, setBatchFormat] = useState<'pdf' | 'excel' | 'print'>('pdf');
   // Filtrer les listes par rôle
   const listesAccessibles = listesPedagogiques.filter(liste => 
     liste.rolesAutorises.includes(currentRole) || currentRole === 'admin'
@@ -330,6 +338,66 @@ export default function ImprimerListesPedagogie() {
     toast.success('Impression lancée');
   };
 
+  // Fonctions pour impression groupée
+  const toggleListeSelection = (listeId: string) => {
+    setSelectedListes(prev => 
+      prev.includes(listeId) 
+        ? prev.filter(id => id !== listeId)
+        : [...prev, listeId]
+    );
+  };
+
+  const selectAllInCategory = (categoryId: string) => {
+    const listes = listesAccessibles.filter(l => l.categorie === categoryId);
+    const allSelected = listes.every(l => selectedListes.includes(l.id));
+    if (allSelected) {
+      setSelectedListes(prev => prev.filter(id => !listes.map(l => l.id).includes(id)));
+    } else {
+      setSelectedListes(prev => [...new Set([...prev, ...listes.map(l => l.id)])]);
+    }
+  };
+
+  const handleBatchProcess = async () => {
+    if (selectedListes.length === 0) {
+      toast.error('Veuillez sélectionner au moins une liste');
+      return;
+    }
+
+    setIsBatchProcessing(true);
+    setBatchProgress(0);
+
+    for (let i = 0; i < selectedListes.length; i++) {
+      const listeId = selectedListes[i];
+      const liste = listesPedagogiques.find(l => l.id === listeId);
+      const category = categories.find(c => liste && c.id === liste.categorie);
+
+      if (liste && category) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const action = batchFormat === 'pdf' ? 'export_pdf' : 
+                       batchFormat === 'excel' ? 'export_excel' : 'impression';
+        logAction(action, listeId, liste.nom, liste.categorie, filtres, Math.floor(Math.random() * 100) + 10, currentUserId, currentRole);
+      }
+
+      setBatchProgress(Math.round(((i + 1) / selectedListes.length) * 100));
+    }
+
+    setIsBatchProcessing(false);
+    setShowBatchDialog(false);
+    const count = selectedListes.length;
+    setSelectedListes([]);
+    
+    const formatLabel = batchFormat === 'pdf' ? 'PDF' : batchFormat === 'excel' ? 'Excel' : 'impression';
+    toast.success(`${count} liste(s) exportée(s) en ${formatLabel}`);
+  };
+
+  const getSelectedListesInfo = () => {
+    return selectedListes.map(id => {
+      const liste = listesPedagogiques.find(l => l.id === id);
+      const category = categories.find(c => liste && c.id === liste.categorie);
+      return { id, nom: liste?.nom || '', categorie: category?.nom || '' };
+    });
+  };
+
   const stats = getStats();
 
   return (
@@ -346,6 +414,91 @@ export default function ImprimerListesPedagogie() {
           </p>
         </div>
         <div className="flex gap-2">
+          {/* Bouton Impression Groupée */}
+          <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
+            <DialogTrigger asChild>
+              <Button variant="default" className="relative">
+                <Layers className="h-4 w-4 mr-2" />
+                Impression groupée
+                {selectedListes.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 bg-white text-primary">
+                    {selectedListes.length}
+                  </Badge>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5" />
+                  Impression groupée - {selectedListes.length} liste(s)
+                </DialogTitle>
+              </DialogHeader>
+              
+              {selectedListes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Layers className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Aucune liste sélectionnée</p>
+                  <p className="text-sm mt-2">Cochez les listes dans les catégories</p>
+                </div>
+              ) : (
+                <>
+                  <ScrollArea className="h-[300px] border rounded-lg p-4">
+                    <div className="space-y-2">
+                      {getSelectedListesInfo().map((liste) => (
+                        <div key={liste.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <div>
+                            <p className="font-medium text-sm">{liste.nom}</p>
+                            <p className="text-xs text-muted-foreground">{liste.categorie}</p>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => toggleListeSelection(liste.id)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  <div className="space-y-4 pt-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Format d'export</label>
+                      <div className="flex gap-2">
+                        <Button variant={batchFormat === 'pdf' ? 'default' : 'outline'} onClick={() => setBatchFormat('pdf')} className="flex-1">
+                          <FileText className="h-4 w-4 mr-2" />PDF
+                        </Button>
+                        <Button variant={batchFormat === 'excel' ? 'default' : 'outline'} onClick={() => setBatchFormat('excel')} className="flex-1">
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />Excel
+                        </Button>
+                        <Button variant={batchFormat === 'print' ? 'default' : 'outline'} onClick={() => setBatchFormat('print')} className="flex-1">
+                          <Printer className="h-4 w-4 mr-2" />Imprimer
+                        </Button>
+                      </div>
+                    </div>
+
+                    {isBatchProcessing && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Traitement en cours...</span>
+                          <span>{batchProgress}%</span>
+                        </div>
+                        <Progress value={batchProgress} />
+                      </div>
+                    )}
+
+                    <div className="flex justify-between">
+                      <Button variant="outline" onClick={() => setSelectedListes([])} disabled={isBatchProcessing}>
+                        Tout désélectionner
+                      </Button>
+                      <Button onClick={handleBatchProcess} disabled={isBatchProcessing || selectedListes.length === 0}>
+                        {isBatchProcessing ? 'Traitement...' : `Générer ${selectedListes.length} liste(s)`}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={showAudit} onOpenChange={setShowAudit}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -420,6 +573,27 @@ export default function ImprimerListesPedagogie() {
         </div>
       </div>
 
+      {/* Barre de sélection rapide */}
+      {selectedListes.length > 0 && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <CheckSquare className="h-5 w-5 text-primary" />
+              <span className="font-medium">{selectedListes.length} liste(s) sélectionnée(s)</span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedListes([])}>
+                Désélectionner tout
+              </Button>
+              <Button size="sm" onClick={() => setShowBatchDialog(true)}>
+                <Layers className="h-4 w-4 mr-2" />
+                Générer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Panneau de catégories */}
         <Card className="lg:col-span-1">
@@ -456,7 +630,17 @@ export default function ImprimerListesPedagogie() {
         {/* Liste des listes disponibles */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg">Listes disponibles</CardTitle>
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span>Listes disponibles</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => selectAllInCategory(selectedCategorie)}
+              >
+                <CheckSquare className="h-4 w-4 mr-1" />
+                {listesFiltrees.every(l => selectedListes.includes(l.id)) ? 'Désél.' : 'Tout'}
+              </Button>
+            </CardTitle>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -471,17 +655,25 @@ export default function ImprimerListesPedagogie() {
             <ScrollArea className="h-[430px]">
               <div className="space-y-1 p-2">
                 {listesFiltrees.map(liste => (
-                  <Button
+                  <div 
                     key={liste.id}
-                    variant={selectedListe?.id === liste.id ? 'default' : 'ghost'}
-                    className="w-full justify-start h-auto py-2"
-                    onClick={() => handleSelectListe(liste)}
+                    className={`flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer ${
+                      selectedListe?.id === liste.id ? 'bg-primary/10' : ''
+                    } ${selectedListes.includes(liste.id) ? 'ring-1 ring-primary' : ''}`}
                   >
-                    <div className="text-left">
-                      <div className="font-medium">{liste.nom}</div>
+                    <Checkbox 
+                      checked={selectedListes.includes(liste.id)}
+                      onCheckedChange={() => toggleListeSelection(liste.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div 
+                      className="flex-1 text-left cursor-pointer"
+                      onClick={() => handleSelectListe(liste)}
+                    >
+                      <div className="font-medium text-sm">{liste.nom}</div>
                       <div className="text-xs text-muted-foreground truncate">{liste.description}</div>
                     </div>
-                  </Button>
+                  </div>
                 ))}
                 {listesFiltrees.length === 0 && (
                   <p className="text-center text-muted-foreground py-4">Aucune liste trouvée</p>
