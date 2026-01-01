@@ -115,6 +115,7 @@ import Caisse from "./pages/comptabilite/Caisse";
 import JournauxComptables from "./pages/comptabilite/JournauxComptables";
 import PaiementsScolaires from "./pages/comptabilite/PaiementsScolaires";
 import Quittances from "./pages/comptabilite/Quittances";
+import ImprimerListesComptabilite from "./pages/comptabilite/ImprimerListesComptabilite";
 import BulletinsNotes from "./pages/notes/Bulletins";
 import ImprimerListesNotes from "./pages/notes/ImprimerListesNotes";
 import PlanningInfrastructures from "./pages/infrastructures/Planning";
@@ -322,6 +323,7 @@ const App = () => (
           <Route path="/comptabilite/journaux" element={<MainLayout><JournauxComptables /></MainLayout>} />
           <Route path="/comptabilite/paiements" element={<MainLayout><PaiementsScolaires /></MainLayout>} />
           <Route path="/comptabilite/quittances" element={<MainLayout><Quittances /></MainLayout>} />
+          <Route path="/comptabilite/listes" element={<MainLayout><ImprimerListesComptabilite /></MainLayout>} />
           
           {/* Infrastructures Routes */}
           <Route path="/infrastructures/maintenance" element={<MainLayout><Maintenance /></MainLayout>} />
