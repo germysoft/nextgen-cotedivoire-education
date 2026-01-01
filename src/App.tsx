@@ -256,19 +256,22 @@ const App = () => (
           {/* Verification Route (public) */}
           <Route path="/verification-convocation" element={<VerificationConvocation />} />
           
-          {/* Scolarité Routes */}
+{/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />
           <Route path="/scolarite/matricule" element={<MainLayout><Matricule /></MainLayout>} />
           <Route path="/scolarite/historique" element={<MainLayout><Historique /></MainLayout>} />
           <Route path="/scolarite/echeances" element={<MainLayout><Echeances /></MainLayout>} />
           <Route path="/scolarite/mena" element={<MainLayout><MENAImportExport /></MainLayout>} />
+          <Route path="/scolarite/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
+          <Route path="/scolarite/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
+          
+          {/* Portail Parents Routes */}
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
           <Route path="/portail/notes" element={<MainLayout><NotesParents /></MainLayout>} />
           <Route path="/portail/absences" element={<MainLayout><AbsencesParents /></MainLayout>} />
           <Route path="/portail/paiements" element={<MainLayout><PaiementsParents /></MainLayout>} />
           <Route path="/portail/chat" element={<MainLayout><ChatParents /></MainLayout>} />
           <Route path="/portail/calendrier" element={<MainLayout><CalendrierParents /></MainLayout>} />
-          <Route path="/dashboard/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />
