@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { menuPermissionMap } from "@/types/roles";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Sidebar,
   SidebarContent,
@@ -31,12 +32,13 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface SubMenuItem {
-  title: string;
+  titleKey: string;
   url: string;
 }
 
 interface MenuItem {
-  title: string;
+  titleKey: string;
+  legacyTitle: string;
   icon: any;
   url?: string;
   subItems?: SubMenuItem[];
@@ -44,281 +46,305 @@ interface MenuItem {
 
 const menuStructure: MenuItem[] = [
   {
-    title: "Tableaux de Bord",
+    titleKey: "sidebar.dashboards",
+    legacyTitle: "Tableaux de Bord",
     icon: Home,
     subItems: [
-      { title: "Vue Globale", url: "/dashboard" },
-      { title: "Dashboard Personnalisé", url: "/dashboard/custom" },
+      { titleKey: "sidebar.globalView", url: "/dashboard" },
+      { titleKey: "sidebar.customDashboard", url: "/dashboard/custom" },
     ],
   },
   {
-    title: "Ressources Humaines",
+    titleKey: "sidebar.humanResources",
+    legacyTitle: "Ressources Humaines",
     icon: Briefcase,
     subItems: [
-      { title: "Tableau de Bord RH", url: "/hr/tableau-bord" },
-      { title: "Dossier Personnel", url: "/hr" },
-      { title: "Affectations & Promotions", url: "/hr/affectations" },
-      { title: "Congés & Absences", url: "/hr/conges" },
-      { title: "Pointage", url: "/hr/pointage" },
-      { title: "Historique Carrière", url: "/hr/historique" },
-      { title: "Contrats & Attestations", url: "/hr/contrats" },
-      { title: "Entretiens Annuels", url: "/hr/entretiens" },
-      { title: "Formations", url: "/hr/formations" },
-      { title: "Compétences", url: "/hr/competences" },
-      { title: "Recrutement", url: "/hr/recrutement" },
+      { titleKey: "sidebar.hrDashboard", url: "/hr/tableau-bord" },
+      { titleKey: "sidebar.personnelFile", url: "/hr" },
+      { titleKey: "sidebar.assignments", url: "/hr/affectations" },
+      { titleKey: "sidebar.leaveAbsences", url: "/hr/conges" },
+      { titleKey: "sidebar.attendance", url: "/hr/pointage" },
+      { titleKey: "sidebar.careerHistory", url: "/hr/historique" },
+      { titleKey: "sidebar.contracts", url: "/hr/contrats" },
+      { titleKey: "sidebar.annualReviews", url: "/hr/entretiens" },
+      { titleKey: "sidebar.training", url: "/hr/formations" },
+      { titleKey: "sidebar.skills", url: "/hr/competences" },
+      { titleKey: "sidebar.recruitment", url: "/hr/recrutement" },
     ],
   },
   {
-    title: "Gestion Pédagogique",
+    titleKey: "sidebar.pedagogicalManagement",
+    legacyTitle: "Gestion Pédagogique",
     icon: School,
     subItems: [
-      { title: "Cycles & Classes", url: "/classes" },
-      { title: "Emplois du Temps", url: "/pedagogie/emplois-du-temps" },
-      { title: "Attribution Enseignants", url: "/pedagogie/attribution" },
-      { title: "Matières & Programmes", url: "/pedagogie/matieres" },
-      { title: "Conseils de Classe", url: "/pedagogie/conseils" },
-      { title: "Bulletins MENA", url: "/pedagogie/bulletins" },
-      { title: "Discipline", url: "/pedagogie/discipline" },
-      { title: "Convocations Parents", url: "/pedagogie/convocations" },
-      { title: "E-learning", url: "/pedagogie/elearning" },
+      { titleKey: "sidebar.cyclesClasses", url: "/classes" },
+      { titleKey: "sidebar.schedules", url: "/pedagogie/emplois-du-temps" },
+      { titleKey: "sidebar.teacherAssignment", url: "/pedagogie/attribution" },
+      { titleKey: "sidebar.subjectsPrograms", url: "/pedagogie/matieres" },
+      { titleKey: "sidebar.classCouncils", url: "/pedagogie/conseils" },
+      { titleKey: "sidebar.menaBulletins", url: "/pedagogie/bulletins" },
+      { titleKey: "sidebar.discipline", url: "/pedagogie/discipline" },
+      { titleKey: "sidebar.parentConvocations", url: "/pedagogie/convocations" },
+      { titleKey: "sidebar.elearning", url: "/pedagogie/elearning" },
     ],
   },
   {
-    title: "Gestion de la Scolarité",
+    titleKey: "sidebar.tuitionManagement",
+    legacyTitle: "Gestion de la Scolarité",
     icon: ClipboardList,
     subItems: [
-      { title: "Inscription/Réinscription", url: "/students" },
-      { title: "Paiements", url: "/scolarite/paiements" },
-      { title: "Génération Matricule", url: "/scolarite/matricule" },
-      { title: "Suivi Échéances", url: "/scolarite/echeances" },
-      { title: "Historique Scolaire", url: "/scolarite/historique" },
-      { title: "Import/Export MENA", url: "/scolarite/mena" },
+      { titleKey: "sidebar.enrollment", url: "/students" },
+      { titleKey: "sidebar.payments", url: "/scolarite/paiements" },
+      { titleKey: "sidebar.matriculeGeneration", url: "/scolarite/matricule" },
+      { titleKey: "sidebar.deadlineTracking", url: "/scolarite/echeances" },
+      { titleKey: "sidebar.schoolHistory", url: "/scolarite/historique" },
+      { titleKey: "sidebar.menaImportExport", url: "/scolarite/mena" },
+      { titleKey: "sidebar.documents", url: "/scolarite/documents" },
+      { titleKey: "sidebar.alerts", url: "/scolarite/alertes" },
     ],
   },
   {
-    title: "Notes & Évaluations",
+    titleKey: "sidebar.gradesEvaluations",
+    legacyTitle: "Notes & Évaluations",
     icon: BookOpenCheck,
     subItems: [
-      { title: "Saisie des Notes", url: "/grades" },
-      { title: "Configuration Barèmes", url: "/notes/baremes" },
-      { title: "Calcul Moyennes", url: "/notes/moyennes" },
-      { title: "Validation Notes", url: "/notes/validation" },
-      { title: "Bulletins & Relevés", url: "/notes/bulletins" },
-      { title: "QCM Auto-corrigé", url: "/notes/qcm" },
+      { titleKey: "sidebar.gradeEntry", url: "/grades" },
+      { titleKey: "sidebar.scaleConfiguration", url: "/notes/baremes" },
+      { titleKey: "sidebar.averageCalculation", url: "/notes/moyennes" },
+      { titleKey: "sidebar.gradeValidation", url: "/notes/validation" },
+      { titleKey: "sidebar.bulletinsTranscripts", url: "/notes/bulletins" },
+      { titleKey: "sidebar.autoGradedQcm", url: "/notes/qcm" },
     ],
   },
   {
-    title: "Gestion des Examens",
+    titleKey: "sidebar.examManagement",
+    legacyTitle: "Gestion des Examens",
     icon: ClipboardCheck,
     subItems: [
-      { title: "Paramétrage Examens", url: "/examens/parametrage" },
-      { title: "Inscription Candidats", url: "/examens/candidats" },
-      { title: "Jurys & Examinateurs", url: "/examens/jurys" },
-      { title: "Salles & Planning", url: "/examens/salles" },
-      { title: "Convocations", url: "/examens/convocations" },
-      { title: "Procès-Verbaux", url: "/examens/pv" },
-      { title: "Saisie Notes Examens", url: "/examens/notes" },
-      { title: "Délibérations", url: "/examens/deliberations" },
-      { title: "Résultats & Classements", url: "/examens/resultats" },
-      { title: "Documents Officiels", url: "/examens/documents" },
-      { title: "Communication", url: "/examens/communication" },
-      { title: "Audit & Sécurité", url: "/examens/audit" },
-      { title: "Rapprochement DECO", url: "/examens/rapprochement" },
-      { title: "Tableau de Bord Examens", url: "/examens/tableau-bord" },
-      { title: "Alertes & Monitoring", url: "/examens/alertes-monitoring" },
+      { titleKey: "sidebar.examSetup", url: "/examens/parametrage" },
+      { titleKey: "sidebar.candidateRegistration", url: "/examens/candidats" },
+      { titleKey: "sidebar.juriesExaminers", url: "/examens/jurys" },
+      { titleKey: "sidebar.roomsPlanning", url: "/examens/salles" },
+      { titleKey: "sidebar.convocations", url: "/examens/convocations" },
+      { titleKey: "sidebar.minutes", url: "/examens/pv" },
+      { titleKey: "sidebar.examGradeEntry", url: "/examens/notes" },
+      { titleKey: "sidebar.deliberations", url: "/examens/deliberations" },
+      { titleKey: "sidebar.resultsRankings", url: "/examens/resultats" },
+      { titleKey: "sidebar.officialDocuments", url: "/examens/documents" },
+      { titleKey: "sidebar.communication", url: "/examens/communication" },
+      { titleKey: "sidebar.auditSecurity", url: "/examens/audit" },
+      { titleKey: "sidebar.decoReconciliation", url: "/examens/rapprochement" },
+      { titleKey: "sidebar.examDashboard", url: "/examens/tableau-bord" },
+      { titleKey: "sidebar.alertsMonitoring", url: "/examens/alertes-monitoring" },
     ],
   },
   {
-    title: "Messagerie & SMS",
+    titleKey: "sidebar.messagingSms",
+    legacyTitle: "Messagerie & SMS",
     icon: MessageSquare,
     subItems: [
-      { title: "Chat Interne", url: "/messaging" },
-      { title: "SMS Professionnels", url: "/messaging/sms" },
-      { title: "Notifications Auto", url: "/messaging/notifications" },
-      { title: "Envoi Emails", url: "/messaging/emails" },
-      { title: "Forum Interne", url: "/messaging/forum" },
+      { titleKey: "sidebar.internalChat", url: "/messaging" },
+      { titleKey: "sidebar.professionalSms", url: "/messaging/sms" },
+      { titleKey: "sidebar.autoNotifications", url: "/messaging/notifications" },
+      { titleKey: "sidebar.sendEmails", url: "/messaging/emails" },
+      { titleKey: "sidebar.internalForum", url: "/messaging/forum" },
     ],
   },
   {
-    title: "Portail Parents & Élèves",
+    titleKey: "sidebar.parentStudentPortal",
+    legacyTitle: "Portail Parents & Élèves",
     icon: Users2,
     subItems: [
-      { title: "Accès Portail", url: "/parent-portal" },
-      { title: "Connexion Sécurisée", url: "/parent-login" },
-      { title: "Notes & Bulletins", url: "/portail/notes" },
-      { title: "Absences & Emploi", url: "/portail/absences" },
-      { title: "Paiements", url: "/portail/paiements" },
-      { title: "Documents", url: "/portail/documents" },
-      { title: "Chat Parents", url: "/portail/chat" },
-      { title: "Calendrier & RDV", url: "/portail/calendrier" },
+      { titleKey: "sidebar.portalAccess", url: "/parent-portal" },
+      { titleKey: "sidebar.secureLogin", url: "/parent-login" },
+      { titleKey: "sidebar.gradesBulletins", url: "/portail/notes" },
+      { titleKey: "sidebar.absencesSchedule", url: "/portail/absences" },
+      { titleKey: "sidebar.payments", url: "/portail/paiements" },
+      { titleKey: "sidebar.documents", url: "/portail/documents" },
+      { titleKey: "sidebar.parentChat", url: "/portail/chat" },
+      { titleKey: "sidebar.calendarAppointments", url: "/portail/calendrier" },
     ],
   },
   {
-    title: "Suivi Enseignants",
+    titleKey: "sidebar.teacherTracking",
+    legacyTitle: "Suivi Enseignants",
     icon: UserCheck,
     subItems: [
-      { title: "Planning Hebdomadaire", url: "/teachers" },
-      { title: "Suivi des Cours", url: "/enseignants/suivi-cours" },
-      { title: "Pointage Auto", url: "/enseignants/pointage" },
-      { title: "Rapport Assiduité", url: "/enseignants/assiduite" },
-      { title: "Fiche de Service", url: "/enseignants/fiche-service" },
+      { titleKey: "sidebar.weeklyPlanning", url: "/teachers" },
+      { titleKey: "sidebar.courseTracking", url: "/enseignants/suivi-cours" },
+      { titleKey: "sidebar.autoAttendance", url: "/enseignants/pointage" },
+      { titleKey: "sidebar.attendanceReport", url: "/enseignants/assiduite" },
+      { titleKey: "sidebar.serviceSheet", url: "/enseignants/fiche-service" },
     ],
   },
   {
-    title: "Comptabilité Générale",
+    titleKey: "sidebar.generalAccounting",
+    legacyTitle: "Comptabilité Générale",
     icon: DollarSign,
     subItems: [
-      { title: "Recettes & Dépenses", url: "/finance" },
-      { title: "Gestion Caisse", url: "/comptabilite/caisse" },
-      { title: "Journaux Comptables", url: "/comptabilite/journaux" },
-      { title: "Balance & Bilan", url: "/comptabilite/bilan" },
-      { title: "Paiements Scolaires", url: "/comptabilite/paiements" },
-      { title: "Quittances", url: "/comptabilite/quittances" },
+      { titleKey: "sidebar.incomeExpenses", url: "/finance" },
+      { titleKey: "sidebar.cashManagement", url: "/comptabilite/caisse" },
+      { titleKey: "sidebar.accountingJournals", url: "/comptabilite/journaux" },
+      { titleKey: "sidebar.balanceSheet", url: "/comptabilite/bilan" },
+      { titleKey: "sidebar.schoolPayments", url: "/comptabilite/paiements" },
+      { titleKey: "sidebar.receipts", url: "/comptabilite/quittances" },
     ],
   },
   {
-    title: "Infrastructures",
+    titleKey: "sidebar.infrastructure",
+    legacyTitle: "Infrastructures",
     icon: Building2,
     subItems: [
-      { title: "Salles & Locaux", url: "/facilities" },
-      { title: "Maintenance", url: "/infrastructures/maintenance" },
-      { title: "Planning Utilisation", url: "/infrastructures/planning" },
+      { titleKey: "sidebar.roomsPremises", url: "/facilities" },
+      { titleKey: "sidebar.maintenance", url: "/infrastructures/maintenance" },
+      { titleKey: "sidebar.usagePlanning", url: "/infrastructures/planning" },
     ],
   },
   {
-    title: "Services",
+    titleKey: "sidebar.services",
+    legacyTitle: "Services",
     icon: Utensils,
     subItems: [
-      { title: "Cantine", url: "/services/cantine" },
-      { title: "Transport Scolaire", url: "/services/transport" },
-      { title: "Internat", url: "/services/internat" },
+      { titleKey: "sidebar.canteen", url: "/services/cantine" },
+      { titleKey: "sidebar.schoolTransport", url: "/services/transport" },
+      { titleKey: "sidebar.boarding", url: "/services/internat" },
     ],
   },
   {
-    title: "Bibliothèque",
+    titleKey: "sidebar.library",
+    legacyTitle: "Bibliothèque",
     icon: Library,
     subItems: [
-      { title: "Tableau de Bord", url: "/library" },
-      { title: "Catalogue", url: "/bibliotheque/catalogue" },
-      { title: "Emprunts & Retours", url: "/bibliotheque/emprunts" },
-      { title: "Scan QR Code", url: "/bibliotheque/scan" },
-      { title: "Suggestions Lecture", url: "/bibliotheque/suggestions" },
-      { title: "Acquisitions", url: "/bibliotheque/acquisitions" },
-      { title: "Réservations", url: "/bibliotheque/reservations" },
-      { title: "Alertes Retard", url: "/bibliotheque/alertes" },
-      { title: "Inventaire", url: "/bibliotheque/inventaire" },
-      { title: "Cartes Lecteur", url: "/bibliotheque/cartes" },
-      { title: "Statistiques", url: "/bibliotheque/statistiques" },
+      { titleKey: "sidebar.libraryDashboard", url: "/library" },
+      { titleKey: "sidebar.catalog", url: "/bibliotheque/catalogue" },
+      { titleKey: "sidebar.loansReturns", url: "/bibliotheque/emprunts" },
+      { titleKey: "sidebar.qrCodeScan", url: "/bibliotheque/scan" },
+      { titleKey: "sidebar.readingSuggestions", url: "/bibliotheque/suggestions" },
+      { titleKey: "sidebar.acquisitions", url: "/bibliotheque/acquisitions" },
+      { titleKey: "sidebar.reservations", url: "/bibliotheque/reservations" },
+      { titleKey: "sidebar.overdueAlerts", url: "/bibliotheque/alertes" },
+      { titleKey: "sidebar.inventory", url: "/bibliotheque/inventaire" },
+      { titleKey: "sidebar.readerCards", url: "/bibliotheque/cartes" },
+      { titleKey: "sidebar.libraryStatistics", url: "/bibliotheque/statistiques" },
     ],
   },
   {
-    title: "Activités Parascolaires",
+    titleKey: "sidebar.extracurricular",
+    legacyTitle: "Activités Parascolaires",
     icon: Trophy,
     subItems: [
-      { title: "Clubs & Sports", url: "/extracurricular" },
-      { title: "Participation", url: "/parascolaire/participation" },
-      { title: "Événements", url: "/parascolaire/evenements" },
+      { titleKey: "sidebar.clubsSports", url: "/extracurricular" },
+      { titleKey: "sidebar.participation", url: "/parascolaire/participation" },
+      { titleKey: "sidebar.events", url: "/parascolaire/evenements" },
     ],
   },
   {
-    title: "Infirmerie",
+    titleKey: "sidebar.infirmary",
+    legacyTitle: "Infirmerie",
     icon: Heart,
     subItems: [
-      { title: "Fiches Médicales", url: "/infirmary" },
-      { title: "Consultations", url: "/infirmerie/consultations" },
-      { title: "Historique Médical", url: "/infirmerie/historique" },
-      { title: "Fiches Santé", url: "/infirmerie/fiches" },
-      { title: "Stock Médicaments", url: "/infirmerie/stock" },
-      { title: "Rapports Périodiques", url: "/infirmerie/rapports" },
-      { title: "Ordonnances", url: "/infirmerie/ordonnances" },
-      { title: "Rappels SMS/Email", url: "/infirmerie/rappels" },
-      { title: "Alertes Urgentes", url: "/infirmerie/alertes" },
+      { titleKey: "sidebar.medicalRecords", url: "/infirmary" },
+      { titleKey: "sidebar.consultations", url: "/infirmerie/consultations" },
+      { titleKey: "sidebar.medicalHistory", url: "/infirmerie/historique" },
+      { titleKey: "sidebar.healthRecords", url: "/infirmerie/fiches" },
+      { titleKey: "sidebar.medicationStock", url: "/infirmerie/stock" },
+      { titleKey: "sidebar.periodicReports", url: "/infirmerie/rapports" },
+      { titleKey: "sidebar.prescriptions", url: "/infirmerie/ordonnances" },
+      { titleKey: "sidebar.smsEmailReminders", url: "/infirmerie/rappels" },
+      { titleKey: "sidebar.urgentAlerts", url: "/infirmerie/alertes" },
     ],
   },
   {
-    title: "Stocks & Patrimoine",
+    titleKey: "sidebar.stocksAssets",
+    legacyTitle: "Stocks & Patrimoine",
     icon: Package,
     subItems: [
-      { title: "Entrées/Sorties", url: "/inventory" },
-      { title: "Seuils Alerte", url: "/stocks/seuils" },
-      { title: "Inventaire Auto", url: "/stocks/inventaire" },
+      { titleKey: "sidebar.inOut", url: "/inventory" },
+      { titleKey: "sidebar.alertThresholds", url: "/stocks/seuils" },
+      { titleKey: "sidebar.autoInventory", url: "/stocks/inventaire" },
     ],
   },
   {
-    title: "Partenariats",
+    titleKey: "sidebar.partnerships",
+    legacyTitle: "Partenariats",
     icon: Handshake,
     subItems: [
-      { title: "APEL", url: "/partnerships" },
-      { title: "Réunions & PV", url: "/partenariats/reunions" },
-      { title: "Sponsors", url: "/partenariats/sponsors" },
+      { titleKey: "sidebar.apel", url: "/partnerships" },
+      { titleKey: "sidebar.meetingsMinutes", url: "/partenariats/reunions" },
+      { titleKey: "sidebar.sponsors", url: "/partenariats/sponsors" },
     ],
   },
   {
-    title: "MENA/DESPS",
+    titleKey: "sidebar.menaDesps",
+    legacyTitle: "MENA/DESPS",
     icon: Link2,
     subItems: [
-      { title: "Synchronisation", url: "/mena/sync" },
-      { title: "Fichier National", url: "/mena/fichier" },
-      { title: "Préinscriptions", url: "/mena/preinscriptions" },
-      { title: "Décisions & Bilans", url: "/mena/decisions" },
+      { titleKey: "sidebar.synchronization", url: "/mena/sync" },
+      { titleKey: "sidebar.nationalFile", url: "/mena/fichier" },
+      { titleKey: "sidebar.preEnrollments", url: "/mena/preinscriptions" },
+      { titleKey: "sidebar.decisionsReports", url: "/mena/decisions" },
     ],
   },
   {
-    title: "Outils Productivité",
+    titleKey: "sidebar.productivityTools",
+    legacyTitle: "Outils Productivité",
     icon: FileSpreadsheet,
     subItems: [
-      { title: "Suite Bureautique", url: "/outils/bureautique" },
-      { title: "Signature Électronique", url: "/outils/signature" },
-      { title: "Modèles Courriers", url: "/outils/modeles" },
-      { title: "Cloud Sécurisé", url: "/outils/cloud" },
+      { titleKey: "sidebar.officeSuite", url: "/outils/bureautique" },
+      { titleKey: "sidebar.electronicSignature", url: "/outils/signature" },
+      { titleKey: "sidebar.letterTemplates", url: "/outils/modeles" },
+      { titleKey: "sidebar.secureCloud", url: "/outils/cloud" },
     ],
   },
   {
-    title: "Statistiques & Rapports",
+    titleKey: "sidebar.statisticsReports",
+    legacyTitle: "Statistiques & Rapports",
     icon: BarChart3,
     subItems: [
-      { title: "Rapports Globaux", url: "/statistiques/rapports" },
-      { title: "Tableaux Croisés", url: "/statistiques/tableaux" },
-      { title: "Export Multi-format", url: "/statistiques/export" },
-      { title: "Rapports Planifiés", url: "/statistiques/planifies" },
+      { titleKey: "sidebar.globalReports", url: "/statistiques/rapports" },
+      { titleKey: "sidebar.crossTables", url: "/statistiques/tableaux" },
+      { titleKey: "sidebar.multiFormatExport", url: "/statistiques/export" },
+      { titleKey: "sidebar.scheduledReports", url: "/statistiques/planifies" },
     ],
   },
   {
-    title: "Paramétrage & Sécurité",
+    titleKey: "sidebar.settingsSecurity",
+    legacyTitle: "Paramétrage & Sécurité",
     icon: Settings,
     subItems: [
-      { title: "Configuration Établissement", url: "/parametrage/etablissement" },
-      { title: "Utilisateurs", url: "/settings" },
-      { title: "Rôles & Droits", url: "/parametrage/roles" },
-      { title: "Sécurité Avancée", url: "/parametrage/securite" },
-      { title: "Audit & Traçabilité", url: "/parametrage/audit" },
-      { title: "Archives & Années", url: "/parametrage/archives" },
-      { title: "Sauvegarde", url: "/parametrage/sauvegarde" },
-      { title: "Multilingue", url: "/parametrage/langues" },
-      { title: "Logs Système", url: "/parametrage/logs" },
+      { titleKey: "sidebar.schoolConfiguration", url: "/parametrage/etablissement" },
+      { titleKey: "sidebar.users", url: "/settings" },
+      { titleKey: "sidebar.rolesRights", url: "/parametrage/roles" },
+      { titleKey: "sidebar.advancedSecurity", url: "/parametrage/securite" },
+      { titleKey: "sidebar.auditTraceability", url: "/parametrage/audit" },
+      { titleKey: "sidebar.archivesYears", url: "/parametrage/archives" },
+      { titleKey: "sidebar.backup", url: "/parametrage/sauvegarde" },
+      { titleKey: "sidebar.multilingual", url: "/parametrage/langues" },
+      { titleKey: "sidebar.systemLogs", url: "/parametrage/logs" },
     ],
   },
   {
-    title: "Modules Optionnels",
+    titleKey: "sidebar.optionalModules",
+    legacyTitle: "Modules Optionnels",
     icon: Puzzle,
     subItems: [
-      { title: "E-learning Avancé", url: "/modules/elearning" },
-      { title: "App Mobile", url: "/modules/mobile" },
-      { title: "QR Code Scolaire", url: "/modules/qrcode" },
-      { title: "Paiement Mobile", url: "/modules/paiement-mobile" },
-      { title: "Intelligence Artificielle", url: "/modules/ia" },
+      { titleKey: "sidebar.advancedElearning", url: "/modules/elearning" },
+      { titleKey: "sidebar.mobileApp", url: "/modules/mobile" },
+      { titleKey: "sidebar.schoolQrCode", url: "/modules/qrcode" },
+      { titleKey: "sidebar.mobilePayment", url: "/modules/paiement-mobile" },
+      { titleKey: "sidebar.artificialIntelligence", url: "/modules/ia" },
     ],
   },
 ];
 
 export function AppSidebar() {
   const { open } = useSidebar();
-  // Initialiser tous les groupes comme fermés pour éviter le warning controlled/uncontrolled
+  const { t } = useLanguage();
   const [openGroups, setOpenGroups] = useState<{ [key: string]: boolean }>(() => {
     const initialState: { [key: string]: boolean } = {};
     menuStructure.forEach(item => {
       if (item.subItems) {
-        initialState[item.title] = false;
+        initialState[item.legacyTitle] = false;
       }
     });
     return initialState;
@@ -333,9 +359,8 @@ export function AppSidebar() {
     }));
   };
 
-  // Filtrer les items du menu selon les permissions
   const filteredMenuStructure = menuStructure.filter((item) => {
-    const permissionKey = menuPermissionMap[item.title];
+    const permissionKey = menuPermissionMap[item.legacyTitle];
     return permissionKey ? hasPermission(permissionKey) : true;
   });
 
@@ -349,7 +374,7 @@ export function AppSidebar() {
           {open && (
             <div>
               <h2 className="text-lg font-bold text-sidebar-foreground">NextGen Éducation</h2>
-              <p className="text-xs text-sidebar-foreground/70">Gestion Scolaire</p>
+              <p className="text-xs text-sidebar-foreground/70">{t('nav.schoolManagement')}</p>
             </div>
           )}
         </div>
@@ -360,7 +385,7 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupLabel className="flex items-center gap-2">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              Favoris
+              {t('nav.favorites')}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -387,12 +412,12 @@ export function AppSidebar() {
         )}
         
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation Principale</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('nav.mainNavigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredMenuStructure.map((item) => (
                 item.url ? (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.legacyTitle}>
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.url}
@@ -403,22 +428,22 @@ export function AppSidebar() {
                         }
                       >
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span>{t(item.titleKey)}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ) : (
                   <Collapsible
-                    key={item.title}
-                    open={openGroups[item.title]}
-                    onOpenChange={() => toggleGroup(item.title)}
+                    key={item.legacyTitle}
+                    open={openGroups[item.legacyTitle]}
+                    onOpenChange={() => toggleGroup(item.legacyTitle)}
                     className="group/collapsible"
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className="w-full">
                           <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
+                          <span>{t(item.titleKey)}</span>
                           <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -436,7 +461,7 @@ export function AppSidebar() {
                                       : "hover:bg-sidebar-accent/50"
                                   }
                                 >
-                                  <span>{subItem.title}</span>
+                                  <span>{t(subItem.titleKey)}</span>
                                 </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
