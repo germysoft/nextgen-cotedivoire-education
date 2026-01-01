@@ -78,6 +78,7 @@ export const fr = {
   'sidebar.juriesExaminers': 'Jurys & Examinateurs',
   'sidebar.roomsPlanning': 'Salles & Planning',
   'sidebar.convocations': 'Convocations',
+  'sidebar.printListsPedagogie': 'Imprimer Listes',
   'sidebar.minutes': 'Procès-Verbaux',
   'sidebar.examGradeEntry': 'Saisie Notes Examens',
   'sidebar.deliberations': 'Délibérations',
