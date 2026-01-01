@@ -117,6 +117,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.gradeValidation", url: "/notes/validation" },
       { titleKey: "sidebar.bulletinsTranscripts", url: "/notes/bulletins" },
       { titleKey: "sidebar.autoGradedQcm", url: "/notes/qcm" },
+      { titleKey: "sidebar.printListsNotes", url: "/notes/listes" },
     ],
   },
   {

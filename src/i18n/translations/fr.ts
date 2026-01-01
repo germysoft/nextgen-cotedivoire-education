@@ -72,6 +72,7 @@ export const fr = {
   'sidebar.gradeValidation': 'Validation Notes',
   'sidebar.bulletinsTranscripts': 'Bulletins & Relevés',
   'sidebar.autoGradedQcm': 'QCM Auto-corrigé',
+  'sidebar.printListsNotes': 'Imprimer Listes',
   'sidebar.examManagement': 'Gestion des Examens',
   'sidebar.examSetup': 'Paramétrage Examens',
   'sidebar.candidateRegistration': 'Inscription Candidats',
