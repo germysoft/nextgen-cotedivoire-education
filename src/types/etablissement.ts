@@ -11,6 +11,8 @@ export type TypeEtablissement =
 
 export type TypeEvaluation = 'trimestre' | 'semestre';
 
+export type LangueDefaut = 'fr' | 'en' | 'es';
+
 export type Cycle = 
   | 'prescolaire'
   | 'primaire' 
@@ -100,6 +102,7 @@ export interface ParametresPedagogiques {
   heureFinCours: string;
   dureeRecreation: number; // en minutes
   joursOuvrables: ('lundi' | 'mardi' | 'mercredi' | 'jeudi' | 'vendredi' | 'samedi')[];
+  langueParDefaut: LangueDefaut;
 }
 
 export interface SignataireDocuments {
@@ -213,6 +216,7 @@ export const defaultConfiguration: ConfigurationEtablissement = {
     heureFinCours: '17:00',
     dureeRecreation: 15,
     joursOuvrables: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'],
+    langueParDefaut: 'fr',
   },
   signataire: {
     nomSignataire: '',

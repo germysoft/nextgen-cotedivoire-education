@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { 
   Building2, MapPin, User, BookOpen, Palette, Shield, Save, 
   Upload, Lock, Unlock, History, AlertTriangle, Check, Image,
-  Phone, Mail, Globe, Calendar, Clock, FileSignature, FileDown
+  Phone, Mail, Globe, Calendar, Clock, FileSignature, FileDown, Languages
 } from "lucide-react";
 import { generateConfigurationPDF } from "@/components/etablissement/ConfigurationPDFGenerator";
 import {
@@ -41,6 +41,7 @@ import {
   FonctionResponsable,
   TypeEvaluation,
   Cycle,
+  LangueDefaut,
   listeDRENA,
   villesCoteDIvoire,
   communesAbidjan,
@@ -863,7 +864,7 @@ const ConfigurationEtablissement = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="anneeScolaire" className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" /> Année scolaire en cours
@@ -875,6 +876,37 @@ const ConfigurationEtablissement = () => {
                     placeholder="2024-2025"
                     disabled={isLocked}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="langueDefaut" className="flex items-center gap-2">
+                    <Languages className="h-4 w-4" /> Langue par défaut
+                  </Label>
+                  <Select
+                    value={configuration.parametresPedagogiques.langueParDefaut || 'fr'}
+                    onValueChange={(value: LangueDefaut) => updateSection('parametresPedagogiques', { langueParDefaut: value })}
+                    disabled={isLocked}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fr">
+                        <div className="flex items-center gap-2">
+                          <span>🇫🇷</span> Français
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="en">
+                        <div className="flex items-center gap-2">
+                          <span>🇬🇧</span> English
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="es">
+                        <div className="flex items-center gap-2">
+                          <span>🇪🇸</span> Español
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="typeEvaluation">Type d'évaluation</Label>
