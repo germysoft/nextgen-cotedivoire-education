@@ -44,6 +44,7 @@ export const es = {
   'sidebar.training': 'Formación',
   'sidebar.skills': 'Competencias',
   'sidebar.recruitment': 'Reclutamiento',
+  'sidebar.printListsHR': 'Imprimir Listas',
   'sidebar.pedagogicalManagement': 'Gestión Pedagógica',
   'sidebar.cyclesClasses': 'Ciclos y Clases',
   'sidebar.schedules': 'Horarios',
