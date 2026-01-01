@@ -90,6 +90,7 @@ export const es = {
   'sidebar.decoReconciliation': 'Conciliación DECO',
   'sidebar.examDashboard': 'Panel de Exámenes',
   'sidebar.alertsMonitoring': 'Alertas y Monitoreo',
+  'sidebar.printListsExams': 'Imprimir Listas',
   'sidebar.messagingSms': 'Mensajería y SMS',
   'sidebar.internalChat': 'Chat Interno',
   'sidebar.professionalSms': 'SMS Profesionales',
