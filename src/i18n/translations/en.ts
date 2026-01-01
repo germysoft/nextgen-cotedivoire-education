@@ -780,6 +780,8 @@ export const en = {
   'toast.languageChanged': 'Language changed',
   'toast.languageReset': 'Language reset to default',
   'language.resetToDefault': 'Reset to institution language',
+  'language.institutionDefault': 'Institution language',
+  'language.default': 'Default',
   'toast.configLocked': 'Configuration locked',
   'toast.configUnlocked': 'Configuration unlocked',
   'toast.pdfGenerated': 'PDF generated successfully',
