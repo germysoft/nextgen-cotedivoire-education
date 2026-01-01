@@ -17,6 +17,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockMedicalRecords = [
   { 
@@ -55,6 +56,7 @@ const mockVisits = [
 ];
 
 export default function Infirmary() {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [isNewVisitOpen, setIsNewVisitOpen] = useState(false);
 
@@ -65,43 +67,43 @@ export default function Infirmary() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Infirmerie</h1>
-          <p className="text-muted-foreground">Gestion médicale et santé des élèves</p>
+          <h1 className="text-3xl font-bold">{t('infirmary.title')}</h1>
+          <p className="text-muted-foreground">{t('infirmary.subtitle')}</p>
         </div>
         <Dialog open={isNewVisitOpen} onOpenChange={setIsNewVisitOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Consultation
+              {t('infirmary.newConsultation')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Enregistrer une consultation</DialogTitle>
+              <DialogTitle>{t('infirmary.registerConsultation')}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label>Élève</Label>
-                <Input placeholder="Nom ou matricule de l'élève" />
+                <Label>{t('infirmary.student')}</Label>
+                <Input placeholder={t('infirmary.studentPlaceholder')} />
               </div>
               <div className="space-y-2">
-                <Label>Motif de consultation</Label>
-                <Textarea placeholder="Décrire les symptômes..." rows={3} />
+                <Label>{t('infirmary.reason')}</Label>
+                <Textarea placeholder={t('infirmary.reasonPlaceholder')} rows={3} />
               </div>
               <div className="space-y-2">
-                <Label>Traitement prescrit</Label>
-                <Textarea placeholder="Médicaments ou soins administrés..." rows={3} />
+                <Label>{t('infirmary.treatment')}</Label>
+                <Textarea placeholder={t('infirmary.treatmentPlaceholder')} rows={3} />
               </div>
               <div className="space-y-2">
-                <Label>Observations</Label>
-                <Textarea placeholder="Remarques ou instructions..." rows={2} />
+                <Label>{t('infirmary.observations')}</Label>
+                <Textarea placeholder={t('infirmary.observationsPlaceholder')} rows={2} />
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsNewVisitOpen(false)}>
-                  Annuler
+                  {t('infirmary.cancel')}
                 </Button>
                 <Button onClick={() => setIsNewVisitOpen(false)}>
-                  Enregistrer
+                  {t('infirmary.save')}
                 </Button>
               </div>
             </div>
@@ -113,44 +115,44 @@ export default function Infirmary() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Consultations</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('infirmary.consultations')}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalVisits}</div>
-            <p className="text-xs text-muted-foreground">Ce mois</p>
+            <p className="text-xs text-muted-foreground">{t('infirmary.thisMonth')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alertes Médicales</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('infirmary.medicalAlerts')}</CardTitle>
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{activeAlerts}</div>
-            <p className="text-xs text-muted-foreground">Conditions à surveiller</p>
+            <p className="text-xs text-muted-foreground">{t('infirmary.conditionsToMonitor')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fiches Médicales</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('infirmary.medicalRecords')}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockMedicalRecords.length}</div>
-            <p className="text-xs text-muted-foreground">Dossiers actifs</p>
+            <p className="text-xs text-muted-foreground">{t('infirmary.activeRecords')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Patients Aujourd'hui</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('infirmary.patientsToday')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {mockVisits.filter(v => v.date === "2024-11-05").length}
             </div>
-            <p className="text-xs text-muted-foreground">Consultations du jour</p>
+            <p className="text-xs text-muted-foreground">{t('infirmary.todayConsultations')}</p>
           </CardContent>
         </Card>
       </div>
@@ -158,27 +160,27 @@ export default function Infirmary() {
       {/* Main Content */}
       <Card>
         <CardHeader>
-          <CardTitle>Gestion Médicale</CardTitle>
+          <CardTitle>{t('infirmary.medicalManagement')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="visits">
             <TabsList>
-              <TabsTrigger value="visits">Consultations</TabsTrigger>
-              <TabsTrigger value="records">Fiches Médicales</TabsTrigger>
-              <TabsTrigger value="stats">Statistiques</TabsTrigger>
+              <TabsTrigger value="visits">{t('infirmary.consultations')}</TabsTrigger>
+              <TabsTrigger value="records">{t('infirmary.medicalRecords')}</TabsTrigger>
+              <TabsTrigger value="stats">{t('library.statistics')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="visits" className="space-y-4">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Heure</TableHead>
-                    <TableHead>Élève</TableHead>
-                    <TableHead>Motif</TableHead>
-                    <TableHead>Traitement</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('infirmary.date')}</TableHead>
+                    <TableHead>{t('infirmary.time')}</TableHead>
+                    <TableHead>{t('infirmary.student')}</TableHead>
+                    <TableHead>{t('infirmary.reason')}</TableHead>
+                    <TableHead>{t('infirmary.treatment')}</TableHead>
+                    <TableHead>{t('infirmary.status')}</TableHead>
+                    <TableHead className="text-right">{t('infirmary.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -191,11 +193,11 @@ export default function Infirmary() {
                       <TableCell className="text-sm">{visit.treatment}</TableCell>
                       <TableCell>
                         <Badge variant={visit.status === "Traité" ? "default" : "secondary"}>
-                          {visit.status}
+                          {visit.status === "Traité" ? t('infirmary.treated') : t('infirmary.ongoing')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost">Voir</Button>
+                        <Button size="sm" variant="ghost">{t('infirmary.view')}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -208,7 +210,7 @@ export default function Infirmary() {
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher un élève..."
+                    placeholder={t('infirmary.searchStudent')}
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -219,13 +221,13 @@ export default function Infirmary() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Matricule</TableHead>
-                    <TableHead>Nom de l'Élève</TableHead>
-                    <TableHead>Groupe Sanguin</TableHead>
-                    <TableHead>Allergies</TableHead>
-                    <TableHead>Conditions</TableHead>
-                    <TableHead>Dernière Visite</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('infirmary.matricule')}</TableHead>
+                    <TableHead>{t('infirmary.studentName')}</TableHead>
+                    <TableHead>{t('infirmary.bloodType')}</TableHead>
+                    <TableHead>{t('infirmary.allergies')}</TableHead>
+                    <TableHead>{t('infirmary.conditions')}</TableHead>
+                    <TableHead>{t('infirmary.lastVisit')}</TableHead>
+                    <TableHead className="text-right">{t('infirmary.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -240,7 +242,7 @@ export default function Infirmary() {
                         {record.allergies !== "Aucune" ? (
                           <span className="text-destructive font-medium">{record.allergies}</span>
                         ) : (
-                          <span className="text-muted-foreground">{record.allergies}</span>
+                          <span className="text-muted-foreground">{t('infirmary.none')}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm">
@@ -252,7 +254,7 @@ export default function Infirmary() {
                       </TableCell>
                       <TableCell className="font-mono text-sm">{record.lastVisit}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost">Voir Dossier</Button>
+                        <Button size="sm" variant="ghost">{t('infirmary.viewRecord')}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -264,30 +266,30 @@ export default function Infirmary() {
               <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Motifs Fréquents</CardTitle>
+                    <CardTitle className="text-base">{t('infirmary.frequentReasons')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Maux de tête</span>
+                      <span className="text-sm">{t('infirmary.headache')}</span>
                       <Badge variant="outline">15</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Fièvre</span>
+                      <span className="text-sm">{t('infirmary.fever')}</span>
                       <Badge variant="outline">12</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Maux de ventre</span>
+                      <span className="text-sm">{t('infirmary.stomachache')}</span>
                       <Badge variant="outline">8</Badge>
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Tendances</CardTitle>
+                    <CardTitle className="text-base">{t('infirmary.trends')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Statistiques détaillées à venir
+                      {t('infirmary.detailedStats')}
                     </p>
                   </CardContent>
                 </Card>

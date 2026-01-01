@@ -14,6 +14,7 @@ import {
   Users,
   AlertCircle
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockBooks = [
   { id: 1, title: "Mathématiques 6ème", author: "CEDA", category: "Manuel scolaire", quantity: 150, available: 142, borrowed: 8 },
@@ -30,6 +31,7 @@ const mockBorrowings = [
 ];
 
 export default function Library() {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
 
   const totalBooks = mockBooks.reduce((acc, book) => acc + book.quantity, 0);
@@ -40,17 +42,17 @@ export default function Library() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Gestion de la Bibliothèque</h1>
-          <p className="text-muted-foreground">Livres, manuels et emprunts</p>
+          <h1 className="text-3xl font-bold">{t('library.title')}</h1>
+          <p className="text-muted-foreground">{t('library.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            Exporter
+            {t('library.export')}
           </Button>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Nouveau Livre
+            {t('library.newBook')}
           </Button>
         </div>
       </div>
@@ -59,42 +61,42 @@ export default function Library() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Livres</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('library.totalBooks')}</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalBooks}</div>
-            <p className="text-xs text-muted-foreground">{mockBooks.length} titres</p>
+            <p className="text-xs text-muted-foreground">{mockBooks.length} {t('library.titles')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Emprunts en cours</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('library.currentLoans')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalBorrowed}</div>
-            <p className="text-xs text-muted-foreground">Livres empruntés</p>
+            <p className="text-xs text-muted-foreground">{t('library.borrowedBooks')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Retards</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('library.lateReturns')}</CardTitle>
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{lateReturns}</div>
-            <p className="text-xs text-muted-foreground">Retours en retard</p>
+            <p className="text-xs text-muted-foreground">{t('library.lateReturnsDesc')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux d'emprunt</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('library.borrowRate')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{((totalBorrowed / totalBooks) * 100).toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">Livres en circulation</p>
+            <p className="text-xs text-muted-foreground">{t('library.booksInCirculation')}</p>
           </CardContent>
         </Card>
       </div>
@@ -102,14 +104,14 @@ export default function Library() {
       {/* Main Content */}
       <Card>
         <CardHeader>
-          <CardTitle>Bibliothèque</CardTitle>
+          <CardTitle>{t('library.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="books">
             <TabsList>
-              <TabsTrigger value="books">Catalogue</TabsTrigger>
-              <TabsTrigger value="borrowings">Emprunts</TabsTrigger>
-              <TabsTrigger value="stats">Statistiques</TabsTrigger>
+              <TabsTrigger value="books">{t('library.catalog')}</TabsTrigger>
+              <TabsTrigger value="borrowings">{t('library.loans')}</TabsTrigger>
+              <TabsTrigger value="stats">{t('library.statistics')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="books" className="space-y-4">
@@ -117,7 +119,7 @@ export default function Library() {
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher un livre..."
+                    placeholder={t('library.searchBook')}
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -128,13 +130,13 @@ export default function Library() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Titre</TableHead>
-                    <TableHead>Auteur</TableHead>
-                    <TableHead>Catégorie</TableHead>
-                    <TableHead>Quantité</TableHead>
-                    <TableHead>Disponibles</TableHead>
-                    <TableHead>Empruntés</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('library.title_col')}</TableHead>
+                    <TableHead>{t('library.author')}</TableHead>
+                    <TableHead>{t('library.category')}</TableHead>
+                    <TableHead>{t('library.quantity')}</TableHead>
+                    <TableHead>{t('library.availableQty')}</TableHead>
+                    <TableHead>{t('library.borrowedQty')}</TableHead>
+                    <TableHead className="text-right">{t('library.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -151,7 +153,7 @@ export default function Library() {
                       </TableCell>
                       <TableCell>{book.borrowed}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost">Voir</Button>
+                        <Button size="sm" variant="ghost">{t('library.view')}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -163,13 +165,13 @@ export default function Library() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Matricule</TableHead>
-                    <TableHead>Nom de l'Élève</TableHead>
-                    <TableHead>Livre</TableHead>
-                    <TableHead>Date d'emprunt</TableHead>
-                    <TableHead>Date de retour</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('library.matricule')}</TableHead>
+                    <TableHead>{t('library.studentName')}</TableHead>
+                    <TableHead>{t('library.book')}</TableHead>
+                    <TableHead>{t('library.borrowDate')}</TableHead>
+                    <TableHead>{t('library.returnDate')}</TableHead>
+                    <TableHead>{t('library.status')}</TableHead>
+                    <TableHead className="text-right">{t('library.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -182,12 +184,12 @@ export default function Library() {
                       <TableCell className="font-mono text-sm">{borrowing.returnDate}</TableCell>
                       <TableCell>
                         <Badge variant={borrowing.status === "En retard" ? "destructive" : "default"}>
-                          {borrowing.status}
+                          {borrowing.status === "En retard" ? t('library.overdue') : t('library.inProgress')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline">
-                          Retourner
+                          {t('library.return')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -198,7 +200,7 @@ export default function Library() {
 
             <TabsContent value="stats">
               <div className="text-center py-12 text-muted-foreground">
-                Statistiques détaillées à venir
+                {t('library.detailedStats')}
               </div>
             </TabsContent>
           </Tabs>
