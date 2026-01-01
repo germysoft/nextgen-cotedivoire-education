@@ -15,18 +15,19 @@ import {
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, Download, FileText,
   GraduationCap, Award, Users, Target, Calendar, Building, BookOpen,
-  ArrowUpRight, ArrowDownRight, RefreshCw, Filter, Printer, Mail
+  ArrowUpRight, ArrowDownRight, RefreshCw, Printer, Mail
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data - Sessions d'examens
 const sessionsData = [
-  { id: "1", type: "BEPC", annee: "2024", statut: "Terminé", candidats: 45678, admis: 34567, tauxReussite: 75.7 },
-  { id: "2", type: "BAC", annee: "2024", statut: "Terminé", candidats: 38234, admis: 26764, tauxReussite: 70.0 },
-  { id: "3", type: "BEPC", annee: "2023", statut: "Archivé", candidats: 43210, admis: 31234, tauxReussite: 72.3 },
-  { id: "4", type: "BAC", annee: "2023", statut: "Archivé", candidats: 36890, admis: 24567, tauxReussite: 66.6 },
-  { id: "5", type: "BEPC", annee: "2022", statut: "Archivé", candidats: 41567, admis: 28567, tauxReussite: 68.7 },
-  { id: "6", type: "BAC", annee: "2022", statut: "Archivé", candidats: 35123, admis: 22345, tauxReussite: 63.6 },
+  { id: "1", type: "BEPC", annee: "2024", statut: "completed", candidats: 45678, admis: 34567, tauxReussite: 75.7 },
+  { id: "2", type: "BAC", annee: "2024", statut: "completed", candidats: 38234, admis: 26764, tauxReussite: 70.0 },
+  { id: "3", type: "BEPC", annee: "2023", statut: "archived", candidats: 43210, admis: 31234, tauxReussite: 72.3 },
+  { id: "4", type: "BAC", annee: "2023", statut: "archived", candidats: 36890, admis: 24567, tauxReussite: 66.6 },
+  { id: "5", type: "BEPC", annee: "2022", statut: "archived", candidats: 41567, admis: 28567, tauxReussite: 68.7 },
+  { id: "6", type: "BAC", annee: "2022", statut: "archived", candidats: 35123, admis: 22345, tauxReussite: 63.6 },
 ];
 
 // Comparatif inter-années
@@ -62,16 +63,7 @@ const reussiteParMatiere = [
   { matiere: "EPS", moyenne: 14.5, tauxReussite: 89.2, coef: 1 },
 ];
 
-// Mentions distribution
-const mentionsData = [
-  { name: "Très Bien", value: 8.5, color: "hsl(var(--chart-1))" },
-  { name: "Bien", value: 15.2, color: "hsl(var(--chart-2))" },
-  { name: "Assez Bien", value: 24.8, color: "hsl(var(--chart-3))" },
-  { name: "Passable", value: 26.5, color: "hsl(var(--chart-4))" },
-  { name: "Non Admis", value: 25.0, color: "hsl(var(--destructive))" },
-];
-
-// Alertes anomalies
+// Anomalies
 const anomalies = [
   { id: "1", type: "critique", centre: "Korhogo", description: "Taux de réussite 15% inférieur à la moyenne nationale", date: "2024-07-20" },
   { id: "2", type: "attention", centre: "Man", description: "Moyenne en Mathématiques anormalement basse (8.2/20)", date: "2024-07-19" },
@@ -80,33 +72,50 @@ const anomalies = [
   { id: "5", type: "attention", centre: "Daloa", description: "Nombre d'absences élevé le jour J (12%)", date: "2024-07-16" },
 ];
 
-// Performance radar
-const performanceRadar = [
-  { subject: "Taux Réussite", A: 75, B: 70, fullMark: 100 },
-  { subject: "Régularité", A: 82, B: 78, fullMark: 100 },
-  { subject: "Progression", A: 88, B: 72, fullMark: 100 },
-  { subject: "Équité", A: 65, B: 60, fullMark: 100 },
-  { subject: "Efficacité", A: 78, B: 74, fullMark: 100 },
-];
-
 export default function TableauBordExamens() {
+  const { t, language } = useLanguage();
   const [selectedYear, setSelectedYear] = useState("2024");
   const [selectedExam, setSelectedExam] = useState("tous");
+
+  // Données traduites pour les mentions
+  const mentionsData = [
+    { name: t('exams.mentions.veryGood'), value: 8.5, color: "hsl(var(--chart-1))" },
+    { name: t('exams.mentions.good'), value: 15.2, color: "hsl(var(--chart-2))" },
+    { name: t('exams.mentions.fairlyGood'), value: 24.8, color: "hsl(var(--chart-3))" },
+    { name: t('exams.mentions.passable'), value: 26.5, color: "hsl(var(--chart-4))" },
+    { name: t('exams.mentions.notAdmitted'), value: 25.0, color: "hsl(var(--destructive))" },
+  ];
+
+  // Performance radar traduit
+  const performanceRadar = [
+    { subject: t('exams.radar.successRate'), A: 75, B: 70, fullMark: 100 },
+    { subject: t('exams.radar.regularity'), A: 82, B: 78, fullMark: 100 },
+    { subject: t('exams.radar.progression'), A: 88, B: 72, fullMark: 100 },
+    { subject: t('exams.radar.equity'), A: 65, B: 60, fullMark: 100 },
+    { subject: t('exams.radar.efficiency'), A: 78, B: 74, fullMark: 100 },
+  ];
 
   const getAnomalyBadge = (type: string) => {
     switch (type) {
       case "critique":
-        return <Badge variant="destructive">Critique</Badge>;
+        return <Badge variant="destructive">{t('exams.dashboard.critical')}</Badge>;
       case "attention":
-        return <Badge className="bg-orange-500">Attention</Badge>;
+        return <Badge className="bg-orange-500">{t('exams.dashboard.attention')}</Badge>;
       default:
-        return <Badge variant="secondary">Info</Badge>;
+        return <Badge variant="secondary">{t('exams.dashboard.info')}</Badge>;
     }
   };
 
+  const getStatusBadge = (statut: string) => {
+    if (statut === "completed") {
+      return <Badge variant="default">{t('exams.dashboard.completed')}</Badge>;
+    }
+    return <Badge variant="secondary">{t('exams.dashboard.archived')}</Badge>;
+  };
+
   const handleExportRapport = (format: string) => {
-    toast.success(`Export ${format.toUpperCase()} en cours...`, {
-      description: "Le rapport sera téléchargé dans quelques instants"
+    toast.success(t('exams.dashboard.exportInProgress').replace('...', ` ${format.toUpperCase()}...`), {
+      description: t('exams.dashboard.reportWillBeDownloaded')
     });
   };
 
@@ -115,6 +124,11 @@ export default function TableauBordExamens() {
   const totalAdmis = currentYear.reduce((acc, s) => acc + s.admis, 0);
   const tauxGlobal = totalCandidats > 0 ? ((totalAdmis / totalCandidats) * 100).toFixed(1) : 0;
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US');
+  };
+
   return (
     <div className="space-y-6">
       {/* En-tête */}
@@ -122,14 +136,14 @@ export default function TableauBordExamens() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <BarChart3 className="h-8 w-8 text-primary" />
-            Tableau de Bord Examens
+            {t('exams.dashboard.title')}
           </h1>
-          <p className="text-muted-foreground">Vue consolidée des sessions BEPC & BAC</p>
+          <p className="text-muted-foreground">{t('exams.dashboard.subtitle')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Année" />
+              <SelectValue placeholder={t('exams.dashboard.year')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="2024">2024</SelectItem>
@@ -139,10 +153,10 @@ export default function TableauBordExamens() {
           </Select>
           <Select value={selectedExam} onValueChange={setSelectedExam}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Examen" />
+              <SelectValue placeholder={t('exams.dashboard.exam')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="tous">Tous</SelectItem>
+              <SelectItem value="tous">{t('exams.dashboard.all')}</SelectItem>
               <SelectItem value="bepc">BEPC</SelectItem>
               <SelectItem value="bac">BAC</SelectItem>
             </SelectContent>
@@ -152,11 +166,11 @@ export default function TableauBordExamens() {
           </Button>
           <Button variant="outline" onClick={() => handleExportRapport("pdf")}>
             <Download className="h-4 w-4 mr-2" />
-            Export PDF
+            {t('exams.dashboard.exportPdf')}
           </Button>
           <Button onClick={() => handleExportRapport("excel")}>
             <FileText className="h-4 w-4 mr-2" />
-            Rapport Direction
+            {t('exams.dashboard.directionReport')}
           </Button>
         </div>
       </div>
@@ -167,11 +181,11 @@ export default function TableauBordExamens() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Candidats {selectedYear}</p>
+                <p className="text-sm text-muted-foreground">{t('exams.dashboard.candidates')} {selectedYear}</p>
                 <p className="text-3xl font-bold">{totalCandidats.toLocaleString()}</p>
                 <div className="flex items-center text-green-600 text-sm mt-1">
                   <ArrowUpRight className="h-4 w-4" />
-                  <span>+5.7% vs {parseInt(selectedYear) - 1}</span>
+                  <span>+5.7% {t('exams.dashboard.vs')} {parseInt(selectedYear) - 1}</span>
                 </div>
               </div>
               <div className="p-3 bg-primary/20 rounded-full">
@@ -185,11 +199,11 @@ export default function TableauBordExamens() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Admis</p>
+                <p className="text-sm text-muted-foreground">{t('exams.dashboard.admitted')}</p>
                 <p className="text-3xl font-bold">{totalAdmis.toLocaleString()}</p>
                 <div className="flex items-center text-green-600 text-sm mt-1">
                   <ArrowUpRight className="h-4 w-4" />
-                  <span>+8.2% vs {parseInt(selectedYear) - 1}</span>
+                  <span>+8.2% {t('exams.dashboard.vs')} {parseInt(selectedYear) - 1}</span>
                 </div>
               </div>
               <div className="p-3 bg-green-500/20 rounded-full">
@@ -203,7 +217,7 @@ export default function TableauBordExamens() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Taux de Réussite Global</p>
+                <p className="text-sm text-muted-foreground">{t('exams.dashboard.globalSuccessRate')}</p>
                 <p className="text-3xl font-bold">{tauxGlobal}%</p>
                 <Progress value={Number(tauxGlobal)} className="mt-2 h-2" />
               </div>
@@ -218,10 +232,10 @@ export default function TableauBordExamens() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Alertes Actives</p>
+                <p className="text-sm text-muted-foreground">{t('exams.dashboard.activeAlerts')}</p>
                 <p className="text-3xl font-bold">{anomalies.filter(a => a.type === "critique").length}</p>
                 <p className="text-sm text-orange-600 mt-1">
-                  {anomalies.length} anomalies détectées
+                  {anomalies.length} {t('exams.dashboard.anomaliesDetected')}
                 </p>
               </div>
               <div className="p-3 bg-orange-500/20 rounded-full">
@@ -236,20 +250,20 @@ export default function TableauBordExamens() {
       {anomalies.filter(a => a.type === "critique").length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Alertes Critiques</AlertTitle>
+          <AlertTitle>{t('exams.dashboard.criticalAlerts')}</AlertTitle>
           <AlertDescription>
-            {anomalies.filter(a => a.type === "critique").length} anomalie(s) critique(s) nécessitent une attention immédiate.
+            {anomalies.filter(a => a.type === "critique").length} {t('exams.dashboard.criticalAnomaliesRequireAttention')}
           </AlertDescription>
         </Alert>
       )}
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="centres">Par Centre</TabsTrigger>
-          <TabsTrigger value="matieres">Par Matière</TabsTrigger>
-          <TabsTrigger value="comparatif">Comparatif</TabsTrigger>
-          <TabsTrigger value="anomalies">Anomalies</TabsTrigger>
+          <TabsTrigger value="overview">{t('exams.dashboard.overview')}</TabsTrigger>
+          <TabsTrigger value="centres">{t('exams.dashboard.byCenter')}</TabsTrigger>
+          <TabsTrigger value="matieres">{t('exams.dashboard.bySubject')}</TabsTrigger>
+          <TabsTrigger value="comparatif">{t('exams.dashboard.comparative')}</TabsTrigger>
+          <TabsTrigger value="anomalies">{t('exams.dashboard.anomalies')}</TabsTrigger>
         </TabsList>
 
         {/* Vue d'ensemble */}
@@ -260,7 +274,7 @@ export default function TableauBordExamens() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Évolution du Taux de Réussite (5 ans)
+                  {t('exams.dashboard.successRateEvolution')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -283,7 +297,7 @@ export default function TableauBordExamens() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5" />
-                  Distribution des Mentions {selectedYear}
+                  {t('exams.dashboard.honorsDistribution')} {selectedYear}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -315,20 +329,20 @@ export default function TableauBordExamens() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Sessions d'Examens
+                {t('exams.dashboard.examSessions')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Session</TableHead>
-                    <TableHead>Année</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Candidats</TableHead>
-                    <TableHead className="text-right">Admis</TableHead>
-                    <TableHead className="text-right">Taux Réussite</TableHead>
-                    <TableHead>Tendance</TableHead>
+                    <TableHead>{t('exams.dashboard.session')}</TableHead>
+                    <TableHead>{t('exams.dashboard.year')}</TableHead>
+                    <TableHead>{t('exams.dashboard.status')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.candidates')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.admitted')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.successRate')}</TableHead>
+                    <TableHead>{t('exams.dashboard.trend')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -342,9 +356,7 @@ export default function TableauBordExamens() {
                       </TableCell>
                       <TableCell>{session.annee}</TableCell>
                       <TableCell>
-                        <Badge variant={session.statut === "Terminé" ? "default" : "secondary"}>
-                          {session.statut}
-                        </Badge>
+                        {getStatusBadge(session.statut)}
                       </TableCell>
                       <TableCell className="text-right">{session.candidats.toLocaleString()}</TableCell>
                       <TableCell className="text-right">{session.admis.toLocaleString()}</TableCell>
@@ -370,7 +382,7 @@ export default function TableauBordExamens() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                Taux de Réussite par Centre d'Examen
+                {t('exams.dashboard.successRateByCenter')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -390,18 +402,18 @@ export default function TableauBordExamens() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Détail par Centre</CardTitle>
+              <CardTitle>{t('exams.dashboard.centerDetail')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Centre</TableHead>
-                    <TableHead className="text-right">Candidats</TableHead>
+                    <TableHead>{t('exams.dashboard.center')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.candidates')}</TableHead>
                     <TableHead className="text-right">BEPC</TableHead>
                     <TableHead className="text-right">BAC</TableHead>
-                    <TableHead className="text-right">Écart Moyenne</TableHead>
-                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.nationalAverageGap')}</TableHead>
+                    <TableHead>{t('exams.dashboard.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -420,13 +432,13 @@ export default function TableauBordExamens() {
                         </TableCell>
                         <TableCell>
                           {ecart >= 5 ? (
-                            <Badge className="bg-green-500">Excellent</Badge>
+                            <Badge className="bg-green-500">{t('exams.dashboard.excellent')}</Badge>
                           ) : ecart >= 0 ? (
-                            <Badge variant="secondary">Normal</Badge>
+                            <Badge variant="secondary">{t('exams.dashboard.normal')}</Badge>
                           ) : ecart >= -5 ? (
-                            <Badge className="bg-orange-500">Attention</Badge>
+                            <Badge className="bg-orange-500">{t('exams.dashboard.attention')}</Badge>
                           ) : (
-                            <Badge variant="destructive">Critique</Badge>
+                            <Badge variant="destructive">{t('exams.dashboard.critical')}</Badge>
                           )}
                         </TableCell>
                       </TableRow>
@@ -444,7 +456,7 @@ export default function TableauBordExamens() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Performance par Matière
+                {t('exams.dashboard.subjectPerformance')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -456,8 +468,8 @@ export default function TableauBordExamens() {
                   <YAxis yAxisId="right" orientation="right" domain={[0, 20]} />
                   <Tooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="tauxReussite" name="Taux Réussite (%)" fill="hsl(var(--chart-1))" />
-                  <Bar yAxisId="right" dataKey="moyenne" name="Moyenne /20" fill="hsl(var(--chart-2))" />
+                  <Bar yAxisId="left" dataKey="tauxReussite" name={t('exams.dashboard.successRatePercent')} fill="hsl(var(--chart-1))" />
+                  <Bar yAxisId="right" dataKey="moyenne" name={t('exams.dashboard.averageOf20')} fill="hsl(var(--chart-2))" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -465,18 +477,18 @@ export default function TableauBordExamens() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Analyse Détaillée par Matière</CardTitle>
+              <CardTitle>{t('exams.dashboard.detailedAnalysisBySubject')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Matière</TableHead>
-                    <TableHead className="text-center">Coefficient</TableHead>
-                    <TableHead className="text-right">Moyenne</TableHead>
-                    <TableHead className="text-right">Taux Réussite</TableHead>
-                    <TableHead>Performance</TableHead>
-                    <TableHead>Recommandation</TableHead>
+                    <TableHead>{t('exams.dashboard.subject')}</TableHead>
+                    <TableHead className="text-center">{t('exams.dashboard.coefficient')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.average')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.successRate')}</TableHead>
+                    <TableHead>{t('exams.dashboard.performance')}</TableHead>
+                    <TableHead>{t('exams.dashboard.recommendation')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -493,8 +505,8 @@ export default function TableauBordExamens() {
                         />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {matiere.tauxReussite < 65 ? "Renforcement nécessaire" : 
-                         matiere.tauxReussite < 75 ? "Suivi régulier" : "Maintenir"}
+                        {matiere.tauxReussite < 65 ? t('exams.dashboard.reinforcementNeeded') : 
+                         matiere.tauxReussite < 75 ? t('exams.dashboard.regularMonitoring') : t('exams.dashboard.maintain')}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -509,7 +521,7 @@ export default function TableauBordExamens() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Évolution Comparée BEPC vs BAC</CardTitle>
+                <CardTitle>{t('exams.dashboard.comparedEvolution')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -528,7 +540,7 @@ export default function TableauBordExamens() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Indicateurs de Performance</CardTitle>
+                <CardTitle>{t('exams.dashboard.performanceIndicators')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -548,18 +560,18 @@ export default function TableauBordExamens() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Tableau Comparatif Inter-Années</CardTitle>
+              <CardTitle>{t('exams.dashboard.interYearComparison')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Année</TableHead>
+                    <TableHead>{t('exams.dashboard.year')}</TableHead>
                     <TableHead className="text-right">BEPC (%)</TableHead>
-                    <TableHead className="text-right">Évolution</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.evolution')}</TableHead>
                     <TableHead className="text-right">BAC (%)</TableHead>
-                    <TableHead className="text-right">Évolution</TableHead>
-                    <TableHead className="text-right">Moyenne Globale</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.evolution')}</TableHead>
+                    <TableHead className="text-right">{t('exams.dashboard.globalAverage')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -606,7 +618,7 @@ export default function TableauBordExamens() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
-                Détection Automatique d'Anomalies
+                {t('exams.dashboard.autoAnomalyDetection')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -635,16 +647,16 @@ export default function TableauBordExamens() {
                           </div>
                           <p className="font-medium">{anomalie.description}</p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Détecté le {new Date(anomalie.date).toLocaleDateString("fr-FR")}
+                            {t('exams.dashboard.detectedOn')} {formatDate(anomalie.date)}
                           </p>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">
-                          Analyser
+                          {t('exams.dashboard.analyze')}
                         </Button>
                         <Button size="sm" variant={anomalie.type === "critique" ? "destructive" : "default"}>
-                          Traiter
+                          {t('exams.dashboard.process')}
                         </Button>
                       </div>
                     </div>
@@ -662,7 +674,7 @@ export default function TableauBordExamens() {
                   <p className="text-4xl font-bold text-red-600">
                     {anomalies.filter(a => a.type === "critique").length}
                   </p>
-                  <p className="text-muted-foreground">Anomalies Critiques</p>
+                  <p className="text-muted-foreground">{t('exams.dashboard.criticalAnomalies')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -672,7 +684,7 @@ export default function TableauBordExamens() {
                   <p className="text-4xl font-bold text-orange-600">
                     {anomalies.filter(a => a.type === "attention").length}
                   </p>
-                  <p className="text-muted-foreground">Anomalies Attention</p>
+                  <p className="text-muted-foreground">{t('exams.dashboard.attentionAnomalies')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -682,7 +694,7 @@ export default function TableauBordExamens() {
                   <p className="text-4xl font-bold text-muted-foreground">
                     {anomalies.filter(a => a.type === "info").length}
                   </p>
-                  <p className="text-muted-foreground">Informations</p>
+                  <p className="text-muted-foreground">{t('exams.dashboard.information')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -693,27 +705,27 @@ export default function TableauBordExamens() {
       {/* Actions rapides export */}
       <Card>
         <CardHeader>
-          <CardTitle>Export Rapports Direction</CardTitle>
+          <CardTitle>{t('exams.dashboard.exportDirectionReports')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
             <Button variant="outline" onClick={() => handleExportRapport("pdf")}>
               <FileText className="h-4 w-4 mr-2" />
-              Rapport Synthétique PDF
+              {t('exams.dashboard.syntheticPdfReport')}
             </Button>
             <Button variant="outline" onClick={() => handleExportRapport("excel")}>
               <Download className="h-4 w-4 mr-2" />
-              Données Complètes Excel
+              {t('exams.dashboard.completeExcelData')}
             </Button>
             <Button variant="outline" onClick={() => handleExportRapport("print")}>
               <Printer className="h-4 w-4 mr-2" />
-              Imprimer Tableau de Bord
+              {t('exams.dashboard.printDashboard')}
             </Button>
             <Button variant="outline" onClick={() => {
-              toast.success("Rapport envoyé par email", { description: "Le rapport a été envoyé à la direction" });
+              toast.success(t('exams.dashboard.reportSentByEmail'), { description: t('exams.dashboard.reportSentToDirection') });
             }}>
               <Mail className="h-4 w-4 mr-2" />
-              Envoyer à la Direction
+              {t('exams.dashboard.sendToDirection')}
             </Button>
           </div>
         </CardContent>
