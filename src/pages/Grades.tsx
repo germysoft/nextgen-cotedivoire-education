@@ -11,6 +11,7 @@ import { GradeEntryWizard } from "@/components/grades/GradeEntryWizard";
 import { ConduiteEditor } from "@/components/grades/ConduiteEditor";
 import { useGradeCalculation } from "@/hooks/useGradeCalculation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data avec note de conduite
 const mockStudentGrades = [
@@ -49,6 +50,7 @@ const mockStudentGrades = [
 ];
 
 export default function Grades() {
+  const { t } = useLanguage();
   const [selectedClass, setSelectedClass] = useState("6èmeA");
   const [selectedTrimester, setSelectedTrimester] = useState("1");
   const [isGradeWizardOpen, setIsGradeWizardOpen] = useState(false);
@@ -76,23 +78,23 @@ export default function Grades() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des Notes</h1>
-          <p className="text-muted-foreground">Saisir et consulter les notes des élèves</p>
+          <h1 className="text-3xl font-bold">{t('grades.title')}</h1>
+          <p className="text-muted-foreground">{t('grades.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            Exporter
+            {t('grades.export')}
           </Button>
           {includeConduite && (
             <Button variant="outline" onClick={() => setIsConduiteEditorOpen(true)}>
               <UserCheck className="mr-2 h-4 w-4" />
-              Notes de Conduite
+              {t('grades.conductGrades')}
             </Button>
           )}
           <Button onClick={() => setIsGradeWizardOpen(true)}>
             <Calculator className="mr-2 h-4 w-4" />
-            Saisir Notes
+            {t('grades.enterGrades')}
           </Button>
         </div>
       </div>
@@ -114,7 +116,7 @@ export default function Grades() {
         <Alert className="border-primary/50 bg-primary/5">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            La moyenne de conduite est prise en compte dans le calcul des moyennes générales (coefficient 1).
+            {t('grades.conductIncluded')}
           </AlertDescription>
         </Alert>
       )}
@@ -123,17 +125,17 @@ export default function Grades() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Moyenne Générale</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('grades.generalAverage')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">14.8</div>
-            <p className="text-xs text-muted-foreground">Classe 6èmeA</p>
+            <p className="text-xs text-muted-foreground">{t('grades.class')} 6èmeA</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Meilleure Note</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('grades.bestGrade')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">18.5</div>
@@ -142,21 +144,21 @@ export default function Grades() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux de Réussite</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('grades.successRate')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">92%</div>
-            <p className="text-xs text-muted-foreground">Moyenne ≥ 10</p>
+            <p className="text-xs text-muted-foreground">{t('grades.averageAbove10')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bulletins Générés</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('grades.bulletinsGenerated')}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground">Ce trimestre</p>
+            <p className="text-xs text-muted-foreground">{t('grades.thisTerm')}</p>
           </CardContent>
         </Card>
       </div>
@@ -164,12 +166,12 @@ export default function Grades() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtres</CardTitle>
+          <CardTitle>{t('grades.filters')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Classe</Label>
+              <Label>{t('grades.class')}</Label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
                 <SelectTrigger>
                   <SelectValue />
@@ -184,20 +186,20 @@ export default function Grades() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Trimestre</Label>
+              <Label>{t('grades.term')}</Label>
               <Select value={selectedTrimester} onValueChange={setSelectedTrimester}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1er Trimestre</SelectItem>
-                  <SelectItem value="2">2ème Trimestre</SelectItem>
-                  <SelectItem value="3">3ème Trimestre</SelectItem>
+                  <SelectItem value="1">{t('grades.term1')}</SelectItem>
+                  <SelectItem value="2">{t('grades.term2')}</SelectItem>
+                  <SelectItem value="3">{t('grades.term3')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Année Scolaire</Label>
+              <Label>{t('grades.schoolYear')}</Label>
               <Select defaultValue="2024-2025">
                 <SelectTrigger>
                   <SelectValue />
@@ -215,13 +217,13 @@ export default function Grades() {
       {/* Grades Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Relevé de Notes - {selectedClass}</CardTitle>
+          <CardTitle>{t('grades.gradeReport')} - {selectedClass}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="list">
             <TabsList>
-              <TabsTrigger value="list">Liste des notes</TabsTrigger>
-              <TabsTrigger value="stats">Statistiques</TabsTrigger>
+              <TabsTrigger value="list">{t('grades.gradeList')}</TabsTrigger>
+              <TabsTrigger value="stats">{t('grades.statistics')}</TabsTrigger>
             </TabsList>
             <TabsContent value="list" className="space-y-4">
               {studentGrades.map((student) => {
@@ -231,15 +233,15 @@ export default function Grades() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="font-semibold text-lg">{student.studentName}</h3>
-                        <p className="text-sm text-muted-foreground">Matricule: {student.matricule}</p>
+                        <p className="text-sm text-muted-foreground">{t('grades.matricule')}: {student.matricule}</p>
                       </div>
                       <div className="text-right">
                         <Badge variant={getGradeColor(studentAverage)} className="text-lg px-3 py-1">
-                          Moyenne: {studentAverage.toFixed(2)}
+                          {t('grades.average')}: {studentAverage.toFixed(2)}
                         </Badge>
                         {includeConduite && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            (avec conduite: {student.conduiteNote}/20)
+                            ({t('grades.withConduct')}: {student.conduiteNote}/20)
                           </p>
                         )}
                       </div>
@@ -247,11 +249,11 @@ export default function Grades() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Matière</TableHead>
-                          <TableHead>Enseignant</TableHead>
-                          <TableHead className="text-center">Note /20</TableHead>
-                          <TableHead className="text-center">Coef.</TableHead>
-                          <TableHead className="text-center">Total Points</TableHead>
+                          <TableHead>{t('grades.subject')}</TableHead>
+                          <TableHead>{t('grades.teacher')}</TableHead>
+                          <TableHead className="text-center">{t('grades.gradeOutOf20')}</TableHead>
+                          <TableHead className="text-center">{t('grades.coef')}</TableHead>
+                          <TableHead className="text-center">{t('grades.totalPoints')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -268,7 +270,7 @@ export default function Grades() {
                         ))}
                         {includeConduite && (
                           <TableRow className="bg-muted/50">
-                            <TableCell className="font-medium">Conduite</TableCell>
+                            <TableCell className="font-medium">{t('grades.conduct')}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">-</TableCell>
                             <TableCell className="text-center font-semibold">{student.conduiteNote}</TableCell>
                             <TableCell className="text-center">1</TableCell>
@@ -282,11 +284,11 @@ export default function Grades() {
                     <div className="flex justify-end gap-2 mt-4">
                       <Button variant="outline" size="sm">
                         <FileText className="mr-2 h-4 w-4" />
-                        Générer Bulletin
+                        {t('grades.generateBulletin')}
                       </Button>
                       <Button variant="outline" size="sm">
                         <Download className="mr-2 h-4 w-4" />
-                        Télécharger PDF
+                        {t('grades.downloadPDF')}
                       </Button>
                     </div>
                   </div>
@@ -295,7 +297,7 @@ export default function Grades() {
             </TabsContent>
             <TabsContent value="stats">
               <div className="text-center py-12 text-muted-foreground">
-                Statistiques détaillées à venir
+                {t('grades.detailedStats')}
               </div>
             </TabsContent>
           </Tabs>
