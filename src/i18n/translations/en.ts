@@ -72,6 +72,7 @@ export const en = {
   'sidebar.gradeValidation': 'Grade Validation',
   'sidebar.bulletinsTranscripts': 'Bulletins & Transcripts',
   'sidebar.autoGradedQcm': 'Auto-Graded QCM',
+  'sidebar.printListsNotes': 'Print Lists',
   'sidebar.examManagement': 'Exam Management',
   'sidebar.examSetup': 'Exam Setup',
   'sidebar.candidateRegistration': 'Candidate Registration',

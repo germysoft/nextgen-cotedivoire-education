@@ -116,6 +116,7 @@ import JournauxComptables from "./pages/comptabilite/JournauxComptables";
 import PaiementsScolaires from "./pages/comptabilite/PaiementsScolaires";
 import Quittances from "./pages/comptabilite/Quittances";
 import BulletinsNotes from "./pages/notes/Bulletins";
+import ImprimerListesNotes from "./pages/notes/ImprimerListesNotes";
 import PlanningInfrastructures from "./pages/infrastructures/Planning";
 import Convocations from "./pages/Convocations";
 import StudentProfile from "./pages/StudentProfile";
@@ -240,6 +241,7 @@ const App = () => (
           <Route path="/notes/qcm" element={<MainLayout><QCM /></MainLayout>} />
           <Route path="/notes/moyennes" element={<MainLayout><Moyennes /></MainLayout>} />
           <Route path="/notes/bulletins" element={<MainLayout><BulletinsNotes /></MainLayout>} />
+          <Route path="/notes/listes" element={<MainLayout><ImprimerListesNotes /></MainLayout>} />
           
           {/* Examens Routes */}
           <Route path="/examens/parametrage" element={<MainLayout><ParametrageExamens /></MainLayout>} />
