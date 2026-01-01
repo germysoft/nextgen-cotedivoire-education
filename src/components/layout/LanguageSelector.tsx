@@ -1,16 +1,17 @@
-import { Globe, Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/badge";
 
 export function LanguageSelector() {
-  const { language, setLanguage, availableLanguages, currentLanguageInfo } = useLanguage();
+  const { language, setLanguage, resetToEtablissementLanguage, availableLanguages, currentLanguageInfo, etablissementLanguage, t } = useLanguage();
 
   return (
     <DropdownMenu>
@@ -22,7 +23,7 @@ export function LanguageSelector() {
           </Badge>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-56">
         {availableLanguages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
@@ -38,6 +39,18 @@ export function LanguageSelector() {
             )}
           </DropdownMenuItem>
         ))}
+        {etablissementLanguage && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={resetToEtablissementLanguage}
+              className="flex items-center gap-2 text-muted-foreground"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>{t('language.resetToDefault')}</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

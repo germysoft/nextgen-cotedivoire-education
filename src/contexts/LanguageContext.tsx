@@ -9,9 +9,11 @@ const ETABLISSEMENT_CONFIG_KEY = 'etablissement_configuration';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  resetToEtablissementLanguage: () => void;
   t: (key: string) => string;
   availableLanguages: LanguageInfo[];
   currentLanguageInfo: LanguageInfo;
+  etablissementLanguage: Language | null;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -54,6 +56,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return DEFAULT_LANGUAGE;
   });
 
+  const etablissementLanguage = getEtablissementDefaultLanguage();
+
   useEffect(() => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     document.documentElement.lang = language;
@@ -61,10 +65,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    // Marquer que l'utilisateur a maintenant une préférence personnelle
     localStorage.setItem(LANGUAGE_PREFERENCE_SET_KEY, 'true');
-    const langInfo = availableLanguages.find(l => l.code === lang);
     toast.success(translations[lang]['toast.languageChanged'] || 'Language changed');
+  };
+
+  const resetToEtablissementLanguage = () => {
+    const etabLang = getEtablissementDefaultLanguage() || DEFAULT_LANGUAGE;
+    setLanguageState(etabLang);
+    localStorage.removeItem(LANGUAGE_PREFERENCE_SET_KEY);
+    toast.success(translations[etabLang]['toast.languageReset'] || 'Language reset to default');
   };
 
   const t = (key: string): string => {
@@ -74,7 +83,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const currentLanguageInfo = availableLanguages.find(l => l.code === language) || availableLanguages[0];
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, availableLanguages, currentLanguageInfo }}>
+    <LanguageContext.Provider value={{ language, setLanguage, resetToEtablissementLanguage, t, availableLanguages, currentLanguageInfo, etablissementLanguage }}>
       {children}
     </LanguageContext.Provider>
   );
