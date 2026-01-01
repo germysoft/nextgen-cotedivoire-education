@@ -13,26 +13,33 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const teachers = [
-  { id: "T001", name: "KOUADIO Marc", subject: "Mathématiques", classes: "3ème, 2nde", phone: "+225 07 00 00 01", email: "marc.k@school.ci", status: "Permanent" },
-  { id: "T002", name: "DIABATÉ Sarah", subject: "Français", classes: "6ème, 5ème", phone: "+225 07 00 00 02", email: "sarah.d@school.ci", status: "Permanent" },
-  { id: "T003", name: "BROU Emmanuel", subject: "Anglais", classes: "4ème, 3ème", phone: "+225 07 00 00 03", email: "emmanuel.b@school.ci", status: "Vacataire" },
-  { id: "T004", name: "TOURÉ Aminata", subject: "SVT", classes: "2nde, 1ère", phone: "+225 07 00 00 04", email: "aminata.t@school.ci", status: "Permanent" },
-  { id: "T005", name: "KOFFI Daniel", subject: "Histoire-Géo", classes: "Tle A, Tle D", phone: "+225 07 00 00 05", email: "daniel.k@school.ci", status: "Permanent" },
+  { id: "T001", name: "KOUADIO Marc", subject: "Mathématiques", classes: "3ème, 2nde", phone: "+225 07 00 00 01", email: "marc.k@school.ci", status: "permanent" },
+  { id: "T002", name: "DIABATÉ Sarah", subject: "Français", classes: "6ème, 5ème", phone: "+225 07 00 00 02", email: "sarah.d@school.ci", status: "permanent" },
+  { id: "T003", name: "BROU Emmanuel", subject: "Anglais", classes: "4ème, 3ème", phone: "+225 07 00 00 03", email: "emmanuel.b@school.ci", status: "contractor" },
+  { id: "T004", name: "TOURÉ Aminata", subject: "SVT", classes: "2nde, 1ère", phone: "+225 07 00 00 04", email: "aminata.t@school.ci", status: "permanent" },
+  { id: "T005", name: "KOFFI Daniel", subject: "Histoire-Géo", classes: "Tle A, Tle D", phone: "+225 07 00 00 05", email: "daniel.k@school.ci", status: "permanent" },
 ];
 
 export default function Teachers() {
+  const { t } = useLanguage();
+
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("");
+  };
+
+  const getStatusLabel = (status: string) => {
+    return status === "permanent" ? t('teachers.permanent') : t('teachers.contractor');
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestion des Enseignants</h1>
-          <p className="text-muted-foreground">Corps professoral de l'établissement</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('teachers.title')}</h1>
+          <p className="text-muted-foreground">{t('teachers.subtitle')}</p>
         </div>
         <AddTeacherDialog />
       </div>
@@ -40,29 +47,29 @@ export default function Teachers() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Enseignants Permanents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('teachers.permanentTeachers')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">38</div>
-            <p className="text-xs text-muted-foreground">84% de l'effectif</p>
+            <p className="text-xs text-muted-foreground">84% {t('common.total').toLowerCase()}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Vacataires</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('teachers.contractors')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">7</div>
-            <p className="text-xs text-muted-foreground">16% de l'effectif</p>
+            <p className="text-xs text-muted-foreground">16% {t('common.total').toLowerCase()}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Taux de Présence</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('teachers.attendanceRate')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">98.2%</div>
-            <p className="text-xs text-success">+1.5% ce mois</p>
+            <p className="text-xs text-success">+1.5% {t('dashboard.thisMonth')}</p>
           </CardContent>
         </Card>
       </div>
@@ -70,19 +77,19 @@ export default function Teachers() {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Liste des Enseignants ({teachers.length})</CardTitle>
+            <CardTitle>{t('teachers.list')} ({teachers.length})</CardTitle>
             <div className="flex gap-2">
               <div className="relative flex-1 sm:flex-initial">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher..."
+                  placeholder={t('common.search')}
                   className="pl-10 sm:w-64"
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" title={t('common.filter')}>
                 <Filter className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" title={t('common.export')}>
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -93,12 +100,12 @@ export default function Teachers() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Enseignant</TableHead>
-                  <TableHead>Matière</TableHead>
-                  <TableHead>Classes</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('dashboard.teachers')}</TableHead>
+                  <TableHead>{t('teachers.subject')}</TableHead>
+                  <TableHead>{t('teachers.classes')}</TableHead>
+                  <TableHead>{t('teachers.contact')}</TableHead>
+                  <TableHead>{t('teachers.status')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -132,16 +139,16 @@ export default function Teachers() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={teacher.status === "Permanent" ? "default" : "secondary"}>
-                        {teacher.status}
+                      <Badge variant={teacher.status === "permanent" ? "default" : "secondary"}>
+                        {getStatusLabel(teacher.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" title={t('common.view')}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" title={t('common.edit')}>
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data
 const mockClasses = [
@@ -24,34 +25,34 @@ const mockClasses = [
 ];
 
 const mockStudents = [
-  { id: 1, name: "KOUASSI Jean", avgGrade: 14.5, rank: 3, absences: 2, status: "Excellent" },
-  { id: 2, name: "DIALLO Fatoumata", avgGrade: 16.2, rank: 1, absences: 0, status: "Excellent" },
-  { id: 3, name: "TOURÉ Mohamed", avgGrade: 11.8, rank: 15, absences: 5, status: "Passable" },
-  { id: 4, name: "SANOGO Aminata", avgGrade: 8.5, rank: 28, absences: 8, status: "Insuffisant" },
-  { id: 5, name: "KOFFI Paul", avgGrade: 15.1, rank: 2, absences: 1, status: "Très Bien" },
+  { id: 1, name: "KOUASSI Jean", avgGrade: 14.5, rank: 3, absences: 2, status: "excellent" },
+  { id: 2, name: "DIALLO Fatoumata", avgGrade: 16.2, rank: 1, absences: 0, status: "excellent" },
+  { id: 3, name: "TOURÉ Mohamed", avgGrade: 11.8, rank: 15, absences: 5, status: "passable" },
+  { id: 4, name: "SANOGO Aminata", avgGrade: 8.5, rank: 28, absences: 8, status: "insufficient" },
+  { id: 5, name: "KOFFI Paul", avgGrade: 15.1, rank: 2, absences: 1, status: "veryGood" },
 ];
 
 const mockSchedule = [
-  { day: "Lundi", slots: [
+  { day: "monday", slots: [
     { time: "08:00-10:00", subject: "Mathématiques", teacher: "M. KOFFI" },
     { time: "10:00-12:00", subject: "Français", teacher: "Mme SANOGO" },
     { time: "14:00-16:00", subject: "Anglais", teacher: "M. JOHNSON" },
   ]},
-  { day: "Mardi", slots: [
+  { day: "tuesday", slots: [
     { time: "08:00-10:00", subject: "Physique-Chimie", teacher: "M. TOURÉ" },
     { time: "10:00-12:00", subject: "SVT", teacher: "Mme BAMBA" },
     { time: "14:00-16:00", subject: "Histoire-Géo", teacher: "M. KONE" },
   ]},
-  { day: "Mercredi", slots: [
+  { day: "wednesday", slots: [
     { time: "08:00-10:00", subject: "Mathématiques", teacher: "M. KOFFI" },
     { time: "10:00-12:00", subject: "EPS", teacher: "M. YAO" },
   ]},
-  { day: "Jeudi", slots: [
+  { day: "thursday", slots: [
     { time: "08:00-10:00", subject: "Français", teacher: "Mme SANOGO" },
     { time: "10:00-12:00", subject: "Physique-Chimie", teacher: "M. TOURÉ" },
     { time: "14:00-16:00", subject: "Philosophie", teacher: "M. DIALLO" },
   ]},
-  { day: "Vendredi", slots: [
+  { day: "friday", slots: [
     { time: "08:00-10:00", subject: "Anglais", teacher: "M. JOHNSON" },
     { time: "10:00-12:00", subject: "Mathématiques", teacher: "M. KOFFI" },
     { time: "14:00-16:00", subject: "SVT", teacher: "Mme BAMBA" },
@@ -79,6 +80,7 @@ const cycleDistribution = [
 ];
 
 export default function Classes() {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<typeof mockClasses[0] | null>(null);
@@ -97,6 +99,30 @@ export default function Classes() {
     return "secondary";
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "excellent": return t('grades.excellent');
+      case "veryGood": return t('grades.veryGood');
+      case "good": return t('grades.good');
+      case "passable": return t('grades.passable');
+      case "insufficient": return t('grades.insufficient');
+      default: return status;
+    }
+  };
+
+  const getDayLabel = (day: string) => {
+    switch (day) {
+      case "monday": return t('schedule.monday');
+      case "tuesday": return t('schedule.tuesday');
+      case "wednesday": return t('schedule.wednesday');
+      case "thursday": return t('schedule.thursday');
+      case "friday": return t('schedule.friday');
+      case "saturday": return t('schedule.saturday');
+      case "sunday": return t('schedule.sunday');
+      default: return day;
+    }
+  };
+
   const totalStudents = mockClasses.reduce((acc, c) => acc + c.enrolled, 0);
   const avgOccupancy = Math.round((totalStudents / mockClasses.reduce((acc, c) => acc + c.capacity, 0)) * 100);
   const avgClassGrade = (mockClasses.reduce((acc, c) => acc + c.avgGrade, 0) / mockClasses.length).toFixed(1);
@@ -113,31 +139,31 @@ export default function Classes() {
         <>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Gestion des Classes</h1>
-              <p className="text-muted-foreground">Gérer les classes et leurs affectations</p>
+              <h1 className="text-3xl font-bold">{t('classes.title')}</h1>
+              <p className="text-muted-foreground">{t('classes.subtitle')}</p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Classe
+                  {t('classes.addNew')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Ajouter une nouvelle classe</DialogTitle>
+                  <DialogTitle>{t('classes.addNew')}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="className">Nom de la classe</Label>
+                      <Label htmlFor="className">{t('common.name')}</Label>
                       <Input id="className" placeholder="Ex: 6èmeA" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cycle">Cycle</Label>
+                      <Label htmlFor="cycle">{t('academic.cycle')}</Label>
                       <Select>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner" />
+                          <SelectValue placeholder={t('common.select')} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="1er">1er Cycle</SelectItem>
@@ -148,10 +174,10 @@ export default function Classes() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="level">Niveau</Label>
+                      <Label htmlFor="level">{t('classes.level')}</Label>
                       <Select>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner" />
+                          <SelectValue placeholder={t('common.select')} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="6eme">6ème</SelectItem>
@@ -165,15 +191,15 @@ export default function Classes() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="capacity">Capacité</Label>
+                      <Label htmlFor="capacity">{t('classes.capacity')}</Label>
                       <Input id="capacity" type="number" placeholder="45" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="teacher">Professeur Principal</Label>
+                    <Label htmlFor="teacher">{t('classes.mainTeacher')}</Label>
                     <Select>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un professeur" />
+                        <SelectValue placeholder={t('common.select')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">M. Kouassi Jean</SelectItem>
@@ -183,8 +209,8 @@ export default function Classes() {
                     </Select>
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-                    <Button onClick={() => setIsDialogOpen(false)}>Créer la classe</Button>
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
+                    <Button onClick={() => setIsDialogOpen(false)}>{t('common.save')}</Button>
                   </div>
                 </div>
               </DialogContent>
@@ -195,27 +221,27 @@ export default function Classes() {
           <div className="grid gap-4 md:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('common.total')} {t('dashboard.classes')}</CardTitle>
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{mockClasses.length}</div>
-                <p className="text-xs text-muted-foreground">Toutes les classes actives</p>
+                <p className="text-xs text-muted-foreground">{t('common.active')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Élèves</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.totalStudents')}</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalStudents}</div>
-                <p className="text-xs text-muted-foreground">Inscrits cette année</p>
+                <p className="text-xs text-muted-foreground">{t('students.enrolled')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taux Occupation</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('classes.capacity')}</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -225,22 +251,22 @@ export default function Classes() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Moyenne Générale</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('grades.average')}</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{avgClassGrade}/20</div>
-                <p className="text-xs text-green-600">+0.8 vs trimestre dernier</p>
+                <p className="text-xs text-green-600">+0.8 vs {t('grades.term').toLowerCase()}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Heures/Semaine</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('time.hours')}/sem.</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalHours}h</div>
-                <p className="text-xs text-muted-foreground">Volume horaire total</p>
+                <p className="text-xs text-muted-foreground">{t('common.total')}</p>
               </CardContent>
             </Card>
           </div>
@@ -250,12 +276,12 @@ export default function Classes() {
             <Card className="lg:col-span-2">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Liste des Classes</CardTitle>
+                  <CardTitle>{t('students.list')}</CardTitle>
                   <div className="flex items-center gap-2">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Rechercher une classe..."
+                        placeholder={t('common.search')}
                         className="pl-8 w-[250px]"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -268,13 +294,13 @@ export default function Classes() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Niveau</TableHead>
-                      <TableHead>Prof. Principal</TableHead>
-                      <TableHead>Effectif</TableHead>
-                      <TableHead>Moyenne</TableHead>
-                      <TableHead>Réussite</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('common.name')}</TableHead>
+                      <TableHead>{t('classes.level')}</TableHead>
+                      <TableHead>{t('classes.mainTeacher')}</TableHead>
+                      <TableHead>{t('classes.enrollment')}</TableHead>
+                      <TableHead>{t('grades.average')}</TableHead>
+                      <TableHead>{t('reports.performance')}</TableHead>
+                      <TableHead className="text-right">{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -306,13 +332,13 @@ export default function Classes() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => handleViewClass(classe)}>
+                            <Button size="sm" variant="ghost" onClick={() => handleViewClass(classe)} title={t('common.view')}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost">
+                            <Button size="sm" variant="ghost" title={t('common.edit')}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost">
+                            <Button size="sm" variant="ghost" title={t('common.delete')}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -327,7 +353,7 @@ export default function Classes() {
             {/* Cycle Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>Répartition par Cycle</CardTitle>
+                <CardTitle>{t('academic.cycle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[200px]">
@@ -357,7 +383,7 @@ export default function Classes() {
                         <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
                         <span className="text-sm">{item.name}</span>
                       </div>
-                      <span className="font-bold">{item.value} classes</span>
+                      <span className="font-bold">{item.value} {t('dashboard.classes').toLowerCase()}</span>
                     </div>
                   ))}
                 </div>
@@ -371,46 +397,46 @@ export default function Classes() {
           <div className="flex items-center justify-between">
             <div>
               <Button variant="ghost" onClick={() => setViewMode("list")} className="mb-2">
-                ← Retour à la liste
+                ← {t('common.back')}
               </Button>
-              <h1 className="text-3xl font-bold">Classe {selectedClass?.name}</h1>
+              <h1 className="text-3xl font-bold">{t('students.class')} {selectedClass?.name}</h1>
               <p className="text-muted-foreground">
-                {selectedClass?.level} - {selectedClass?.cycle} • Prof. Principal: {selectedClass?.teacher}
+                {selectedClass?.level} - {selectedClass?.cycle} • {t('classes.mainTeacher')}: {selectedClass?.teacher}
               </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline">
                 <Edit className="mr-2 h-4 w-4" />
-                Modifier
+                {t('common.edit')}
               </Button>
               <Button>
-                Exporter Données
+                {t('common.export')}
               </Button>
             </div>
           </div>
 
           <Tabs defaultValue="students" className="space-y-6">
             <TabsList>
-              <TabsTrigger value="students">Élèves ({selectedClass?.enrolled})</TabsTrigger>
-              <TabsTrigger value="schedule">Emploi du Temps</TabsTrigger>
-              <TabsTrigger value="performance">Performance</TabsTrigger>
+              <TabsTrigger value="students">{t('nav.students')} ({selectedClass?.enrolled})</TabsTrigger>
+              <TabsTrigger value="schedule">{t('schedule.title')}</TabsTrigger>
+              <TabsTrigger value="performance">{t('reports.performance')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="students">
               <Card>
                 <CardHeader>
-                  <CardTitle>Liste des Élèves - {selectedClass?.name}</CardTitle>
+                  <CardTitle>{t('students.list')} - {selectedClass?.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Moyenne</TableHead>
-                        <TableHead>Rang</TableHead>
-                        <TableHead>Absences</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('common.name')}</TableHead>
+                        <TableHead>{t('grades.average')}</TableHead>
+                        <TableHead>{t('grades.rank')}</TableHead>
+                        <TableHead>{t('hr.absent')}</TableHead>
+                        <TableHead>{t('students.status')}</TableHead>
+                        <TableHead className="text-right">{t('common.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -435,14 +461,14 @@ export default function Classes() {
                           </TableCell>
                           <TableCell>
                             <Badge variant={
-                              student.status === "Excellent" || student.status === "Très Bien" ? "default" :
-                              student.status === "Passable" ? "secondary" : "destructive"
+                              student.status === "excellent" || student.status === "veryGood" ? "default" :
+                              student.status === "passable" ? "secondary" : "destructive"
                             }>
-                              {student.status}
+                              {getStatusLabel(student.status)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" variant="outline">Voir Profil</Button>
+                            <Button size="sm" variant="outline">{t('common.view')}</Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -455,13 +481,13 @@ export default function Classes() {
             <TabsContent value="schedule">
               <Card>
                 <CardHeader>
-                  <CardTitle>Emploi du Temps Hebdomadaire</CardTitle>
+                  <CardTitle>{t('schedule.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
                     {mockSchedule.map((day) => (
                       <div key={day.day} className="border rounded-lg p-4">
-                        <h3 className="font-bold mb-3">{day.day}</h3>
+                        <h3 className="font-bold mb-3">{getDayLabel(day.day)}</h3>
                         <div className="grid gap-2 md:grid-cols-3">
                           {day.slots.map((slot, idx) => (
                             <div key={idx} className="p-3 bg-muted rounded-lg">
@@ -485,7 +511,7 @@ export default function Classes() {
               <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Performance par Matière</CardTitle>
+                    <CardTitle>{t('reports.performance')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
@@ -496,8 +522,8 @@ export default function Classes() {
                           <YAxis domain={[0, 20]} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="average" name="Moyenne Classe" fill="#3b82f6" />
-                          <Bar dataKey="classAvg" name="Moyenne Établissement" fill="#10b981" />
+                          <Bar dataKey="average" name={t('grades.average')} fill="#3b82f6" />
+                          <Bar dataKey="classAvg" name={t('dashboard.classes')} fill="#10b981" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -506,7 +532,7 @@ export default function Classes() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Évolution Mensuelle</CardTitle>
+                    <CardTitle>{t('dashboard.performanceEvolution')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
