@@ -91,6 +91,7 @@ export const es = {
   'sidebar.examDashboard': 'Panel de Exámenes',
   'sidebar.alertsMonitoring': 'Alertas y Monitoreo',
   'sidebar.printListsExams': 'Imprimir Listas',
+  'sidebar.printListsAccounting': 'Imprimir Listas',
   'sidebar.messagingSms': 'Mensajería y SMS',
   'sidebar.internalChat': 'Chat Interno',
   'sidebar.professionalSms': 'SMS Profesionales',

@@ -193,6 +193,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.balanceSheet", url: "/comptabilite/bilan" },
       { titleKey: "sidebar.schoolPayments", url: "/comptabilite/paiements" },
       { titleKey: "sidebar.receipts", url: "/comptabilite/quittances" },
+      { titleKey: "sidebar.printListsAccounting", url: "/comptabilite/listes" },
     ],
   },
   {
