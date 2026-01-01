@@ -168,18 +168,18 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-    <LanguageProvider>
-      <FavoritesProvider>
-        <NotificationsProvider>
+      <LanguageProvider>
+        <FavoritesProvider>
+          <NotificationsProvider>
             <RoleProvider>
               <AuditProvider>
-              <EtablissementProvider>
-                <ArchivesProvider>
-                <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Routes>
+                <EtablissementProvider>
+                  <ArchivesProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                        <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
@@ -381,18 +381,18 @@ const App = () => (
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-              </TooltipProvider>
-              </ArchivesProvider>
-            </EtablissementProvider>
+                          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </BrowserRouter>
+                    </TooltipProvider>
+                  </ArchivesProvider>
+                </EtablissementProvider>
               </AuditProvider>
-          </RoleProvider>
-        </NotificationsProvider>
-      </FavoritesProvider>
-    </LanguageProvider>
+            </RoleProvider>
+          </NotificationsProvider>
+        </FavoritesProvider>
+      </LanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
