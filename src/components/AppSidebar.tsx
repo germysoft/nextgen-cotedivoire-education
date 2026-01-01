@@ -101,6 +101,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.menaImportExport", url: "/scolarite/mena" },
       { titleKey: "sidebar.documents", url: "/scolarite/documents" },
       { titleKey: "sidebar.alerts", url: "/scolarite/alertes" },
+      { titleKey: "sidebar.printLists", url: "/scolarite/listes" },
     ],
   },
   {
