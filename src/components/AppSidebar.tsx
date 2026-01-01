@@ -87,6 +87,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.discipline", url: "/pedagogie/discipline" },
       { titleKey: "sidebar.parentConvocations", url: "/pedagogie/convocations" },
       { titleKey: "sidebar.elearning", url: "/pedagogie/elearning" },
+      { titleKey: "sidebar.printListsPedagogie", url: "/pedagogie/listes" },
     ],
   },
   {

@@ -58,6 +58,7 @@ import Conseils from "./pages/pedagogie/Conseils";
 import Discipline from "./pages/pedagogie/Discipline";
 import Bulletins from "./pages/pedagogie/Bulletins";
 import EmploisDuTemps from "./pages/pedagogie/EmploisDuTemps";
+import ImprimerListesPedagogie from "./pages/pedagogie/ImprimerListesPedagogie";
 import Emprunts from "./pages/bibliotheque/Emprunts";
 import Catalogue from "./pages/bibliotheque/Catalogue";
 import Reservations from "./pages/bibliotheque/Reservations";
@@ -231,6 +232,7 @@ const App = () => (
           <Route path="/pedagogie/bulletins" element={<MainLayout><Bulletins /></MainLayout>} />
           <Route path="/pedagogie/emplois-du-temps" element={<MainLayout><EmploisDuTemps /></MainLayout>} />
           <Route path="/pedagogie/convocations" element={<MainLayout><Convocations /></MainLayout>} />
+          <Route path="/pedagogie/listes" element={<MainLayout><ImprimerListesPedagogie /></MainLayout>} />
           
           {/* Notes Routes */}
           <Route path="/notes/baremes" element={<MainLayout><Baremes /></MainLayout>} />
