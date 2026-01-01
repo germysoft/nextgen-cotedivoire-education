@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPie, Pie, Cell, Area, AreaChart } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const enrollmentData = [
   { name: "6ème", students: 120 },
@@ -38,66 +39,68 @@ const financialData = [
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
 
-const recentActivities = [
-  { id: 1, type: "Inscription", description: "Nouveau élève: KOUASSI Jean", time: "Il y a 2h", icon: Users, color: "bg-primary" },
-  { id: 2, type: "Paiement", description: "Frais de scolarité - Classe 6ème A", time: "Il y a 3h", icon: DollarSign, color: "bg-accent" },
-  { id: 3, type: "Note", description: "Notes saisies pour 1ère C - Mathématiques", time: "Il y a 5h", icon: BookOpen, color: "bg-chart-2" },
-  { id: 4, type: "Réunion", description: "Conseil de classe 3ème B programmé", time: "Hier", icon: Calendar, color: "bg-chart-3" },
-];
-
-const alerts = [
-  { id: 1, type: "urgent", title: "Impayés Critiques", description: "15 élèves avec plus de 3 mois d'impayés", count: 15 },
-  { id: 2, type: "warning", title: "Absences Répétées", description: "8 élèves absents plus de 5 jours", count: 8 },
-  { id: 3, type: "info", title: "Documents Manquants", description: "23 dossiers incomplets", count: 23 },
-  { id: 4, type: "success", title: "Bulletins Validés", description: "Tous les bulletins T1 sont prêts", count: 28 },
-];
-
-const messageStats = [
-  { type: "SMS Envoyés", value: 1245, change: "+18%", icon: MessageSquare },
-  { type: "Emails", value: 567, change: "+12%", icon: FileText },
-  { type: "Notifications", value: 2340, change: "+25%", icon: Bell },
-];
-
 export default function Dashboard() {
+  const { t } = useLanguage();
+
+  const recentActivities = [
+    { id: 1, type: t('students.addNew'), description: "KOUASSI Jean", time: `${t('time.ago')} 2h`, icon: Users, color: "bg-primary" },
+    { id: 2, type: t('finance.payment'), description: `${t('finance.tuitionFees')} - 6ème A`, time: `${t('time.ago')} 3h`, icon: DollarSign, color: "bg-accent" },
+    { id: 3, type: t('grades.title'), description: "1ère C - Mathématiques", time: `${t('time.ago')} 5h`, icon: BookOpen, color: "bg-chart-2" },
+    { id: 4, type: t('hr.evaluations'), description: "3ème B", time: t('time.yesterday'), icon: Calendar, color: "bg-chart-3" },
+  ];
+
+  const alerts = [
+    { id: 1, type: "urgent", title: t('finance.overdue'), description: "15 élèves avec plus de 3 mois d'impayés", count: 15 },
+    { id: 2, type: "warning", title: t('hr.absent'), description: "8 élèves absents plus de 5 jours", count: 8 },
+    { id: 3, type: "info", title: "Documents", description: "23 dossiers incomplets", count: 23 },
+    { id: 4, type: "success", title: t('bulletins.title'), description: "Tous les bulletins T1 sont prêts", count: 28 },
+  ];
+
+  const messageStats = [
+    { type: t('messaging.sms'), value: 1245, change: "+18%", icon: MessageSquare },
+    { type: t('messaging.email'), value: 567, change: "+12%", icon: FileText },
+    { type: t('messaging.notifications'), value: 2340, change: "+25%", icon: Bell },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tableaux de Bord</h1>
-          <p className="text-muted-foreground">Vue complète de tous les indicateurs de l'établissement</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
+          <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
         </div>
         <Button>
           <FileText className="mr-2 h-4 w-4" />
-          Exporter Rapport
+          {t('dashboard.exportReport')}
         </Button>
       </div>
 
       {/* Vue Globale - Always visible */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Élèves"
+          title={t('dashboard.totalStudents')}
           value="700"
-          change="+12% ce mois"
+          change={`+12% ${t('dashboard.thisMonth')}`}
           changeType="positive"
           icon={Users}
           iconColor="bg-primary"
         />
         <StatCard
-          title="Enseignants"
+          title={t('dashboard.teachers')}
           value="45"
-          change="3 nouveaux"
+          change={`3 ${t('dashboard.new')}`}
           changeType="positive"
           icon={GraduationCap}
           iconColor="bg-accent"
         />
         <StatCard
-          title="Classes"
+          title={t('dashboard.classes')}
           value="28"
           icon={BookOpen}
           iconColor="bg-chart-2"
         />
         <StatCard
-          title="Taux de Présence"
+          title={t('dashboard.attendance')}
           value="94.5%"
           change="+2.1%"
           changeType="positive"
@@ -108,13 +111,13 @@ export default function Dashboard() {
 
       <Tabs defaultValue="global" className="space-y-6">
         <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="global">Vue Globale</TabsTrigger>
-          <TabsTrigger value="admin">Administratif</TabsTrigger>
-          <TabsTrigger value="pedagogique">Pédagogique</TabsTrigger>
-          <TabsTrigger value="scolarite">Scolarité</TabsTrigger>
-          <TabsTrigger value="finance">Comptabilité</TabsTrigger>
-          <TabsTrigger value="messaging">Messagerie</TabsTrigger>
-          <TabsTrigger value="alerts">Alertes</TabsTrigger>
+          <TabsTrigger value="global">{t('dashboard.globalView')}</TabsTrigger>
+          <TabsTrigger value="admin">{t('dashboard.administrative')}</TabsTrigger>
+          <TabsTrigger value="pedagogique">{t('dashboard.pedagogical')}</TabsTrigger>
+          <TabsTrigger value="scolarite">{t('dashboard.tuition')}</TabsTrigger>
+          <TabsTrigger value="finance">{t('dashboard.accountingTab')}</TabsTrigger>
+          <TabsTrigger value="messaging">{t('dashboard.messagingTab')}</TabsTrigger>
+          <TabsTrigger value="alerts">{t('dashboard.alertsTab')}</TabsTrigger>
         </TabsList>
 
         {/* Vue Globale */}
@@ -122,8 +125,8 @@ export default function Dashboard() {
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Effectif par Niveau</CardTitle>
-                <CardDescription>Répartition des élèves par classe</CardDescription>
+                <CardTitle>{t('dashboard.enrollmentByLevel')}</CardTitle>
+                <CardDescription>{t('dashboard.studentDistribution')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -140,8 +143,8 @@ export default function Dashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Évolution des Moyennes</CardTitle>
-                <CardDescription>Performance académique générale</CardDescription>
+                <CardTitle>{t('dashboard.performanceEvolution')}</CardTitle>
+                <CardDescription>{t('dashboard.academicPerformance')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -166,7 +169,7 @@ export default function Dashboard() {
           <div className="grid gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Activités Récentes</CardTitle>
+                <CardTitle>{t('dashboard.recentActivities')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -188,24 +191,24 @@ export default function Dashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Actions Rapides</CardTitle>
+                <CardTitle>{t('dashboard.quickActions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button className="w-full justify-start" variant="outline">
                   <Users className="mr-2 h-4 w-4" />
-                  Nouvelle Inscription
+                  {t('dashboard.newEnrollment')}
                 </Button>
                 <Button className="w-full justify-start" variant="outline">
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Saisir des Notes
+                  {t('dashboard.enterGrades')}
                 </Button>
                 <Button className="w-full justify-start" variant="outline">
                   <DollarSign className="mr-2 h-4 w-4" />
-                  Enregistrer Paiement
+                  {t('dashboard.recordPayment')}
                 </Button>
                 <Button className="w-full justify-start" variant="outline">
                   <GraduationCap className="mr-2 h-4 w-4" />
-                  Ajouter Enseignant
+                  {t('dashboard.addTeacher')}
                 </Button>
               </CardContent>
             </Card>
