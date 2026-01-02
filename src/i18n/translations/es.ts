@@ -128,6 +128,7 @@ export const es = {
   'sidebar.canteen': 'Comedor',
   'sidebar.schoolTransport': 'Transporte Escolar',
   'sidebar.boarding': 'Internado',
+  'sidebar.printListsServices': 'Imprimir Listas',
   'sidebar.library': 'Biblioteca',
   'sidebar.libraryDashboard': 'Panel de Control',
   'sidebar.catalog': 'Catálogo',

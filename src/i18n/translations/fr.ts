@@ -128,6 +128,7 @@ export const fr = {
   'sidebar.canteen': 'Cantine',
   'sidebar.schoolTransport': 'Transport Scolaire',
   'sidebar.boarding': 'Internat',
+  'sidebar.printListsServices': 'Imprimer Listes',
   'sidebar.library': 'Bibliothèque',
   'sidebar.libraryDashboard': 'Tableau de Bord',
   'sidebar.catalog': 'Catalogue',

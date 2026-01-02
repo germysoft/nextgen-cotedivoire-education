@@ -216,6 +216,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.canteen", url: "/services/cantine" },
       { titleKey: "sidebar.schoolTransport", url: "/services/transport" },
       { titleKey: "sidebar.boarding", url: "/services/internat" },
+      { titleKey: "sidebar.printListsServices", url: "/services/listes" },
     ],
   },
   {

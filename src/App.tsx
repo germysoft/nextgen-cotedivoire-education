@@ -51,6 +51,7 @@ import NotificationsAuto from "./pages/messaging/Notifications";
 import Transport from "./pages/services/Transport";
 import Cantine from "./pages/services/Cantine";
 import Internat from "./pages/services/Internat";
+import ImprimerListesServices from "./pages/services/ImprimerListesServices";
 import Elearning from "./pages/pedagogie/Elearning";
 import Attribution from "./pages/pedagogie/Attribution";
 import Matieres from "./pages/pedagogie/Matieres";
@@ -298,6 +299,7 @@ const App = () => (
           <Route path="/services/transport" element={<MainLayout><Transport /></MainLayout>} />
           <Route path="/services/cantine" element={<MainLayout><Cantine /></MainLayout>} />
           <Route path="/services/internat" element={<MainLayout><Internat /></MainLayout>} />
+          <Route path="/services/listes" element={<MainLayout><ImprimerListesServices /></MainLayout>} />
           
           {/* Bibliothèque Routes */}
           <Route path="/bibliotheque/catalogue" element={<MainLayout><Catalogue /></MainLayout>} />
