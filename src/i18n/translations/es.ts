@@ -111,6 +111,7 @@ export const es = {
   'sidebar.autoAttendance': 'Asistencia Automática',
   'sidebar.attendanceReport': 'Informe de Asistencia',
   'sidebar.serviceSheet': 'Hoja de Servicio',
+  'sidebar.printListsTeachers': 'Imprimir Listas',
   'sidebar.generalAccounting': 'Contabilidad General',
   'sidebar.incomeExpenses': 'Ingresos y Gastos',
   'sidebar.cashManagement': 'Gestión de Caja',

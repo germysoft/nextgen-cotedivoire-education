@@ -111,6 +111,7 @@ export const en = {
   'sidebar.autoAttendance': 'Auto Attendance',
   'sidebar.attendanceReport': 'Attendance Report',
   'sidebar.serviceSheet': 'Service Sheet',
+  'sidebar.printListsTeachers': 'Print Lists',
   'sidebar.generalAccounting': 'General Accounting',
   'sidebar.incomeExpenses': 'Income & Expenses',
   'sidebar.cashManagement': 'Cash Management',

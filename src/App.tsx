@@ -111,6 +111,7 @@ import Emails from "./pages/messaging/Emails";
 import PointageEnseignants from "./pages/enseignants/Pointage";
 import Assiduite from "./pages/enseignants/Assiduite";
 import FicheService from "./pages/enseignants/FicheService";
+import ImprimerListesEnseignants from "./pages/enseignants/ImprimerListesEnseignants";
 import Caisse from "./pages/comptabilite/Caisse";
 import JournauxComptables from "./pages/comptabilite/JournauxComptables";
 import PaiementsScolaires from "./pages/comptabilite/PaiementsScolaires";
@@ -226,6 +227,7 @@ const App = () => (
           <Route path="/enseignants/pointage" element={<MainLayout><PointageEnseignants /></MainLayout>} />
           <Route path="/enseignants/assiduite" element={<MainLayout><Assiduite /></MainLayout>} />
           <Route path="/enseignants/fiche-service" element={<MainLayout><FicheService /></MainLayout>} />
+          <Route path="/enseignants/listes" element={<MainLayout><ImprimerListesEnseignants /></MainLayout>} />
           
           {/* Pédagogie Routes */}
           <Route path="/pedagogie/elearning" element={<MainLayout><Elearning /></MainLayout>} />
