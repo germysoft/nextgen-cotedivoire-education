@@ -118,6 +118,7 @@ export const en = {
   'sidebar.balanceSheet': 'Balance Sheet',
   'sidebar.schoolPayments': 'School Payments',
   'sidebar.receipts': 'Receipts',
+  'sidebar.printListsPortail': 'Print Lists',
   'sidebar.infrastructure': 'Infrastructure',
   'sidebar.roomsPremises': 'Rooms & Premises',
   'sidebar.maintenance': 'Maintenance',
