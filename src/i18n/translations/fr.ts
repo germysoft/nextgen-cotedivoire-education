@@ -111,6 +111,7 @@ export const fr = {
   'sidebar.autoAttendance': 'Pointage Auto',
   'sidebar.attendanceReport': 'Rapport Assiduité',
   'sidebar.serviceSheet': 'Fiche de Service',
+  'sidebar.printListsTeachers': 'Imprimer Listes',
   'sidebar.generalAccounting': 'Comptabilité Générale',
   'sidebar.incomeExpenses': 'Recettes & Dépenses',
   'sidebar.cashManagement': 'Gestion Caisse',

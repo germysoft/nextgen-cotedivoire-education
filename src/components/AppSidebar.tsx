@@ -181,6 +181,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.autoAttendance", url: "/enseignants/pointage" },
       { titleKey: "sidebar.attendanceReport", url: "/enseignants/assiduite" },
       { titleKey: "sidebar.serviceSheet", url: "/enseignants/fiche-service" },
+      { titleKey: "sidebar.printListsTeachers", url: "/enseignants/listes" },
     ],
   },
   {
