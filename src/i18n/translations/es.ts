@@ -168,6 +168,7 @@ export const es = {
   'sidebar.nationalFile': 'Archivo Nacional',
   'sidebar.preEnrollments': 'Preinscripciones',
   'sidebar.decisionsReports': 'Decisiones e Informes',
+  'sidebar.printListsMENA': 'Imprimir Listas',
   'sidebar.productivityTools': 'Herramientas de Productividad',
   'sidebar.officeSuite': 'Suite Ofimática',
   'sidebar.electronicSignature': 'Firma Electrónica',

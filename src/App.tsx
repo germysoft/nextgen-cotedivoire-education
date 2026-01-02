@@ -159,6 +159,7 @@ import Synchronisation from "./pages/mena/Synchronisation";
 import FichierNational from "./pages/mena/FichierNational";
 import Preinscriptions from "./pages/mena/Preinscriptions";
 import DecisionsBilans from "./pages/mena/DecisionsBilans";
+import ImprimerListesMENA from "./pages/mena/ImprimerListesMENA";
 import ReunionsPV from "./pages/partenariats/Reunions";
 import SponsorsPage from "./pages/partenariats/Sponsors";
 import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
@@ -352,6 +353,7 @@ const App = () => (
           <Route path="/mena/fichier" element={<MainLayout><FichierNational /></MainLayout>} />
           <Route path="/mena/preinscriptions" element={<MainLayout><Preinscriptions /></MainLayout>} />
           <Route path="/mena/decisions" element={<MainLayout><DecisionsBilans /></MainLayout>} />
+          <Route path="/mena/listes" element={<MainLayout><ImprimerListesMENA /></MainLayout>} />
           
           {/* Outils Routes */}
           <Route path="/outils/bureautique" element={<MainLayout><SuiteBureautique /></MainLayout>} />

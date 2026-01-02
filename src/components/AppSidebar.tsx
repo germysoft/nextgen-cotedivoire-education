@@ -292,6 +292,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.nationalFile", url: "/mena/fichier" },
       { titleKey: "sidebar.preEnrollments", url: "/mena/preinscriptions" },
       { titleKey: "sidebar.decisionsReports", url: "/mena/decisions" },
+      { titleKey: "sidebar.printListsMENA", url: "/mena/listes" },
     ],
   },
   {
