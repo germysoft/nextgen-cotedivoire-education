@@ -144,6 +144,7 @@ import AbsencesParents from "./pages/portail/AbsencesParents";
 import PaiementsParents from "./pages/portail/PaiementsParents";
 import ChatParents from "./pages/portail/ChatParents";
 import CalendrierParents from "./pages/portail/CalendrierParents";
+import ImprimerListesPortail from "./pages/portail/ImprimerListesPortail";
 import ElearningAvance from "./pages/modules/ElearningAvance";
 import AppMobile from "./pages/modules/AppMobile";
 import QRCodeScolaire from "./pages/modules/QRCodeScolaire";
@@ -283,6 +284,7 @@ const App = () => (
           <Route path="/portail/paiements" element={<MainLayout><PaiementsParents /></MainLayout>} />
           <Route path="/portail/chat" element={<MainLayout><ChatParents /></MainLayout>} />
           <Route path="/portail/calendrier" element={<MainLayout><CalendrierParents /></MainLayout>} />
+          <Route path="/portail/listes" element={<MainLayout><ImprimerListesPortail /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />

@@ -168,6 +168,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.documents", url: "/portail/documents" },
       { titleKey: "sidebar.parentChat", url: "/portail/chat" },
       { titleKey: "sidebar.calendarAppointments", url: "/portail/calendrier" },
+      { titleKey: "sidebar.printListsPortail", url: "/portail/listes" },
     ],
   },
   {
