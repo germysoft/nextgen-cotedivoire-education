@@ -26,6 +26,7 @@ import Infirmary from "./pages/Infirmary";
 import Extracurricular from "./pages/Extracurricular";
 import ParticipationParascolaire from "./pages/parascolaire/Participation";
 import EvenementsParascolaire from "./pages/parascolaire/Evenements";
+import ImprimerListesParascolaire from "./pages/parascolaire/ImprimerListesParascolaire";
 import Inventory from "./pages/Inventory";
 import SeuilsAlerte from "./pages/stocks/SeuilsAlerte";
 import InventaireAuto from "./pages/stocks/InventaireAuto";
@@ -341,6 +342,7 @@ const App = () => (
           {/* Parascolaire Routes */}
           <Route path="/parascolaire/participation" element={<MainLayout><ParticipationParascolaire /></MainLayout>} />
           <Route path="/parascolaire/evenements" element={<MainLayout><EvenementsParascolaire /></MainLayout>} />
+          <Route path="/parascolaire/listes" element={<MainLayout><ImprimerListesParascolaire /></MainLayout>} />
           
           {/* Stocks Routes */}
           <Route path="/stocks/seuils" element={<MainLayout><SeuilsAlerte /></MainLayout>} />

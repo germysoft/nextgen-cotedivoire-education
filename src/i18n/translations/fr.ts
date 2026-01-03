@@ -146,6 +146,7 @@ export const fr = {
   'sidebar.clubsSports': 'Clubs & Sports',
   'sidebar.participation': 'Participation',
   'sidebar.events': 'Événements',
+  'sidebar.printListsExtracurricular': 'Imprimer Listes',
   'sidebar.infirmary': 'Infirmerie',
   'sidebar.medicalRecords': 'Fiches Médicales',
   'sidebar.consultations': 'Consultations',

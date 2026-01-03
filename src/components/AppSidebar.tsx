@@ -246,6 +246,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.clubsSports", url: "/extracurricular" },
       { titleKey: "sidebar.participation", url: "/parascolaire/participation" },
       { titleKey: "sidebar.events", url: "/parascolaire/evenements" },
+      { titleKey: "sidebar.printListsExtracurricular", url: "/parascolaire/listes" },
     ],
   },
   {
