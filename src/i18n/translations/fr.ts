@@ -141,6 +141,7 @@ export const fr = {
   'sidebar.inventory': 'Inventaire',
   'sidebar.readerCards': 'Cartes Lecteur',
   'sidebar.libraryStatistics': 'Statistiques',
+  'sidebar.printListsLibrary': 'Imprimer Listes',
   'sidebar.extracurricular': 'Activités Parascolaires',
   'sidebar.clubsSports': 'Clubs & Sports',
   'sidebar.participation': 'Participation',

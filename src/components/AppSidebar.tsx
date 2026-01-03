@@ -235,6 +235,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.inventory", url: "/bibliotheque/inventaire" },
       { titleKey: "sidebar.readerCards", url: "/bibliotheque/cartes" },
       { titleKey: "sidebar.libraryStatistics", url: "/bibliotheque/statistiques" },
+      { titleKey: "sidebar.printListsLibrary", url: "/bibliotheque/listes" },
     ],
   },
   {
