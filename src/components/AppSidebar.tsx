@@ -263,6 +263,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.prescriptions", url: "/infirmerie/ordonnances" },
       { titleKey: "sidebar.smsEmailReminders", url: "/infirmerie/rappels" },
       { titleKey: "sidebar.urgentAlerts", url: "/infirmerie/alertes" },
+      { titleKey: "sidebar.printListsInfirmary", url: "/infirmerie/listes" },
     ],
   },
   {

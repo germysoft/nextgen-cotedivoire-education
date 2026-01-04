@@ -157,6 +157,7 @@ export const en = {
   'sidebar.prescriptions': 'Prescriptions',
   'sidebar.smsEmailReminders': 'SMS/Email Reminders',
   'sidebar.urgentAlerts': 'Urgent Alerts',
+  'sidebar.printListsInfirmary': 'Print Lists',
   'sidebar.stocksAssets': 'Stocks & Assets',
   'sidebar.inOut': 'In/Out',
   'sidebar.alertThresholds': 'Alert Thresholds',

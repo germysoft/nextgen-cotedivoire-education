@@ -157,6 +157,7 @@ export const es = {
   'sidebar.prescriptions': 'Recetas',
   'sidebar.smsEmailReminders': 'Recordatorios SMS/Email',
   'sidebar.urgentAlerts': 'Alertas Urgentes',
+  'sidebar.printListsInfirmary': 'Imprimir Listas',
   'sidebar.stocksAssets': 'Stocks y Patrimonio',
   'sidebar.inOut': 'Entradas/Salidas',
   'sidebar.alertThresholds': 'Umbrales de Alerta',
