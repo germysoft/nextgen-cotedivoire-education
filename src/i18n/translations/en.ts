@@ -161,6 +161,7 @@ export const en = {
   'sidebar.stocksAssets': 'Stocks & Assets',
   'sidebar.inOut': 'In/Out',
   'sidebar.alertThresholds': 'Alert Thresholds',
+  'sidebar.printListsStocks': 'Print Lists',
   'sidebar.autoInventory': 'Auto Inventory',
   'sidebar.partnerships': 'Partnerships',
   'sidebar.apel': 'APEL',

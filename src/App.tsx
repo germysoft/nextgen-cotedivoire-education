@@ -30,6 +30,7 @@ import ImprimerListesParascolaire from "./pages/parascolaire/ImprimerListesParas
 import Inventory from "./pages/Inventory";
 import SeuilsAlerte from "./pages/stocks/SeuilsAlerte";
 import InventaireAuto from "./pages/stocks/InventaireAuto";
+import ImprimerListesStocks from "./pages/stocks/ImprimerListesStocks";
 import Partnerships from "./pages/Partnerships";
 import ParentPortal from "./pages/ParentPortal";
 import ParentLogin from "./pages/ParentLogin";
@@ -349,6 +350,7 @@ const App = () => (
           {/* Stocks Routes */}
           <Route path="/stocks/seuils" element={<MainLayout><SeuilsAlerte /></MainLayout>} />
           <Route path="/stocks/inventaire" element={<MainLayout><InventaireAuto /></MainLayout>} />
+          <Route path="/stocks/listes" element={<MainLayout><ImprimerListesStocks /></MainLayout>} />
           
           {/* Partenariats Routes */}
           <Route path="/partenariats/reunions" element={<MainLayout><ReunionsPV /></MainLayout>} />

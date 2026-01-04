@@ -274,6 +274,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.inOut", url: "/inventory" },
       { titleKey: "sidebar.alertThresholds", url: "/stocks/seuils" },
       { titleKey: "sidebar.autoInventory", url: "/stocks/inventaire" },
+      { titleKey: "sidebar.printListsStocks", url: "/stocks/listes" },
     ],
   },
   {

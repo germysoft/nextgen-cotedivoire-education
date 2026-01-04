@@ -161,6 +161,7 @@ export const fr = {
   'sidebar.stocksAssets': 'Stocks & Patrimoine',
   'sidebar.inOut': 'Entrées/Sorties',
   'sidebar.alertThresholds': 'Seuils Alerte',
+  'sidebar.printListsStocks': 'Imprimer Listes',
   'sidebar.autoInventory': 'Inventaire Auto',
   'sidebar.partnerships': 'Partenariats',
   'sidebar.apel': 'APEL',
