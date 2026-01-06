@@ -170,6 +170,11 @@ import IntelligenceArtificielle from "./pages/modules/IntelligenceArtificielle";
 import Archives from "./pages/parametrage/Archives";
 import { ArchivesProvider } from "./contexts/ArchivesContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import Certificats from "./pages/scolarite/Certificats";
+import DirecteurDashboard from "./pages/dashboard/DirecteurDashboard";
+import ComptableDashboard from "./pages/dashboard/ComptableDashboard";
+import EnseignantDashboard from "./pages/dashboard/EnseignantDashboard";
+import IntegrationsAPI from "./pages/integrations/IntegrationsAPI";
 
 const queryClient = new QueryClient();
 
@@ -210,9 +215,12 @@ const App = () => (
            <Route path="/parent-login" element={<ParentLogin />} />
           <Route path="/parent-portal" element={<ParentPortal />} />
           
-          {/* Dashboard Routes */}
+{/* Dashboard Routes */}
           <Route path="/dashboard/admin" element={<MainLayout><DashboardAdmin /></MainLayout>} />
           <Route path="/dashboard/pedagogique" element={<MainLayout><DashboardPedagogique /></MainLayout>} />
+          <Route path="/dashboard/directeur" element={<MainLayout><DirecteurDashboard /></MainLayout>} />
+          <Route path="/dashboard/comptable" element={<MainLayout><ComptableDashboard /></MainLayout>} />
+          <Route path="/dashboard/enseignant" element={<MainLayout><EnseignantDashboard /></MainLayout>} />
           
           {/* HR Routes */}
           <Route path="/hr/affectations" element={<MainLayout><Affectations /></MainLayout>} />
@@ -282,8 +290,9 @@ const App = () => (
           <Route path="/scolarite/echeances" element={<MainLayout><Echeances /></MainLayout>} />
           <Route path="/scolarite/mena" element={<MainLayout><MENAImportExport /></MainLayout>} />
           <Route path="/scolarite/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
-          <Route path="/scolarite/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
+<Route path="/scolarite/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           <Route path="/scolarite/listes" element={<MainLayout><ImprimerListes /></MainLayout>} />
+          <Route path="/scolarite/certificats" element={<MainLayout><Certificats /></MainLayout>} />
           
           {/* Portail Parents Routes */}
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
@@ -352,9 +361,12 @@ const App = () => (
           <Route path="/stocks/inventaire" element={<MainLayout><InventaireAuto /></MainLayout>} />
           <Route path="/stocks/listes" element={<MainLayout><ImprimerListesStocks /></MainLayout>} />
           
-          {/* Partenariats Routes */}
+{/* Partenariats Routes */}
           <Route path="/partenariats/reunions" element={<MainLayout><ReunionsPV /></MainLayout>} />
           <Route path="/partenariats/sponsors" element={<MainLayout><SponsorsPage /></MainLayout>} />
+          
+          {/* Intégrations Routes */}
+          <Route path="/integrations/api" element={<MainLayout><IntegrationsAPI /></MainLayout>} />
           
           {/* MENA Routes */}
           <Route path="/mena/sync" element={<MainLayout><Synchronisation /></MainLayout>} />
