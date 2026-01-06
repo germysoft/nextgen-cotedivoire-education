@@ -52,6 +52,9 @@ const menuStructure: MenuItem[] = [
     subItems: [
       { titleKey: "sidebar.globalView", url: "/dashboard" },
       { titleKey: "sidebar.customDashboard", url: "/dashboard/custom" },
+      { titleKey: "sidebar.directorDashboard", url: "/dashboard/directeur" },
+      { titleKey: "sidebar.accountantDashboard", url: "/dashboard/comptable" },
+      { titleKey: "sidebar.teacherDashboard", url: "/dashboard/enseignant" },
     ],
   },
   {
@@ -102,6 +105,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.schoolHistory", url: "/scolarite/historique" },
       { titleKey: "sidebar.menaImportExport", url: "/scolarite/mena" },
       { titleKey: "sidebar.documents", url: "/scolarite/documents" },
+      { titleKey: "sidebar.certificates", url: "/scolarite/certificats" },
       { titleKey: "sidebar.alerts", url: "/scolarite/alertes" },
       { titleKey: "sidebar.printLists", url: "/scolarite/listes" },
     ],
@@ -347,6 +351,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.schoolQrCode", url: "/modules/qrcode" },
       { titleKey: "sidebar.mobilePayment", url: "/modules/paiement-mobile" },
       { titleKey: "sidebar.artificialIntelligence", url: "/modules/ia" },
+      { titleKey: "sidebar.integrationsApi", url: "/integrations/api" },
     ],
   },
 ];
