@@ -199,6 +199,13 @@ export const fr = {
   'sidebar.schoolQrCode': 'QR Code Scolaire',
   'sidebar.mobilePayment': 'Paiement Mobile',
   'sidebar.artificialIntelligence': 'Intelligence Artificielle',
+  'sidebar.directorDashboard': 'Tableau de Bord Directeur',
+  'sidebar.accountantDashboard': 'Tableau de Bord Comptable',
+  'sidebar.teacherDashboard': 'Tableau de Bord Enseignant',
+  'sidebar.certificates': 'Certificats de Scolarité',
+  'sidebar.integrationsApi': 'Intégrations API',
+  'sidebar.disciplineCouncil': 'Conseil de Discipline',
+  'sidebar.educationalMeasures': 'Mesures Éducatives',
 
   // Dashboard
   'dashboard.title': 'Tableaux de Bord',
