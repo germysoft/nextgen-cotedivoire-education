@@ -199,6 +199,13 @@ export const en = {
   'sidebar.schoolQrCode': 'School QR Code',
   'sidebar.mobilePayment': 'Mobile Payment',
   'sidebar.artificialIntelligence': 'Artificial Intelligence',
+  'sidebar.directorDashboard': 'Director Dashboard',
+  'sidebar.accountantDashboard': 'Accountant Dashboard',
+  'sidebar.teacherDashboard': 'Teacher Dashboard',
+  'sidebar.certificates': 'School Certificates',
+  'sidebar.integrationsApi': 'API Integrations',
+  'sidebar.disciplineCouncil': 'Discipline Council',
+  'sidebar.educationalMeasures': 'Educational Measures',
 
   // Dashboard
   'dashboard.title': 'Dashboard',

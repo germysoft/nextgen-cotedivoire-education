@@ -199,6 +199,13 @@ export const es = {
   'sidebar.schoolQrCode': 'Código QR Escolar',
   'sidebar.mobilePayment': 'Pago Móvil',
   'sidebar.artificialIntelligence': 'Inteligencia Artificial',
+  'sidebar.directorDashboard': 'Panel del Director',
+  'sidebar.accountantDashboard': 'Panel del Contador',
+  'sidebar.teacherDashboard': 'Panel del Profesor',
+  'sidebar.certificates': 'Certificados Escolares',
+  'sidebar.integrationsApi': 'Integraciones API',
+  'sidebar.disciplineCouncil': 'Consejo de Disciplina',
+  'sidebar.educationalMeasures': 'Medidas Educativas',
 
   // Dashboard
   'dashboard.title': 'Panel de Control',
