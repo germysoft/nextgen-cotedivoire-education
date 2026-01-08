@@ -1311,8 +1311,16 @@ export default function Discipline() {
                       </TableCell>
                       <TableCell>{c.appreciation}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline">
-                          <FileText className="h-4 w-4" />
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            generateFicheSuiviPDF(c.eleve, c.classe, incidents);
+                            toast({ title: "PDF généré", description: `Fiche de suivi pour ${c.eleve} téléchargée` });
+                          }}
+                        >
+                          <Download className="mr-1 h-4 w-4" />
+                          Fiche Suivi
                         </Button>
                       </TableCell>
                     </TableRow>

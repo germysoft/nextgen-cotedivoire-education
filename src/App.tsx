@@ -171,6 +171,7 @@ import Archives from "./pages/parametrage/Archives";
 import { ArchivesProvider } from "./contexts/ArchivesContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Certificats from "./pages/scolarite/Certificats";
+import Absences from "./pages/scolarite/Absences";
 import DirecteurDashboard from "./pages/dashboard/DirecteurDashboard";
 import ComptableDashboard from "./pages/dashboard/ComptableDashboard";
 import EnseignantDashboard from "./pages/dashboard/EnseignantDashboard";
@@ -293,6 +294,7 @@ const App = () => (
 <Route path="/scolarite/alertes" element={<MainLayout><AlertesImpayes /></MainLayout>} />
           <Route path="/scolarite/listes" element={<MainLayout><ImprimerListes /></MainLayout>} />
           <Route path="/scolarite/certificats" element={<MainLayout><Certificats /></MainLayout>} />
+          <Route path="/scolarite/absences" element={<MainLayout><Absences /></MainLayout>} />
           
           {/* Portail Parents Routes */}
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
