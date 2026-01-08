@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Plus, User, Calendar, FileText, CheckCircle, Clock, TrendingDown, TrendingUp, Gavel, BookOpen, Send, Users, Scale, ClipboardList, Bell, GraduationCap, Eye } from "lucide-react";
+import { AlertTriangle, Plus, User, Calendar, FileText, CheckCircle, Clock, TrendingDown, TrendingUp, Gavel, BookOpen, Send, Users, Scale, ClipboardList, Bell, GraduationCap, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { generateProcesVerbalPDF, generateConvocationParentPDF, generateFicheSuiviPDF } from "@/components/discipline/DisciplinePDFGenerators";
 
 interface Incident {
   id: number;
@@ -880,6 +881,16 @@ export default function Discipline() {
                       <Button size="sm" variant="ghost" onClick={() => setSelectedConseil(conseil)}>
                         <Eye className="h-4 w-4" />
                       </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          generateProcesVerbalPDF(conseil, incidents);
+                          toast({ title: "PDF généré", description: `Procès-verbal pour ${conseil.eleve} téléchargé` });
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -1032,20 +1043,32 @@ export default function Discipline() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Select 
-                            value={conv.statut} 
-                            onValueChange={(v) => handleUpdateConvocationStatus(conv.id, v as ConvocationParent["statut"])}
-                          >
-                            <SelectTrigger className="w-28 h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Envoyée">Envoyée</SelectItem>
-                              <SelectItem value="Confirmée">Confirmée</SelectItem>
-                              <SelectItem value="Réalisée">Réalisée</SelectItem>
-                              <SelectItem value="Absence">Absence</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select 
+                              value={conv.statut} 
+                              onValueChange={(v) => handleUpdateConvocationStatus(conv.id, v as ConvocationParent["statut"])}
+                            >
+                              <SelectTrigger className="w-28 h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Envoyée">Envoyée</SelectItem>
+                                <SelectItem value="Confirmée">Confirmée</SelectItem>
+                                <SelectItem value="Réalisée">Réalisée</SelectItem>
+                                <SelectItem value="Absence">Absence</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                generateConvocationParentPDF(conv, incidents);
+                                toast({ title: "PDF généré", description: `Convocation pour ${conv.parent} téléchargée` });
+                              }}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
