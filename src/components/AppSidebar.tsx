@@ -103,6 +103,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.matriculeGeneration", url: "/scolarite/matricule" },
       { titleKey: "sidebar.deadlineTracking", url: "/scolarite/echeances" },
       { titleKey: "sidebar.schoolHistory", url: "/scolarite/historique" },
+      { titleKey: "sidebar.absences", url: "/scolarite/absences" },
       { titleKey: "sidebar.menaImportExport", url: "/scolarite/mena" },
       { titleKey: "sidebar.documents", url: "/scolarite/documents" },
       { titleKey: "sidebar.certificates", url: "/scolarite/certificats" },

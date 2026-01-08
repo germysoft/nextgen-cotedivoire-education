@@ -61,6 +61,7 @@ export const fr = {
   'sidebar.matriculeGeneration': 'Génération Matricule',
   'sidebar.deadlineTracking': 'Suivi Échéances',
   'sidebar.schoolHistory': 'Historique Scolaire',
+  'sidebar.absences': 'Gestion des Absences',
   'sidebar.menaImportExport': 'Import/Export MENA',
   'sidebar.documents': 'Documents',
   'sidebar.alerts': 'Alertes Impayés',
