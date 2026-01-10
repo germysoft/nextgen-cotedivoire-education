@@ -176,6 +176,9 @@ import DirecteurDashboard from "./pages/dashboard/DirecteurDashboard";
 import ComptableDashboard from "./pages/dashboard/ComptableDashboard";
 import EnseignantDashboard from "./pages/dashboard/EnseignantDashboard";
 import IntegrationsAPI from "./pages/integrations/IntegrationsAPI";
+import CPEDashboard from "./pages/dashboard/CPE";
+import CalendrierScolaire from "./pages/CalendrierScolaire";
+import RapportsAutomatiques from "./pages/RapportsAutomatiques";
 
 const queryClient = new QueryClient();
 
@@ -222,6 +225,11 @@ const App = () => (
           <Route path="/dashboard/directeur" element={<MainLayout><DirecteurDashboard /></MainLayout>} />
           <Route path="/dashboard/comptable" element={<MainLayout><ComptableDashboard /></MainLayout>} />
           <Route path="/dashboard/enseignant" element={<MainLayout><EnseignantDashboard /></MainLayout>} />
+          <Route path="/dashboard/cpe" element={<MainLayout><CPEDashboard /></MainLayout>} />
+          
+          {/* Calendrier & Rapports Routes */}
+          <Route path="/calendrier-scolaire" element={<MainLayout><CalendrierScolaire /></MainLayout>} />
+          <Route path="/rapports-automatiques" element={<MainLayout><RapportsAutomatiques /></MainLayout>} />
           
           {/* HR Routes */}
           <Route path="/hr/affectations" element={<MainLayout><Affectations /></MainLayout>} />
