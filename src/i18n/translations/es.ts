@@ -206,6 +206,7 @@ export const es = {
   'sidebar.cpeDashboard': 'Panel del CPE',
   'sidebar.schoolCalendar': 'Calendario Escolar',
   'sidebar.automaticReports': 'Informes Automáticos',
+  'sidebar.studentPortal': 'Portal del Estudiante',
   'sidebar.certificates': 'Certificados Escolares',
   'sidebar.integrationsApi': 'Integraciones API',
   'sidebar.disciplineCouncil': 'Consejo de Disciplina',

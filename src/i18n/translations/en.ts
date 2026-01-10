@@ -206,6 +206,7 @@ export const en = {
   'sidebar.cpeDashboard': 'CPE Dashboard',
   'sidebar.schoolCalendar': 'School Calendar',
   'sidebar.automaticReports': 'Automatic Reports',
+  'sidebar.studentPortal': 'Student Portal',
   'sidebar.certificates': 'School Certificates',
   'sidebar.integrationsApi': 'API Integrations',
   'sidebar.disciplineCouncil': 'Discipline Council',

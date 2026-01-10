@@ -168,6 +168,7 @@ const menuStructure: MenuItem[] = [
     legacyTitle: "Portail Parents & Élèves",
     icon: Users2,
     subItems: [
+      { titleKey: "sidebar.studentPortal", url: "/portail/eleve" },
       { titleKey: "sidebar.portalAccess", url: "/parent-portal" },
       { titleKey: "sidebar.secureLogin", url: "/parent-login" },
       { titleKey: "sidebar.gradesBulletins", url: "/portail/notes" },
