@@ -179,6 +179,7 @@ import IntegrationsAPI from "./pages/integrations/IntegrationsAPI";
 import CPEDashboard from "./pages/dashboard/CPE";
 import CalendrierScolaire from "./pages/CalendrierScolaire";
 import RapportsAutomatiques from "./pages/RapportsAutomatiques";
+import StudentPortal from "./pages/portail/StudentPortal";
 
 const queryClient = new QueryClient();
 
@@ -304,7 +305,7 @@ const App = () => (
           <Route path="/scolarite/certificats" element={<MainLayout><Certificats /></MainLayout>} />
           <Route path="/scolarite/absences" element={<MainLayout><Absences /></MainLayout>} />
           
-          {/* Portail Parents Routes */}
+          {/* Portail Parents & Élèves Routes */}
           <Route path="/portail/documents" element={<MainLayout><DocumentsEleves /></MainLayout>} />
           <Route path="/portail/notes" element={<MainLayout><NotesParents /></MainLayout>} />
           <Route path="/portail/absences" element={<MainLayout><AbsencesParents /></MainLayout>} />
@@ -312,6 +313,7 @@ const App = () => (
           <Route path="/portail/chat" element={<MainLayout><ChatParents /></MainLayout>} />
           <Route path="/portail/calendrier" element={<MainLayout><CalendrierParents /></MainLayout>} />
           <Route path="/portail/listes" element={<MainLayout><ImprimerListesPortail /></MainLayout>} />
+          <Route path="/portail/eleve" element={<MainLayout><StudentPortal /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />
