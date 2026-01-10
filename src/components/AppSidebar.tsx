@@ -55,6 +55,9 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.directorDashboard", url: "/dashboard/directeur" },
       { titleKey: "sidebar.accountantDashboard", url: "/dashboard/comptable" },
       { titleKey: "sidebar.teacherDashboard", url: "/dashboard/enseignant" },
+      { titleKey: "sidebar.cpeDashboard", url: "/dashboard/cpe" },
+      { titleKey: "sidebar.schoolCalendar", url: "/calendrier-scolaire" },
+      { titleKey: "sidebar.automaticReports", url: "/rapports-automatiques" },
     ],
   },
   {
