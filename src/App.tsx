@@ -180,6 +180,7 @@ import CPEDashboard from "./pages/dashboard/CPE";
 import CalendrierScolaire from "./pages/CalendrierScolaire";
 import RapportsAutomatiques from "./pages/RapportsAutomatiques";
 import StudentPortal from "./pages/portail/StudentPortal";
+import ReunionsParents from "./pages/portail/ReunionsParents";
 
 const queryClient = new QueryClient();
 
@@ -314,6 +315,7 @@ const App = () => (
           <Route path="/portail/calendrier" element={<MainLayout><CalendrierParents /></MainLayout>} />
           <Route path="/portail/listes" element={<MainLayout><ImprimerListesPortail /></MainLayout>} />
           <Route path="/portail/eleve" element={<MainLayout><StudentPortal /></MainLayout>} />
+          <Route path="/portail/reunions-parents" element={<MainLayout><ReunionsParents /></MainLayout>} />
           
           {/* Messaging Routes */}
           <Route path="/messaging/sms" element={<MainLayout><SMSPro /></MainLayout>} />

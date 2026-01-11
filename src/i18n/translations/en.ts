@@ -106,6 +106,7 @@ export const en = {
   'sidebar.absencesSchedule': 'Absences & Schedule',
   'sidebar.parentChat': 'Parent Chat',
   'sidebar.calendarAppointments': 'Calendar & Appointments',
+  'sidebar.parentMeetings': 'Parent Meetings',
   'sidebar.teacherTracking': 'Teacher Tracking',
   'sidebar.weeklyPlanning': 'Weekly Planning',
   'sidebar.courseTracking': 'Course Tracking',
