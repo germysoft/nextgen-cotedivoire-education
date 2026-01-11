@@ -106,6 +106,7 @@ export const es = {
   'sidebar.absencesSchedule': 'Ausencias y Horario',
   'sidebar.parentChat': 'Chat de Padres',
   'sidebar.calendarAppointments': 'Calendario y Citas',
+  'sidebar.parentMeetings': 'Reuniones de Padres',
   'sidebar.teacherTracking': 'Seguimiento de Profesores',
   'sidebar.weeklyPlanning': 'Planificación Semanal',
   'sidebar.courseTracking': 'Seguimiento de Cursos',
