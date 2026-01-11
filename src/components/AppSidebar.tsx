@@ -295,6 +295,7 @@ const menuStructure: MenuItem[] = [
       { titleKey: "sidebar.apel", url: "/partnerships" },
       { titleKey: "sidebar.meetingsMinutes", url: "/partenariats/reunions" },
       { titleKey: "sidebar.sponsors", url: "/partenariats/sponsors" },
+      { titleKey: "sidebar.meetingReports", url: "/partenariats/comptes-rendus" },
     ],
   },
   {
