@@ -169,6 +169,7 @@ export const es = {
   'sidebar.apel': 'APEL',
   'sidebar.meetingsMinutes': 'Reuniones y Actas',
   'sidebar.sponsors': 'Patrocinadores',
+  'sidebar.meetingReports': 'Informes de Reuniones',
   'sidebar.menaDesps': 'MENA/DESPS',
   'sidebar.synchronization': 'Sincronización',
   'sidebar.nationalFile': 'Archivo Nacional',

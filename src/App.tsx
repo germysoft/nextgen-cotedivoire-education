@@ -181,6 +181,7 @@ import CalendrierScolaire from "./pages/CalendrierScolaire";
 import RapportsAutomatiques from "./pages/RapportsAutomatiques";
 import StudentPortal from "./pages/portail/StudentPortal";
 import ReunionsParents from "./pages/portail/ReunionsParents";
+import CompteRenduGenerator from "./pages/reunions/CompteRenduGenerator";
 
 const queryClient = new QueryClient();
 
@@ -378,6 +379,7 @@ const App = () => (
 {/* Partenariats Routes */}
           <Route path="/partenariats/reunions" element={<MainLayout><ReunionsPV /></MainLayout>} />
           <Route path="/partenariats/sponsors" element={<MainLayout><SponsorsPage /></MainLayout>} />
+          <Route path="/partenariats/comptes-rendus" element={<MainLayout><CompteRenduGenerator /></MainLayout>} />
           
           {/* Intégrations Routes */}
           <Route path="/integrations/api" element={<MainLayout><IntegrationsAPI /></MainLayout>} />

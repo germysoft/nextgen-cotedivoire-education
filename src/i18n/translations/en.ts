@@ -169,6 +169,7 @@ export const en = {
   'sidebar.apel': 'APEL',
   'sidebar.meetingsMinutes': 'Meetings & Minutes',
   'sidebar.sponsors': 'Sponsors',
+  'sidebar.meetingReports': 'Meeting Reports',
   'sidebar.menaDesps': 'MENA/DESPS',
   'sidebar.synchronization': 'Synchronization',
   'sidebar.nationalFile': 'National File',
