@@ -36,17 +36,20 @@ import {
   Filter,
   Search,
   MoreVertical,
-  Archive
+  Archive,
+  FileSignature
 } from 'lucide-react';
 import { 
   ReunionReport, 
   SchoolInfo, 
   downloadReunionPDF, 
   downloadEmptyTemplate,
-  generateReunionPDF 
+  generateReunionPDF,
+  ElectronicSignature
 } from '@/components/reunions/ReunionPDFGenerator';
 import { useReportStorage, StoredReport } from '@/hooks/useReportStorage';
 import { generateEmailSubject, generateEmailBody, openMailtoLink, copyEmailContent } from '@/utils/emailUtils';
+import { SignatureManager, SignatureRequirement } from '@/components/reunions/SignatureManager';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +117,62 @@ const CompteRenduGenerator = () => {
     discussions: [],
     decisions: [],
     pointsDivers: [],
+    electronicSignatures: [],
+  };
+
+  const getSignatureRequirements = (): SignatureRequirement[] => {
+    const requirements: SignatureRequirement[] = [];
+    
+    if (currentReport.president) {
+      requirements.push({
+        role: 'president',
+        name: currentReport.president,
+        required: true,
+      });
+    }
+    
+    if (currentReport.secretaire) {
+      requirements.push({
+        role: 'secretaire',
+        name: currentReport.secretaire,
+        required: true,
+      });
+    }
+    
+    // Add participants who are present as optional signers
+    currentReport.participants
+      .filter(p => p.present)
+      .slice(0, 5) // Limit to 5 participant signatures
+      .forEach(p => {
+        requirements.push({
+          role: 'participant',
+          name: p.nom,
+          required: false,
+        });
+      });
+    
+    return requirements;
+  };
+
+  const handleAddSignature = (signatureData: Omit<ElectronicSignature, 'id' | 'signedAt' | 'verified'>) => {
+    const newSignature: ElectronicSignature = {
+      id: `sig-${Date.now()}`,
+      ...signatureData,
+      signedAt: new Date().toISOString(),
+      verified: true,
+    };
+    
+    setCurrentReport(prev => ({
+      ...prev,
+      electronicSignatures: [...(prev.electronicSignatures || []), newSignature],
+    }));
+  };
+
+  const handleRemoveSignature = (id: string) => {
+    setCurrentReport(prev => ({
+      ...prev,
+      electronicSignatures: (prev.electronicSignatures || []).filter(s => s.id !== id),
+    }));
   };
 
   const [currentReport, setCurrentReport] = useState<ReunionReport>(emptyReport);
@@ -933,6 +992,16 @@ const CompteRenduGenerator = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Signature électronique */}
+              {(currentReport.president || currentReport.secretaire) && (
+                <SignatureManager
+                  signatures={currentReport.electronicSignatures || []}
+                  requirements={getSignatureRequirements()}
+                  onAddSignature={handleAddSignature}
+                  onRemoveSignature={handleRemoveSignature}
+                />
+              )}
 
               <Card>
                 <CardHeader>
