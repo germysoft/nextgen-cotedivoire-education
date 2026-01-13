@@ -1,6 +1,16 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+export interface ElectronicSignature {
+  id: string;
+  signerName: string;
+  signerRole: string;
+  signatureData: string;
+  signedAt: string;
+  ipAddress?: string;
+  verified: boolean;
+}
+
 export interface ReunionReport {
   id: string;
   titre: string;
@@ -34,6 +44,7 @@ export interface ReunionReport {
     date: string;
     lieu: string;
   };
+  electronicSignatures?: ElectronicSignature[];
 }
 
 export interface SchoolInfo {
@@ -305,16 +316,21 @@ export const generateReunionPDF = (
     doc.text(`Date: ${report.prochaineMeeting.date} | Lieu: ${report.prochaineMeeting.lieu}`, margin, yPos);
   }
 
-  // Signature
+  // Section Signatures
   yPos += 20;
-  if (yPos > 250) {
+  if (yPos > 200) {
     doc.addPage();
     yPos = 20;
   }
 
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SIGNATURES', margin, yPos);
   
+  yPos += 2;
+  doc.setLineWidth(0.3);
+  doc.line(margin, yPos, margin + 35, yPos);
+
   yPos += 10;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -322,17 +338,138 @@ export const generateReunionPDF = (
   // Colonnes de signature
   const colWidth = (pageWidth - margin * 2) / 2;
   
-  doc.text('Le Président de séance', margin, yPos);
-  doc.text('Le Secrétaire', margin + colWidth, yPos);
+  // Check if we have electronic signatures
+  const hasElectronicSignatures = report.electronicSignatures && report.electronicSignatures.length > 0;
   
-  yPos += 5;
-  doc.setFont('helvetica', 'italic');
-  doc.text(report.president, margin, yPos);
-  doc.text(report.secretaire, margin + colWidth, yPos);
-  
-  yPos += 15;
-  doc.text('Signature:', margin, yPos);
-  doc.text('Signature:', margin + colWidth, yPos);
+  if (hasElectronicSignatures && report.electronicSignatures) {
+    // Add electronic signatures section
+    doc.setFillColor(240, 253, 244); // Light green background
+    doc.rect(margin, yPos - 5, pageWidth - margin * 2, 15, 'F');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(22, 163, 74); // Green text
+    doc.text('✓ Document signé électroniquement', margin + 5, yPos + 3);
+    doc.setTextColor(0, 0, 0);
+    
+    yPos += 20;
+    
+    // Display each electronic signature
+    const presidentSig = report.electronicSignatures.find(s => s.signerRole === 'president');
+    const secretaireSig = report.electronicSignatures.find(s => s.signerRole === 'secretaire');
+    
+    // President signature column
+    doc.setFont('helvetica', 'bold');
+    doc.text('Le Président de séance', margin, yPos);
+    doc.text('Le Secrétaire', margin + colWidth, yPos);
+    
+    yPos += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.text(report.president, margin, yPos);
+    doc.text(report.secretaire, margin + colWidth, yPos);
+    
+    yPos += 8;
+    
+    // Add signature images if available
+    if (presidentSig) {
+      try {
+        doc.addImage(presidentSig.signatureData, 'PNG', margin, yPos, 60, 25);
+        yPos += 28;
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Signé le ${new Date(presidentSig.signedAt).toLocaleString('fr-FR')}`, margin, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+      } catch (e) {
+        doc.text('[Signature électronique]', margin, yPos);
+        yPos += 10;
+      }
+    } else {
+      doc.text('[Signature en attente]', margin, yPos);
+      yPos += 10;
+    }
+    
+    // Reset yPos for secretary column
+    const secretaireYPos = yPos - (presidentSig ? 38 : 10);
+    
+    if (secretaireSig) {
+      try {
+        doc.addImage(secretaireSig.signatureData, 'PNG', margin + colWidth, secretaireYPos, 60, 25);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Signé le ${new Date(secretaireSig.signedAt).toLocaleString('fr-FR')}`, margin + colWidth, secretaireYPos + 28);
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+      } catch (e) {
+        doc.text('[Signature électronique]', margin + colWidth, secretaireYPos);
+      }
+    } else {
+      doc.text('[Signature en attente]', margin + colWidth, secretaireYPos);
+    }
+    
+    // Add other participant signatures if any
+    const otherSignatures = report.electronicSignatures.filter(
+      s => s.signerRole !== 'president' && s.signerRole !== 'secretaire'
+    );
+    
+    if (otherSignatures.length > 0) {
+      yPos += 15;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Autres signataires:', margin, yPos);
+      yPos += 8;
+      
+      otherSignatures.forEach((sig, index) => {
+        if (yPos > 260) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${sig.signerName}:`, margin, yPos);
+        
+        try {
+          doc.addImage(sig.signatureData, 'PNG', margin + 50, yPos - 5, 50, 20);
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text(`(${new Date(sig.signedAt).toLocaleString('fr-FR')})`, margin + 105, yPos + 5);
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(10);
+        } catch (e) {
+          doc.text('[Signature]', margin + 50, yPos);
+        }
+        
+        yPos += 25;
+      });
+    }
+    
+    // Add verification notice
+    yPos += 10;
+    doc.setFillColor(239, 246, 255); // Light blue background
+    doc.rect(margin, yPos - 3, pageWidth - margin * 2, 12, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(59, 130, 246); // Blue text
+    doc.text('🔒 Ce document a été signé électroniquement. Les signatures sont horodatées et vérifiables.', margin + 5, yPos + 4);
+    doc.setTextColor(0, 0, 0);
+    
+  } else {
+    // Traditional signature placeholders
+    doc.text('Le Président de séance', margin, yPos);
+    doc.text('Le Secrétaire', margin + colWidth, yPos);
+    
+    yPos += 5;
+    doc.setFont('helvetica', 'italic');
+    doc.text(report.president, margin, yPos);
+    doc.text(report.secretaire, margin + colWidth, yPos);
+    
+    yPos += 15;
+    doc.text('Signature:', margin, yPos);
+    doc.text('Signature:', margin + colWidth, yPos);
+    
+    // Draw signature lines
+    yPos += 5;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPos + 20, margin + 60, yPos + 20);
+    doc.line(margin + colWidth, yPos + 20, margin + colWidth + 60, yPos + 20);
+  }
 
   // Pied de page sur toutes les pages
   const totalPages = doc.getNumberOfPages();
