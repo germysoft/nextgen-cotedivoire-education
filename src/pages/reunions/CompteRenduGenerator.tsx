@@ -50,6 +50,7 @@ import {
 import { useReportStorage, StoredReport } from '@/hooks/useReportStorage';
 import { generateEmailSubject, generateEmailBody, openMailtoLink, copyEmailContent } from '@/utils/emailUtils';
 import { SignatureManager, SignatureRequirement } from '@/components/reunions/SignatureManager';
+import { SignatureHistory } from '@/components/reunions/SignatureHistory';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -276,8 +277,8 @@ const CompteRenduGenerator = () => {
     toast.success('Modèle vide téléchargé');
   };
 
-  const handlePreviewPDF = () => {
-    const doc = generateReunionPDF(currentReport, schoolInfo);
+  const handlePreviewPDF = async () => {
+    const doc = await generateReunionPDF(currentReport, schoolInfo);
     const pdfBlob = doc.output('blob');
     const url = URL.createObjectURL(pdfBlob);
     window.open(url, '_blank');
@@ -1000,6 +1001,15 @@ const CompteRenduGenerator = () => {
                   requirements={getSignatureRequirements()}
                   onAddSignature={handleAddSignature}
                   onRemoveSignature={handleRemoveSignature}
+                />
+              )}
+
+              {/* Signature History */}
+              {currentReport.electronicSignatures && currentReport.electronicSignatures.length > 0 && (
+                <SignatureHistory
+                  signatures={currentReport.electronicSignatures}
+                  documentId={currentReport.id || editingReportId || 'new'}
+                  documentTitle={currentReport.titre}
                 />
               )}
 
