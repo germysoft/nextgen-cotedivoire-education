@@ -1,5 +1,40 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
+
+// Generate a unique verification hash for the document
+export const generateVerificationHash = (documentId: string, signatures: ElectronicSignature[]): string => {
+  const signatureData = signatures.map(s => `${s.id}-${s.signedAt}`).join('|');
+  const baseString = `${documentId}:${signatureData}`;
+  
+  let hash = 0;
+  for (let i = 0; i < baseString.length; i++) {
+    const char = baseString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  
+  const hexHash = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+  return `CR-${hexHash.slice(0, 4)}-${hexHash.slice(4, 8)}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+};
+
+// Generate QR code data URL
+const generateQRCodeDataUrl = async (data: string): Promise<string> => {
+  try {
+    return await QRCode.toDataURL(data, {
+      width: 80,
+      margin: 1,
+      errorCorrectionLevel: 'H',
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+    });
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return '';
+  }
+};
 
 export interface ElectronicSignature {
   id: string;
@@ -66,14 +101,33 @@ const getTypeLabel = (type: ReunionReport['type']): string => {
   }
 };
 
-export const generateReunionPDF = (
+export const generateReunionPDF = async (
   report: ReunionReport,
   schoolInfo: SchoolInfo
-): jsPDF => {
+): Promise<jsPDF> => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   let yPos = 20;
+  
+  // Check if document has electronic signatures for QR code
+  const hasElectronicSignatures = report.electronicSignatures && report.electronicSignatures.length > 0;
+  let qrCodeDataUrl = '';
+  let verificationHash = '';
+  
+  if (hasElectronicSignatures && report.electronicSignatures) {
+    verificationHash = generateVerificationHash(report.id, report.electronicSignatures);
+    const verificationData = JSON.stringify({
+      type: 'REUNION_REPORT',
+      id: report.id,
+      title: report.titre,
+      hash: verificationHash,
+      signatures: report.electronicSignatures.length,
+      date: report.date,
+      generatedAt: new Date().toISOString(),
+    });
+    qrCodeDataUrl = await generateQRCodeDataUrl(verificationData);
+  }
 
   // En-tête de l'établissement
   doc.setFontSize(16);
@@ -338,9 +392,6 @@ export const generateReunionPDF = (
   // Colonnes de signature
   const colWidth = (pageWidth - margin * 2) / 2;
   
-  // Check if we have electronic signatures
-  const hasElectronicSignatures = report.electronicSignatures && report.electronicSignatures.length > 0;
-  
   if (hasElectronicSignatures && report.electronicSignatures) {
     // Add electronic signatures section
     doc.setFillColor(240, 253, 244); // Light green background
@@ -441,8 +492,48 @@ export const generateReunionPDF = (
       });
     }
     
-    // Add verification notice
-    yPos += 10;
+    // Add QR code and verification section
+    yPos += 15;
+    if (yPos > 230) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    // Draw verification box
+    doc.setFillColor(249, 250, 251); // Light gray background
+    doc.setDrawColor(229, 231, 235);
+    doc.roundedRect(margin, yPos - 5, pageWidth - margin * 2, 50, 3, 3, 'FD');
+    
+    // Add QR code if available
+    if (qrCodeDataUrl) {
+      try {
+        doc.addImage(qrCodeDataUrl, 'PNG', margin + 5, yPos, 40, 40);
+      } catch (e) {
+        console.error('Error adding QR code to PDF:', e);
+      }
+    }
+    
+    // Verification info
+    const textX = margin + 50;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(31, 41, 55);
+    doc.text('Vérification du document', textX, yPos + 5);
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    doc.text(`Code de vérification: ${verificationHash}`, textX, yPos + 13);
+    doc.text(`Nombre de signatures: ${report.electronicSignatures?.length || 0}`, textX, yPos + 20);
+    doc.text(`Document ID: ${report.id.slice(0, 20)}...`, textX, yPos + 27);
+    
+    doc.setFontSize(7);
+    doc.text('Scannez le QR code pour vérifier l\'authenticité de ce document', textX, yPos + 35);
+    
+    doc.setTextColor(0, 0, 0);
+    yPos += 55;
+    
+    // Security notice
     doc.setFillColor(239, 246, 255); // Light blue background
     doc.rect(margin, yPos - 3, pageWidth - margin * 2, 12, 'F');
     doc.setFontSize(8);
@@ -648,8 +739,8 @@ export const generateEmptyReunionTemplate = (
   return doc;
 };
 
-export const downloadReunionPDF = (report: ReunionReport, schoolInfo: SchoolInfo): void => {
-  const doc = generateReunionPDF(report, schoolInfo);
+export const downloadReunionPDF = async (report: ReunionReport, schoolInfo: SchoolInfo): Promise<void> => {
+  const doc = await generateReunionPDF(report, schoolInfo);
   const fileName = `CR_${getTypeLabel(report.type).replace(/ /g, '_')}_${report.date}.pdf`;
   doc.save(fileName);
 };
