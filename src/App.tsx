@@ -183,6 +183,7 @@ import StudentPortal from "./pages/portail/StudentPortal";
 import ReunionsParents from "./pages/portail/ReunionsParents";
 import CompteRenduGenerator from "./pages/reunions/CompteRenduGenerator";
 import VerificationReunion from "./pages/VerificationReunion";
+import SignaturePublique from "./pages/SignaturePublique";
 
 const queryClient = new QueryClient();
 
@@ -427,6 +428,9 @@ const App = () => (
           <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
+          {/* Public Signing Route */}
+          <Route path="/signature-publique" element={<SignaturePublique />} />
+          
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>
