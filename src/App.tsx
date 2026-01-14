@@ -182,6 +182,7 @@ import RapportsAutomatiques from "./pages/RapportsAutomatiques";
 import StudentPortal from "./pages/portail/StudentPortal";
 import ReunionsParents from "./pages/portail/ReunionsParents";
 import CompteRenduGenerator from "./pages/reunions/CompteRenduGenerator";
+import VerificationReunion from "./pages/VerificationReunion";
 
 const queryClient = new QueryClient();
 
@@ -292,8 +293,9 @@ const App = () => (
           <Route path="/examens/alertes-monitoring" element={<MainLayout><AlertesMonitoring /></MainLayout>} />
           <Route path="/examens/listes" element={<MainLayout><ImprimerListesExamens /></MainLayout>} />
           
-          {/* Verification Route (public) */}
+          {/* Verification Routes (public) */}
           <Route path="/verification-convocation" element={<VerificationConvocation />} />
+          <Route path="/verification/document" element={<VerificationReunion />} />
           
 {/* Scolarité Routes */}
           <Route path="/scolarite/paiements" element={<MainLayout><Paiements /></MainLayout>} />

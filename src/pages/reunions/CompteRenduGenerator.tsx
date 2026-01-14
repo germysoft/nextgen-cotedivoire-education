@@ -51,6 +51,7 @@ import { useReportStorage, StoredReport } from '@/hooks/useReportStorage';
 import { generateEmailSubject, generateEmailBody, openMailtoLink, copyEmailContent } from '@/utils/emailUtils';
 import { SignatureManager, SignatureRequirement } from '@/components/reunions/SignatureManager';
 import { SignatureHistory } from '@/components/reunions/SignatureHistory';
+import { SignatureNotifications } from '@/components/reunions/SignatureNotifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -180,6 +181,7 @@ const CompteRenduGenerator = () => {
   const [newParticipant, setNewParticipant] = useState({ nom: '', fonction: '', present: true });
   const [newDiscussion, setNewDiscussion] = useState({ sujet: '', intervenant: '', contenu: '' });
   const [newDecision, setNewDecision] = useState({ description: '', responsable: '', echeance: '' });
+  const [participantEmails, setParticipantEmails] = useState<{ [name: string]: string }>({});
 
   const stats = getStatistics();
 
@@ -1010,6 +1012,18 @@ const CompteRenduGenerator = () => {
                   signatures={currentReport.electronicSignatures}
                   documentId={currentReport.id || editingReportId || 'new'}
                   documentTitle={currentReport.titre}
+                />
+              )}
+
+              {/* Signature Notifications */}
+              {getSignatureRequirements().length > 0 && (
+                <SignatureNotifications
+                  documentId={currentReport.id || editingReportId || 'new'}
+                  documentTitle={currentReport.titre}
+                  requirements={getSignatureRequirements()}
+                  signatures={currentReport.electronicSignatures || []}
+                  participantEmails={participantEmails}
+                  onUpdateEmails={setParticipantEmails}
                 />
               )}
 
