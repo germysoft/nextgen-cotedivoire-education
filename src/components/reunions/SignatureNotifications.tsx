@@ -134,10 +134,11 @@ export const SignatureNotifications: React.FC<SignatureNotificationsProps> = ({
     });
   };
 
-  // Generate signature link
-  const generateSignatureLink = (signerName: string) => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/reunions/compte-rendu?doc=${documentId}&signer=${encodeURIComponent(signerName)}`;
+  // Generate signature link using public signing page
+  const generateSignatureLink = (signerName: string, signerRole: string, email: string) => {
+    // Import and use the public signing URL generator
+    const { generatePublicSigningUrl } = require('@/pages/SignaturePublique');
+    return generatePublicSigningUrl(documentId, documentTitle, signerName, signerRole, email);
   };
 
   // Send notification
@@ -166,7 +167,7 @@ export const SignatureNotifications: React.FC<SignatureNotificationsProps> = ({
     };
 
     // Generate email content
-    const signatureLink = generateSignatureLink(requirement.name);
+    const signatureLink = generateSignatureLink(requirement.name, requirement.role, email);
     const emailSubject = isReminder 
       ? `[Rappel] Signature requise - ${documentTitle}`
       : `Signature requise - ${documentTitle}`;
