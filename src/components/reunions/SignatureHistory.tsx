@@ -56,7 +56,6 @@ export const generateVerificationHash = (documentId: string, signatures: Electro
 
 // Generate verification URL
 export const generateVerificationUrl = (documentId: string, hash: string): string => {
-  // In production, this would be a real verification endpoint
   const baseUrl = window.location.origin;
   return `${baseUrl}/verification/document?id=${documentId}&hash=${hash}`;
 };
