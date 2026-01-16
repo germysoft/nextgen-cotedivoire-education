@@ -52,6 +52,7 @@ import { generateEmailSubject, generateEmailBody, openMailtoLink, copyEmailConte
 import { SignatureManager, SignatureRequirement } from '@/components/reunions/SignatureManager';
 import { SignatureHistory } from '@/components/reunions/SignatureHistory';
 import { SignatureNotifications } from '@/components/reunions/SignatureNotifications';
+import { ReminderScheduler } from '@/components/reunions/ReminderScheduler';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1024,6 +1025,25 @@ const CompteRenduGenerator = () => {
                   signatures={currentReport.electronicSignatures || []}
                   participantEmails={participantEmails}
                   onUpdateEmails={setParticipantEmails}
+                />
+              )}
+
+              {/* Reminder Scheduler */}
+              {getSignatureRequirements().length > 0 && (
+                <ReminderScheduler
+                  documentId={currentReport.id || editingReportId || 'new'}
+                  documentTitle={currentReport.titre}
+                  pendingSigners={getSignatureRequirements()
+                    .filter(req => !(currentReport.electronicSignatures || []).find(
+                      sig => sig.signerRole === req.role && sig.signerName === req.name
+                    ))
+                    .map(req => ({
+                      name: req.name,
+                      email: participantEmails[req.name] || '',
+                      role: req.role,
+                    }))
+                    .filter(s => s.email)
+                  }
                 />
               )}
 
