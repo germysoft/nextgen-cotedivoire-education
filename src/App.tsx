@@ -182,6 +182,7 @@ import RapportsAutomatiques from "./pages/RapportsAutomatiques";
 import StudentPortal from "./pages/portail/StudentPortal";
 import ReunionsParents from "./pages/portail/ReunionsParents";
 import CompteRenduGenerator from "./pages/reunions/CompteRenduGenerator";
+import SignaturesDashboard from "./pages/reunions/SignaturesDashboard";
 import VerificationReunion from "./pages/VerificationReunion";
 import SignaturePublique from "./pages/SignaturePublique";
 
@@ -383,6 +384,7 @@ const App = () => (
           <Route path="/partenariats/reunions" element={<MainLayout><ReunionsPV /></MainLayout>} />
           <Route path="/partenariats/sponsors" element={<MainLayout><SponsorsPage /></MainLayout>} />
           <Route path="/partenariats/comptes-rendus" element={<MainLayout><CompteRenduGenerator /></MainLayout>} />
+          <Route path="/partenariats/signatures-dashboard" element={<MainLayout><SignaturesDashboard /></MainLayout>} />
           
           {/* Intégrations Routes */}
           <Route path="/integrations/api" element={<MainLayout><IntegrationsAPI /></MainLayout>} />
