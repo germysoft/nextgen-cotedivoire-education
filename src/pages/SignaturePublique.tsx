@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   FileSignature, 
@@ -18,9 +21,16 @@ import {
   Shield,
   Loader2,
   Info,
-  Calendar
+  Calendar,
+  Eye,
+  Users,
+  MapPin,
+  ClipboardList,
+  MessageSquare,
+  ListChecks
 } from 'lucide-react';
 import { SignatureCanvas } from '@/components/reunions/SignatureCanvas';
+import { ReunionReport } from '@/components/reunions/ReunionPDFGenerator';
 
 interface SigningToken {
   id: string;
@@ -37,6 +47,7 @@ interface SigningToken {
 
 const TOKENS_STORAGE_KEY = 'public_signing_tokens';
 const SIGNATURES_STORAGE_KEY = 'document_signatures';
+const REPORTS_STORAGE_KEY = 'reunion_reports';
 
 // Generate a secure token
 export const generateSigningToken = (
@@ -81,6 +92,222 @@ export const generatePublicSigningUrl = (
   return `${window.location.origin}/signature-publique?token=${token}`;
 };
 
+// Document Preview Component
+const DocumentPreview: React.FC<{ documentId: string; onClose: () => void }> = ({ documentId, onClose }) => {
+  const [report, setReport] = useState<ReunionReport | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(REPORTS_STORAGE_KEY);
+      if (stored) {
+        const reports = JSON.parse(stored);
+        const found = reports.find((r: any) => r.id === documentId);
+        setReport(found || null);
+      }
+    } catch (e) {
+      console.error('Error loading document:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [documentId]);
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'conseil_classe': return 'Conseil de Classe';
+      case 'reunion_parents': return 'Réunion Parents';
+      case 'reunion_pedagogique': return 'Réunion Pédagogique';
+      case 'reunion_administrative': return 'Réunion Administrative';
+      default: return type;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className="text-center py-8">
+        <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground">Document non disponible pour la prévisualisation</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="general">Général</TabsTrigger>
+          <TabsTrigger value="participants">Participants</TabsTrigger>
+          <TabsTrigger value="discussions">Discussions</TabsTrigger>
+          <TabsTrigger value="decisions">Décisions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general" className="space-y-4 mt-4">
+          <div className="grid gap-4">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <FileText className="w-5 h-5 text-primary mt-0.5" />
+              <div>
+                <p className="font-medium">{report.titre}</p>
+                <Badge variant="outline" className="mt-1">{getTypeLabel(report.type)}</Badge>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="font-medium">{new Date(report.date).toLocaleDateString('fr-FR')}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Horaire</p>
+                  <p className="font-medium">{report.heureDebut} - {report.heureFin}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Lieu</p>
+                <p className="font-medium">{report.lieu || 'Non spécifié'}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">Président de séance</p>
+                <p className="font-medium">{report.president || 'Non spécifié'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">Secrétaire de séance</p>
+                <p className="font-medium">{report.secretaire || 'Non spécifié'}</p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="participants" className="mt-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">{report.participants.length} participant(s)</span>
+            </div>
+            <ScrollArea className="h-[200px]">
+              {report.participants.length > 0 ? (
+                <div className="space-y-2">
+                  {report.participants.map((p, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <div>
+                        <p className="font-medium text-sm">{p.nom}</p>
+                        <p className="text-xs text-muted-foreground">{p.fonction}</p>
+                      </div>
+                      <Badge variant={p.present ? 'default' : 'secondary'}>
+                        {p.present ? 'Présent' : 'Absent'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">Aucun participant enregistré</p>
+              )}
+            </ScrollArea>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="discussions" className="mt-4">
+          <div className="space-y-4">
+            {/* Ordre du jour */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <ClipboardList className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">Ordre du jour</span>
+              </div>
+              <ScrollArea className="h-[100px]">
+                {report.ordreJour.filter(o => o).length > 0 ? (
+                  <ol className="list-decimal list-inside space-y-1 text-sm">
+                    {report.ordreJour.filter(o => o).map((item, idx) => (
+                      <li key={idx} className="p-2 rounded bg-muted/50">{item}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Aucun point à l'ordre du jour</p>
+                )}
+              </ScrollArea>
+            </div>
+
+            {/* Discussions */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">Points discutés ({report.discussions.length})</span>
+              </div>
+              <ScrollArea className="h-[120px]">
+                {report.discussions.length > 0 ? (
+                  <div className="space-y-2">
+                    {report.discussions.map((d, idx) => (
+                      <div key={idx} className="p-2 rounded-lg bg-muted/50 text-sm">
+                        <p className="font-medium">{d.sujet}</p>
+                        {d.intervenant && (
+                          <p className="text-xs text-muted-foreground">Intervenant: {d.intervenant}</p>
+                        )}
+                        <p className="text-muted-foreground mt-1 line-clamp-2">{d.contenu}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Aucune discussion enregistrée</p>
+                )}
+              </ScrollArea>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="decisions" className="mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ListChecks className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">{report.decisions.length} décision(s)</span>
+          </div>
+          <ScrollArea className="h-[220px]">
+            {report.decisions.length > 0 ? (
+              <div className="space-y-2">
+                {report.decisions.map((d, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-start justify-between">
+                      <p className="font-medium text-sm">{d.description}</p>
+                      <Badge variant="outline">#{d.numero}</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>Responsable: {d.responsable}</span>
+                      {d.echeance && <span>Échéance: {d.echeance}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">Aucune décision enregistrée</p>
+            )}
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+
+      <div className="flex justify-end pt-2">
+        <Button onClick={onClose}>Fermer l'aperçu</Button>
+      </div>
+    </div>
+  );
+};
+
 const SignaturePublique: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -92,6 +319,7 @@ const SignaturePublique: React.FC = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [showVerification, setShowVerification] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   
   // Load and validate token
   useEffect(() => {
@@ -325,14 +553,20 @@ const SignaturePublique: React.FC = () => {
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {/* Document info */}
+          {/* Document info with preview button */}
           <div className="rounded-lg border p-4 space-y-3">
-            <div className="flex items-start gap-3">
-              <FileText className="w-5 h-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium">{tokenData?.documentTitle}</p>
-                <p className="text-sm text-muted-foreground">Document à signer</p>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <FileText className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium">{tokenData?.documentTitle}</p>
+                  <p className="text-sm text-muted-foreground">Document à signer</p>
+                </div>
               </div>
+              <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
+                <Eye className="w-4 h-4 mr-1" />
+                Prévisualiser
+              </Button>
             </div>
             
             <Separator />
@@ -447,6 +681,24 @@ const SignaturePublique: React.FC = () => {
           </div>
         </CardFooter>
       </Card>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              Aperçu du document
+            </DialogTitle>
+          </DialogHeader>
+          {tokenData && (
+            <DocumentPreview 
+              documentId={tokenData.documentId} 
+              onClose={() => setShowPreview(false)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
