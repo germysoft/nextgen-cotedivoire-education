@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,12 +28,15 @@ import {
   RefreshCw,
   Eye,
   Mail,
-  BarChart3
+  BarChart3,
+  Database
 } from 'lucide-react';
 import { useReportStorage, StoredReport } from '@/hooks/useReportStorage';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { format, parseISO, differenceInDays, isAfter, isBefore, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { initializeDemoData } from '@/data/mockReunionReports';
+import { toast } from 'sonner';
 
 interface SignatureStatus {
   documentId: string;
@@ -60,6 +63,27 @@ const SignaturesDashboard = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('all');
+  const [demoLoaded, setDemoLoaded] = useState(false);
+
+  // Load demo data on mount if no reports exist
+  useEffect(() => {
+    if (!isLoading && reports.length === 0 && !demoLoaded) {
+      const { reportsCount, tokensCount } = initializeDemoData();
+      if (reportsCount > 0) {
+        setDemoLoaded(true);
+        toast.success(`${reportsCount} comptes-rendus de démonstration chargés`);
+        window.location.reload();
+      }
+    }
+  }, [isLoading, reports.length, demoLoaded]);
+
+  const handleLoadDemoData = () => {
+    localStorage.removeItem('reunion_reports');
+    localStorage.removeItem('public_signing_tokens');
+    const { reportsCount, tokensCount } = initializeDemoData();
+    toast.success(`${reportsCount} comptes-rendus et ${tokensCount} tokens de signature chargés`);
+    window.location.reload();
+  };
 
   // Calculate signature statistics from reports
   const signatureData = useMemo((): SignatureStatus[] => {
@@ -317,10 +341,16 @@ const SignaturesDashboard = () => {
             Suivi de l'avancement des signatures électroniques sur tous les documents
           </p>
         </div>
-        <Button onClick={exportToCSV} className="gap-2">
-          <Download className="w-4 h-4" />
-          Exporter CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleLoadDemoData} className="gap-2">
+            <Database className="w-4 h-4" />
+            Recharger démo
+          </Button>
+          <Button onClick={exportToCSV} className="gap-2">
+            <Download className="w-4 h-4" />
+            Exporter CSV
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
