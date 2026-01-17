@@ -16,14 +16,9 @@ import {
   Clock, 
   Send, 
   CheckCircle2, 
-  AlertTriangle,
-  User,
-  Calendar,
   RefreshCw,
   Settings,
-  History,
-  FileSignature,
-  ExternalLink
+  History
 } from 'lucide-react';
 import { SignatureRequirement } from './SignatureManager';
 import { ElectronicSignature } from './ReunionPDFGenerator';
@@ -136,9 +131,28 @@ export const SignatureNotifications: React.FC<SignatureNotificationsProps> = ({
 
   // Generate signature link using public signing page
   const generateSignatureLink = (signerName: string, signerRole: string, email: string) => {
-    // Import and use the public signing URL generator
-    const { generatePublicSigningUrl } = require('@/pages/SignaturePublique');
-    return generatePublicSigningUrl(documentId, documentTitle, signerName, signerRole, email);
+    // Generate public signing URL with token
+    const tokenId = `sign-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    
+    const token = {
+      id: tokenId,
+      documentId,
+      documentTitle,
+      signerName,
+      signerRole,
+      signerEmail: email,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      signed: false,
+    };
+    
+    // Store token in localStorage
+    const storedTokens = localStorage.getItem('public_signing_tokens');
+    const tokens = storedTokens ? JSON.parse(storedTokens) : [];
+    tokens.push(token);
+    localStorage.setItem('public_signing_tokens', JSON.stringify(tokens));
+    
+    return `${window.location.origin}/signature-publique?token=${tokenId}`;
   };
 
   // Send notification

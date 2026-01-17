@@ -393,7 +393,7 @@ const SignaturePublique: React.FC = () => {
   const handleSignatureComplete = (signatureData: string) => {
     if (!tokenData) return;
     
-    // Save signature
+    // Create the electronic signature object
     const signature = {
       id: `sig-${Date.now()}`,
       documentId: tokenData.documentId,
@@ -405,13 +405,42 @@ const SignaturePublique: React.FC = () => {
       signedFrom: 'public_link',
       ipAddress: 'client',
       userAgent: navigator.userAgent,
+      verified: true,
     };
     
-    // Store signature
+    // Store signature in the dedicated signatures storage
     const storedSignatures = localStorage.getItem(SIGNATURES_STORAGE_KEY);
     const signatures = storedSignatures ? JSON.parse(storedSignatures) : [];
     signatures.push(signature);
     localStorage.setItem(SIGNATURES_STORAGE_KEY, JSON.stringify(signatures));
+    
+    // Also update the report's electronicSignatures array directly
+    try {
+      const storedReports = localStorage.getItem(REPORTS_STORAGE_KEY);
+      if (storedReports) {
+        const reports = JSON.parse(storedReports);
+        const updatedReports = reports.map((report: any) => {
+          if (report.id === tokenData.documentId) {
+            const existingSignatures = report.electronicSignatures || [];
+            return {
+              ...report,
+              electronicSignatures: [...existingSignatures, {
+                id: signature.id,
+                signerName: signature.signerName,
+                signerRole: signature.signerRole,
+                signatureData: signature.signatureData,
+                signedAt: signature.signedAt,
+                verified: true,
+              }],
+            };
+          }
+          return report;
+        });
+        localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(updatedReports));
+      }
+    } catch (e) {
+      console.error('Error updating report with signature:', e);
+    }
     
     // Update token as signed
     const storedTokens = localStorage.getItem(TOKENS_STORAGE_KEY);
