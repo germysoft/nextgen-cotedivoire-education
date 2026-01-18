@@ -14,6 +14,13 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { 
   FileSignature, 
   Download, 
   Search, 
@@ -29,7 +36,12 @@ import {
   Eye,
   Mail,
   BarChart3,
-  Database
+  Database,
+  Link2,
+  ExternalLink,
+  Copy,
+  Trash2,
+  Send
 } from 'lucide-react';
 import { useReportStorage, StoredReport } from '@/hooks/useReportStorage';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -37,6 +49,8 @@ import { format, parseISO, differenceInDays, isAfter, isBefore, subDays } from '
 import { fr } from 'date-fns/locale';
 import { initializeDemoData } from '@/data/mockReunionReports';
 import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 interface SignatureStatus {
   documentId: string;
@@ -57,6 +71,21 @@ interface SignatureStatus {
   }[];
 }
 
+interface SigningToken {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  signerName: string;
+  signerRole: string;
+  signerEmail: string;
+  createdAt: string;
+  expiresAt: string;
+  signed: boolean;
+  signedAt?: string;
+}
+
+const TOKENS_STORAGE_KEY = 'public_signing_tokens';
+
 const SignaturesDashboard = () => {
   const { reports, isLoading } = useReportStorage();
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,6 +93,29 @@ const SignaturesDashboard = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('all');
   const [demoLoaded, setDemoLoaded] = useState(false);
+  const [pendingTokens, setPendingTokens] = useState<SigningToken[]>([]);
+  const [showPendingDialog, setShowPendingDialog] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<SignatureStatus | null>(null);
+
+  // Load pending tokens
+  useEffect(() => {
+    const loadTokens = () => {
+      try {
+        const stored = localStorage.getItem(TOKENS_STORAGE_KEY);
+        if (stored) {
+          const tokens: SigningToken[] = JSON.parse(stored);
+          const pending = tokens.filter(t => !t.signed && new Date(t.expiresAt) > new Date());
+          setPendingTokens(pending);
+        }
+      } catch (e) {
+        console.error('Error loading tokens:', e);
+      }
+    };
+    loadTokens();
+    // Refresh tokens every 30 seconds
+    const interval = setInterval(loadTokens, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Load demo data on mount if no reports exist
   useEffect(() => {
@@ -288,6 +340,40 @@ const SignaturesDashboard = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Copy signing link to clipboard
+  const copySigningLink = (token: SigningToken) => {
+    const url = `${window.location.origin}/signature-publique?token=${token.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Lien copié dans le presse-papiers');
+  };
+
+  // Open signing link
+  const openSigningLink = (token: SigningToken) => {
+    const url = `${window.location.origin}/signature-publique?token=${token.id}`;
+    window.open(url, '_blank');
+  };
+
+  // Delete a token
+  const deleteToken = (tokenId: string) => {
+    try {
+      const stored = localStorage.getItem(TOKENS_STORAGE_KEY);
+      if (stored) {
+        const tokens: SigningToken[] = JSON.parse(stored);
+        const filtered = tokens.filter(t => t.id !== tokenId);
+        localStorage.setItem(TOKENS_STORAGE_KEY, JSON.stringify(filtered));
+        setPendingTokens(prev => prev.filter(t => t.id !== tokenId));
+        toast.success('Lien supprimé');
+      }
+    } catch (e) {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
+  // Get tokens for a specific document
+  const getTokensForDocument = (documentId: string) => {
+    return pendingTokens.filter(t => t.documentId === documentId);
+  };
+
   function getTypeLabel(type: string): string {
     switch (type) {
       case 'conseil_classe': return 'Conseil de Classe';
@@ -320,6 +406,15 @@ const SignaturesDashboard = () => {
     }
   }
 
+  function getRoleLabel(role: string): string {
+    switch (role) {
+      case 'president': return 'Président';
+      case 'secretaire': return 'Secrétaire';
+      case 'participant': return 'Participant';
+      default: return role;
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -341,7 +436,13 @@ const SignaturesDashboard = () => {
             Suivi de l'avancement des signatures électroniques sur tous les documents
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {pendingTokens.length > 0 && (
+            <Button variant="outline" onClick={() => setShowPendingDialog(true)} className="gap-2">
+              <Link2 className="w-4 h-4" />
+              Liens en attente ({pendingTokens.length})
+            </Button>
+          )}
           <Button variant="outline" onClick={handleLoadDemoData} className="gap-2">
             <Database className="w-4 h-4" />
             Recharger démo
@@ -352,6 +453,30 @@ const SignaturesDashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Pending Tokens Alert */}
+      {pendingTokens.length > 0 && (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-800 dark:text-amber-200">
+                    {pendingTokens.length} lien(s) de signature en attente
+                  </p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    Des signataires n'ont pas encore signé leurs documents
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowPendingDialog(true)}>
+                Voir les détails
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -547,6 +672,7 @@ const SignaturesDashboard = () => {
                     <TableHead>Statut</TableHead>
                     <TableHead>Dernière signature</TableHead>
                     <TableHead>Signataires</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -601,6 +727,15 @@ const SignaturesDashboard = () => {
                             </div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setSelectedDocument(doc)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -666,6 +801,163 @@ const SignaturesDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Tokens Dialog */}
+      <Dialog open={showPendingDialog} onOpenChange={setShowPendingDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-5 h-5" />
+              Liens de signature en attente
+            </DialogTitle>
+            <DialogDescription>
+              Gérez les liens de signature envoyés aux signataires
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {pendingTokens.length > 0 ? (
+              <div className="space-y-3">
+                {pendingTokens.map((token) => (
+                  <div key={token.id} className="p-4 rounded-lg border bg-card">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{token.documentTitle}</p>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                          <Users className="w-3 h-3" />
+                          <span>{token.signerName}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {getRoleLabel(token.signerRole)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Mail className="w-3 h-3" />
+                          <span>{token.signerEmail}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Clock className="w-3 h-3 text-amber-500" />
+                          <span className="text-xs text-amber-600">
+                            Expire le {format(parseISO(token.expiresAt), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => copySigningLink(token)}
+                          className="gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copier
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => openSigningLink(token)}
+                          className="gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Ouvrir
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => deleteToken(token.id)}
+                          className="gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Supprimer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <CheckCircle2 className="w-12 h-12 text-green-500 mb-4" />
+                <p className="font-medium">Aucun lien en attente</p>
+                <p className="text-sm text-muted-foreground">
+                  Tous les signataires ont complété leurs signatures
+                </p>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Details Dialog */}
+      <Dialog open={!!selectedDocument} onOpenChange={(open) => !open && setSelectedDocument(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Détails du document
+            </DialogTitle>
+          </DialogHeader>
+          {selectedDocument && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="font-medium">{selectedDocument.documentTitle}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline">{getTypeLabel(selectedDocument.documentType)}</Badge>
+                  {getStatusBadge(selectedDocument.status)}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-medium mb-2">Signataires ({selectedDocument.signers.length})</h4>
+                <div className="space-y-2">
+                  {selectedDocument.signers.map((signer, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                          signer.status === 'signed'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {signer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{signer.name}</p>
+                          <p className="text-xs text-muted-foreground">{signer.role}</p>
+                        </div>
+                      </div>
+                      <Badge variant={signer.status === 'signed' ? 'default' : 'secondary'}>
+                        {signer.status === 'signed' ? 'Signé' : 'En attente'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {getTokensForDocument(selectedDocument.documentId).length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="font-medium mb-2">Liens actifs</h4>
+                    <div className="space-y-2">
+                      {getTokensForDocument(selectedDocument.documentId).map((token) => (
+                        <div key={token.id} className="flex items-center justify-between p-2 rounded-lg bg-amber-50 dark:bg-amber-900/10">
+                          <div className="text-sm">
+                            <p className="font-medium">{token.signerName}</p>
+                            <p className="text-xs text-muted-foreground">{token.signerEmail}</p>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => copySigningLink(token)}>
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
