@@ -51,6 +51,8 @@ import { initializeDemoData } from '@/data/mockReunionReports';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { generateSignaturesDashboardPDF } from '@/components/reunions/SignaturesDashboardPDFGenerator';
+import { FileDown } from 'lucide-react';
 
 interface SignatureStatus {
   documentId: string;
@@ -340,6 +342,21 @@ const SignaturesDashboard = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Export to PDF
+  const exportToPDF = () => {
+    try {
+      generateSignaturesDashboardPDF({
+        stats,
+        signatureData,
+        etablissement: 'NextGen Éducation',
+      });
+      toast.success('PDF généré avec succès');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Erreur lors de la génération du PDF');
+    }
+  };
+
   // Copy signing link to clipboard
   const copySigningLink = (token: SigningToken) => {
     const url = `${window.location.origin}/signature-publique?token=${token.id}`;
@@ -447,9 +464,13 @@ const SignaturesDashboard = () => {
             <Database className="w-4 h-4" />
             Recharger démo
           </Button>
-          <Button onClick={exportToCSV} className="gap-2">
+          <Button variant="outline" onClick={exportToCSV} className="gap-2">
             <Download className="w-4 h-4" />
-            Exporter CSV
+            CSV
+          </Button>
+          <Button onClick={exportToPDF} className="gap-2">
+            <FileDown className="w-4 h-4" />
+            Exporter PDF
           </Button>
         </div>
       </div>
