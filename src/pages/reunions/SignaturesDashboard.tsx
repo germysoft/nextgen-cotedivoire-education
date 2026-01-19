@@ -99,18 +99,36 @@ const REMINDERS_STORAGE_KEY = 'signature_reminders';
 const REMINDER_SETTINGS_KEY = 'signature_reminder_settings';
 
 interface ReminderRecord {
+  id: string;
   tokenId: string;
   documentId: string;
+  documentTitle: string;
   signerName: string;
   signerEmail: string;
   sentAt: string;
   reminderCount: number;
+  type: 'initial' | 'reminder';
+  status: 'sent' | 'opened' | 'clicked' | 'signed';
+  openedAt?: string;
+  clickedAt?: string;
+  signedAt?: string;
 }
 
 interface ReminderSettings {
   autoRemindersEnabled: boolean;
   reminderAfterDays: number;
   maxReminders: number;
+}
+
+interface ReminderStats {
+  totalSent: number;
+  totalOpened: number;
+  totalClicked: number;
+  totalSigned: number;
+  openRate: number;
+  clickRate: number;
+  signRate: number;
+  avgTimeToSign: number;
 }
 
 const DEFAULT_REMINDER_SETTINGS: ReminderSettings = {
@@ -137,6 +155,9 @@ const SignaturesDashboard = () => {
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(DEFAULT_REMINDER_SETTINGS);
   const [reminders, setReminders] = useState<ReminderRecord[]>([]);
   const [overdueTokens, setOverdueTokens] = useState<SigningToken[]>([]);
+  const [showReminderHistory, setShowReminderHistory] = useState(false);
+  const [reminderHistoryFilter, setReminderHistoryFilter] = useState<'all' | 'initial' | 'reminder'>('all');
+  const [reminderStatusFilter, setReminderStatusFilter] = useState<'all' | 'sent' | 'opened' | 'clicked' | 'signed'>('all');
 
   // Load reminder settings
   useEffect(() => {
@@ -386,19 +407,21 @@ L'équipe administrative`;
     window.open(`mailto:${token.signerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     
     // Record the reminder
+    const existingReminder = reminders.find(r => r.tokenId === token.id);
     const newReminder: ReminderRecord = {
+      id: `reminder-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       tokenId: token.id,
       documentId: token.documentId,
+      documentTitle: token.documentTitle,
       signerName: token.signerName,
       signerEmail: token.signerEmail,
       sentAt: new Date().toISOString(),
-      reminderCount: (reminders.find(r => r.tokenId === token.id)?.reminderCount || 0) + 1,
+      reminderCount: (existingReminder?.reminderCount || 0) + 1,
+      type: existingReminder ? 'reminder' : 'initial',
+      status: 'sent',
     };
     
-    const updatedReminders = [
-      ...reminders.filter(r => r.tokenId !== token.id),
-      newReminder,
-    ];
+    const updatedReminders = [...reminders, newReminder];
     setReminders(updatedReminders);
     localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(updatedReminders));
     
@@ -415,7 +438,81 @@ L'équipe administrative`;
 
   // Get reminder count for a token
   const getReminderCount = (tokenId: string): number => {
-    return reminders.find(r => r.tokenId === tokenId)?.reminderCount || 0;
+    return reminders.filter(r => r.tokenId === tokenId).length;
+  };
+
+  // Simulate opening/clicking tracking (in real implementation, this would come from email service)
+  const simulateReminderEvent = (reminderId: string, event: 'opened' | 'clicked' | 'signed') => {
+    const updatedReminders = reminders.map(r => {
+      if (r.id === reminderId) {
+        const updates: Partial<ReminderRecord> = { status: event };
+        if (event === 'opened') updates.openedAt = new Date().toISOString();
+        if (event === 'clicked') {
+          updates.clickedAt = new Date().toISOString();
+          if (!r.openedAt) updates.openedAt = new Date().toISOString();
+        }
+        if (event === 'signed') {
+          updates.signedAt = new Date().toISOString();
+          if (!r.openedAt) updates.openedAt = new Date().toISOString();
+          if (!r.clickedAt) updates.clickedAt = new Date().toISOString();
+        }
+        return { ...r, ...updates };
+      }
+      return r;
+    });
+    setReminders(updatedReminders);
+    localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(updatedReminders));
+    toast.success(`Statut mis à jour : ${event}`);
+  };
+
+  // Calculate reminder statistics
+  const reminderStats = useMemo((): ReminderStats => {
+    const totalSent = reminders.length;
+    const totalOpened = reminders.filter(r => r.openedAt).length;
+    const totalClicked = reminders.filter(r => r.clickedAt).length;
+    const totalSigned = reminders.filter(r => r.signedAt).length;
+
+    const signedReminders = reminders.filter(r => r.signedAt && r.sentAt);
+    const avgTimeToSign = signedReminders.length > 0
+      ? signedReminders.reduce((sum, r) => {
+          const sentDate = parseISO(r.sentAt);
+          const signedDate = parseISO(r.signedAt!);
+          return sum + differenceInDays(signedDate, sentDate);
+        }, 0) / signedReminders.length
+      : 0;
+
+    return {
+      totalSent,
+      totalOpened,
+      totalClicked,
+      totalSigned,
+      openRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
+      clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
+      signRate: totalSent > 0 ? Math.round((totalSigned / totalSent) * 100) : 0,
+      avgTimeToSign: Math.round(avgTimeToSign * 10) / 10,
+    };
+  }, [reminders]);
+
+  // Filtered reminders for history
+  const filteredReminders = useMemo(() => {
+    return reminders
+      .filter(r => reminderHistoryFilter === 'all' || r.type === reminderHistoryFilter)
+      .filter(r => reminderStatusFilter === 'all' || r.status === reminderStatusFilter)
+      .sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+  }, [reminders, reminderHistoryFilter, reminderStatusFilter]);
+
+  // Get status badge for reminder
+  const getReminderStatusBadge = (status: ReminderRecord['status']) => {
+    switch (status) {
+      case 'sent':
+        return <Badge variant="outline">Envoyé</Badge>;
+      case 'opened':
+        return <Badge className="bg-blue-500 hover:bg-blue-600">Ouvert</Badge>;
+      case 'clicked':
+        return <Badge className="bg-purple-500 hover:bg-purple-600">Cliqué</Badge>;
+      case 'signed':
+        return <Badge className="bg-green-500 hover:bg-green-600">Signé</Badge>;
+    }
   };
 
   // Calculate signature statistics from reports
@@ -749,6 +846,10 @@ L'équipe administrative`;
               Liens en attente ({pendingTokens.length})
             </Button>
           )}
+          <Button variant="outline" onClick={() => setShowReminderHistory(true)} className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Historique
+          </Button>
           <Button variant="outline" onClick={() => setShowReminderSettings(true)} className="gap-2">
             <Settings className="w-4 h-4" />
             Rappels auto
@@ -1500,6 +1601,226 @@ L'équipe administrative`;
                 </Alert>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder History Dialog */}
+      <Dialog open={showReminderHistory} onOpenChange={setShowReminderHistory}>
+        <DialogContent className="max-w-5xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Historique des rappels et notifications
+            </DialogTitle>
+            <DialogDescription>
+              Suivez les envois, ouvertures et signatures de vos demandes
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="bg-muted/30">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <Send className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{reminderStats.totalSent}</p>
+                      <p className="text-xs text-muted-foreground">Envoyés</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-muted/30">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                      <Eye className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{reminderStats.totalOpened}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Ouverts ({reminderStats.openRate}%)
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-muted/30">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                      <ExternalLink className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{reminderStats.totalClicked}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Cliqués ({reminderStats.clickRate}%)
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-muted/30">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{reminderStats.totalSigned}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Signés ({reminderStats.signRate}%)
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3">
+              <Select value={reminderHistoryFilter} onValueChange={(v: any) => setReminderHistoryFilter(v)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="initial">Initial</SelectItem>
+                  <SelectItem value="reminder">Rappel</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={reminderStatusFilter} onValueChange={(v: any) => setReminderStatusFilter(v)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="sent">Envoyé</SelectItem>
+                  <SelectItem value="opened">Ouvert</SelectItem>
+                  <SelectItem value="clicked">Cliqué</SelectItem>
+                  <SelectItem value="signed">Signé</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {reminderStats.avgTimeToSign > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span>Délai moyen de signature : <strong>{reminderStats.avgTimeToSign} jour(s)</strong></span>
+                </div>
+              )}
+            </div>
+
+            {/* Table */}
+            <ScrollArea className="h-[400px]">
+              {filteredReminders.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date d'envoi</TableHead>
+                      <TableHead>Document</TableHead>
+                      <TableHead>Destinataire</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Ouvert</TableHead>
+                      <TableHead>Cliqué</TableHead>
+                      <TableHead>Signé</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredReminders.map((reminder) => (
+                      <TableRow key={reminder.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {format(parseISO(reminder.sentAt), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                        </TableCell>
+                        <TableCell className="max-w-[150px] truncate text-sm font-medium">
+                          {reminder.documentTitle}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p className="font-medium">{reminder.signerName}</p>
+                            <p className="text-xs text-muted-foreground">{reminder.signerEmail}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={reminder.type === 'initial' ? 'default' : 'secondary'}>
+                            {reminder.type === 'initial' ? 'Initial' : `Rappel #${reminder.reminderCount}`}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {getReminderStatusBadge(reminder.status)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {reminder.openedAt 
+                            ? format(parseISO(reminder.openedAt), 'dd/MM HH:mm', { locale: fr })
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {reminder.clickedAt 
+                            ? format(parseISO(reminder.clickedAt), 'dd/MM HH:mm', { locale: fr })
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {reminder.signedAt 
+                            ? format(parseISO(reminder.signedAt), 'dd/MM HH:mm', { locale: fr })
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {reminder.status !== 'signed' && (
+                            <div className="flex justify-end gap-1">
+                              {reminder.status === 'sent' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => simulateReminderEvent(reminder.id, 'opened')}
+                                  title="Marquer comme ouvert"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </Button>
+                              )}
+                              {(reminder.status === 'sent' || reminder.status === 'opened') && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => simulateReminderEvent(reminder.id, 'clicked')}
+                                  title="Marquer comme cliqué"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => simulateReminderEvent(reminder.id, 'signed')}
+                                title="Marquer comme signé"
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Mail className="w-12 h-12 text-muted-foreground mb-4" />
+                  <h3 className="font-semibold mb-1">Aucun rappel envoyé</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Les rappels apparaîtront ici une fois envoyés
+                  </p>
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </DialogContent>
       </Dialog>
