@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -19,6 +21,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { 
   FileSignature, 
@@ -41,7 +44,11 @@ import {
   ExternalLink,
   Copy,
   Trash2,
-  Send
+  Send,
+  Bell,
+  Settings,
+  LinkIcon,
+  MailWarning
 } from 'lucide-react';
 import { useReportStorage, StoredReport } from '@/hooks/useReportStorage';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -53,6 +60,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { generateSignaturesDashboardPDF } from '@/components/reunions/SignaturesDashboardPDFGenerator';
 import { FileDown } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface SignatureStatus {
   documentId: string;
@@ -87,6 +95,29 @@ interface SigningToken {
 }
 
 const TOKENS_STORAGE_KEY = 'public_signing_tokens';
+const REMINDERS_STORAGE_KEY = 'signature_reminders';
+const REMINDER_SETTINGS_KEY = 'signature_reminder_settings';
+
+interface ReminderRecord {
+  tokenId: string;
+  documentId: string;
+  signerName: string;
+  signerEmail: string;
+  sentAt: string;
+  reminderCount: number;
+}
+
+interface ReminderSettings {
+  autoRemindersEnabled: boolean;
+  reminderAfterDays: number;
+  maxReminders: number;
+}
+
+const DEFAULT_REMINDER_SETTINGS: ReminderSettings = {
+  autoRemindersEnabled: true,
+  reminderAfterDays: 3,
+  maxReminders: 3,
+};
 
 const SignaturesDashboard = () => {
   const { reports, isLoading } = useReportStorage();
@@ -98,6 +129,30 @@ const SignaturesDashboard = () => {
   const [pendingTokens, setPendingTokens] = useState<SigningToken[]>([]);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<SignatureStatus | null>(null);
+  const [showBulkLinkDialog, setShowBulkLinkDialog] = useState(false);
+  const [bulkLinkDocument, setBulkLinkDocument] = useState<SignatureStatus | null>(null);
+  const [bulkEmails, setBulkEmails] = useState<{[name: string]: string}>({});
+  const [generatedBulkLinks, setGeneratedBulkLinks] = useState<SigningToken[]>([]);
+  const [showReminderSettings, setShowReminderSettings] = useState(false);
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(DEFAULT_REMINDER_SETTINGS);
+  const [reminders, setReminders] = useState<ReminderRecord[]>([]);
+  const [overdueTokens, setOverdueTokens] = useState<SigningToken[]>([]);
+
+  // Load reminder settings
+  useEffect(() => {
+    try {
+      const storedSettings = localStorage.getItem(REMINDER_SETTINGS_KEY);
+      if (storedSettings) {
+        setReminderSettings(JSON.parse(storedSettings));
+      }
+      const storedReminders = localStorage.getItem(REMINDERS_STORAGE_KEY);
+      if (storedReminders) {
+        setReminders(JSON.parse(storedReminders));
+      }
+    } catch (e) {
+      console.error('Error loading reminder settings:', e);
+    }
+  }, []);
 
   // Load pending tokens
   useEffect(() => {
@@ -108,6 +163,13 @@ const SignaturesDashboard = () => {
           const tokens: SigningToken[] = JSON.parse(stored);
           const pending = tokens.filter(t => !t.signed && new Date(t.expiresAt) > new Date());
           setPendingTokens(pending);
+          
+          // Check for overdue tokens (more than X days old)
+          const overdue = pending.filter(t => {
+            const createdDate = parseISO(t.createdAt);
+            return differenceInDays(new Date(), createdDate) >= reminderSettings.reminderAfterDays;
+          });
+          setOverdueTokens(overdue);
         }
       } catch (e) {
         console.error('Error loading tokens:', e);
@@ -117,7 +179,7 @@ const SignaturesDashboard = () => {
     // Refresh tokens every 30 seconds
     const interval = setInterval(loadTokens, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [reminderSettings.reminderAfterDays]);
 
   // Load demo data on mount if no reports exist
   useEffect(() => {
@@ -131,12 +193,229 @@ const SignaturesDashboard = () => {
     }
   }, [isLoading, reports.length, demoLoaded]);
 
+  // Check for automatic reminders
+  useEffect(() => {
+    if (!reminderSettings.autoRemindersEnabled || overdueTokens.length === 0) return;
+
+    // Check if there are tokens that need automatic reminders
+    const tokensNeedingReminder = overdueTokens.filter(token => {
+      const reminder = reminders.find(r => r.tokenId === token.id);
+      if (!reminder) return true; // Never reminded
+      if (reminder.reminderCount >= reminderSettings.maxReminders) return false; // Max reminders reached
+      
+      // Check if enough time has passed since last reminder
+      const lastReminderDate = parseISO(reminder.sentAt);
+      return differenceInDays(new Date(), lastReminderDate) >= reminderSettings.reminderAfterDays;
+    });
+
+    if (tokensNeedingReminder.length > 0) {
+      // Show notification about pending auto-reminders
+      toast.info(
+        `${tokensNeedingReminder.length} signature(s) en attente depuis plus de ${reminderSettings.reminderAfterDays} jours`,
+        {
+          action: {
+            label: 'Envoyer rappels',
+            onClick: () => sendBulkReminders(tokensNeedingReminder),
+          },
+        }
+      );
+    }
+  }, [overdueTokens, reminders, reminderSettings]);
+
   const handleLoadDemoData = () => {
     localStorage.removeItem('reunion_reports');
     localStorage.removeItem('public_signing_tokens');
+    localStorage.removeItem(REMINDERS_STORAGE_KEY);
     const { reportsCount, tokensCount } = initializeDemoData();
     toast.success(`${reportsCount} comptes-rendus et ${tokensCount} tokens de signature chargés`);
     window.location.reload();
+  };
+
+  // Save reminder settings
+  const saveReminderSettings = (newSettings: ReminderSettings) => {
+    setReminderSettings(newSettings);
+    localStorage.setItem(REMINDER_SETTINGS_KEY, JSON.stringify(newSettings));
+    toast.success('Paramètres de rappel sauvegardés');
+  };
+
+  // Generate signing link for a single signer
+  const generateSigningLink = useCallback((
+    documentId: string,
+    documentTitle: string,
+    signerName: string,
+    signerRole: string,
+    signerEmail: string
+  ): SigningToken => {
+    const tokenId = `sign-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    
+    const token: SigningToken = {
+      id: tokenId,
+      documentId,
+      documentTitle,
+      signerName,
+      signerRole,
+      signerEmail,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      signed: false,
+    };
+    
+    // Store token in localStorage
+    const storedTokens = localStorage.getItem(TOKENS_STORAGE_KEY);
+    const tokens: SigningToken[] = storedTokens ? JSON.parse(storedTokens) : [];
+    
+    // Check if a token already exists for this signer on this document
+    const existingIndex = tokens.findIndex(
+      t => t.documentId === documentId && t.signerName === signerName && !t.signed
+    );
+    
+    if (existingIndex >= 0) {
+      // Update existing token
+      tokens[existingIndex] = token;
+    } else {
+      tokens.push(token);
+    }
+    
+    localStorage.setItem(TOKENS_STORAGE_KEY, JSON.stringify(tokens));
+    
+    return token;
+  }, []);
+
+  // Open bulk link dialog for a document
+  const openBulkLinkDialog = (doc: SignatureStatus) => {
+    setBulkLinkDocument(doc);
+    setGeneratedBulkLinks([]);
+    
+    // Initialize emails with any existing ones from tokens
+    const initialEmails: {[name: string]: string} = {};
+    doc.signers.filter(s => s.status === 'pending').forEach(signer => {
+      const existingToken = pendingTokens.find(
+        t => t.documentId === doc.documentId && t.signerName === signer.name
+      );
+      initialEmails[signer.name] = existingToken?.signerEmail || signer.email || '';
+    });
+    setBulkEmails(initialEmails);
+    setShowBulkLinkDialog(true);
+  };
+
+  // Generate bulk signing links
+  const generateBulkLinks = () => {
+    if (!bulkLinkDocument) return;
+    
+    const pendingSigners = bulkLinkDocument.signers.filter(s => s.status === 'pending');
+    const generatedLinks: SigningToken[] = [];
+    
+    pendingSigners.forEach(signer => {
+      const email = bulkEmails[signer.name];
+      if (email && email.includes('@')) {
+        const token = generateSigningLink(
+          bulkLinkDocument.documentId,
+          bulkLinkDocument.documentTitle,
+          signer.name,
+          signer.role,
+          email
+        );
+        generatedLinks.push(token);
+      }
+    });
+    
+    setGeneratedBulkLinks(generatedLinks);
+    setPendingTokens(prev => [...prev.filter(t => 
+      !generatedLinks.some(g => g.documentId === t.documentId && g.signerName === t.signerName)
+    ), ...generatedLinks]);
+    
+    toast.success(`${generatedLinks.length} lien(s) de signature générés`);
+  };
+
+  // Send bulk emails with generated links
+  const sendBulkEmails = () => {
+    if (generatedBulkLinks.length === 0) return;
+    
+    generatedBulkLinks.forEach(token => {
+      const signatureLink = `${window.location.origin}/signature-publique?token=${token.id}`;
+      const subject = `Signature requise - ${token.documentTitle}`;
+      const body = `Bonjour ${token.signerName},
+
+Vous êtes invité(e) à signer le document "${token.documentTitle}".
+
+Merci de cliquer sur le lien ci-dessous pour apposer votre signature électronique :
+
+${signatureLink}
+
+Ce lien expire le ${format(parseISO(token.expiresAt), 'dd/MM/yyyy à HH:mm', { locale: fr })}.
+
+Cordialement,
+L'équipe administrative`;
+
+      window.open(`mailto:${token.signerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+    });
+    
+    toast.success(`${generatedBulkLinks.length} email(s) de demande de signature ouverts`);
+    setShowBulkLinkDialog(false);
+  };
+
+  // Copy all links to clipboard
+  const copyAllLinks = () => {
+    if (generatedBulkLinks.length === 0) return;
+    
+    const linksText = generatedBulkLinks.map(token => 
+      `${token.signerName} (${token.signerEmail}):\n${window.location.origin}/signature-publique?token=${token.id}`
+    ).join('\n\n');
+    
+    navigator.clipboard.writeText(linksText);
+    toast.success('Tous les liens copiés dans le presse-papiers');
+  };
+
+  // Send reminder for a single token
+  const sendReminder = (token: SigningToken) => {
+    const signatureLink = `${window.location.origin}/signature-publique?token=${token.id}`;
+    const subject = `[RAPPEL] Signature requise - ${token.documentTitle}`;
+    const body = `Bonjour ${token.signerName},
+
+Ceci est un rappel concernant la signature du document "${token.documentTitle}".
+
+Votre signature est toujours en attente. Merci de bien vouloir signer le document dès que possible.
+
+Lien de signature : ${signatureLink}
+
+Ce lien expire le ${format(parseISO(token.expiresAt), 'dd/MM/yyyy à HH:mm', { locale: fr })}.
+
+Cordialement,
+L'équipe administrative`;
+
+    window.open(`mailto:${token.signerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+    
+    // Record the reminder
+    const newReminder: ReminderRecord = {
+      tokenId: token.id,
+      documentId: token.documentId,
+      signerName: token.signerName,
+      signerEmail: token.signerEmail,
+      sentAt: new Date().toISOString(),
+      reminderCount: (reminders.find(r => r.tokenId === token.id)?.reminderCount || 0) + 1,
+    };
+    
+    const updatedReminders = [
+      ...reminders.filter(r => r.tokenId !== token.id),
+      newReminder,
+    ];
+    setReminders(updatedReminders);
+    localStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(updatedReminders));
+    
+    toast.success(`Rappel envoyé à ${token.signerName}`);
+  };
+
+  // Send reminders to multiple tokens
+  const sendBulkReminders = (tokens: SigningToken[]) => {
+    tokens.forEach(token => {
+      sendReminder(token);
+    });
+    toast.success(`${tokens.length} rappel(s) envoyé(s)`);
+  };
+
+  // Get reminder count for a token
+  const getReminderCount = (tokenId: string): number => {
+    return reminders.find(r => r.tokenId === tokenId)?.reminderCount || 0;
   };
 
   // Calculate signature statistics from reports
@@ -454,12 +733,26 @@ const SignaturesDashboard = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {overdueTokens.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={() => sendBulkReminders(overdueTokens)} 
+              className="gap-2 border-destructive text-destructive hover:bg-destructive/10"
+            >
+              <MailWarning className="w-4 h-4" />
+              Rappels ({overdueTokens.length})
+            </Button>
+          )}
           {pendingTokens.length > 0 && (
             <Button variant="outline" onClick={() => setShowPendingDialog(true)} className="gap-2">
               <Link2 className="w-4 h-4" />
               Liens en attente ({pendingTokens.length})
             </Button>
           )}
+          <Button variant="outline" onClick={() => setShowReminderSettings(true)} className="gap-2">
+            <Settings className="w-4 h-4" />
+            Rappels auto
+          </Button>
           <Button variant="outline" onClick={handleLoadDemoData} className="gap-2">
             <Database className="w-4 h-4" />
             Recharger démo
@@ -750,13 +1043,26 @@ const SignaturesDashboard = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setSelectedDocument(doc)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {doc.pendingSignatures > 0 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => openBulkLinkDialog(doc)}
+                              title="Générer liens en masse"
+                            >
+                              <LinkIcon className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setSelectedDocument(doc)}
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -977,6 +1283,224 @@ const SignaturesDashboard = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Link Generation Dialog */}
+      <Dialog open={showBulkLinkDialog} onOpenChange={setShowBulkLinkDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LinkIcon className="w-5 h-5" />
+              Générer des liens de signature en masse
+            </DialogTitle>
+            <DialogDescription>
+              Générez des liens de signature pour tous les signataires en attente
+            </DialogDescription>
+          </DialogHeader>
+          
+          {bulkLinkDocument && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="font-medium">{bulkLinkDocument.documentTitle}</p>
+                <p className="text-sm text-muted-foreground">
+                  {bulkLinkDocument.pendingSignatures} signature(s) en attente
+                </p>
+              </div>
+
+              <Separator />
+
+              <ScrollArea className="max-h-[300px]">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Signataires en attente</h4>
+                  {bulkLinkDocument.signers
+                    .filter(s => s.status === 'pending')
+                    .map((signer, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                          {signer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{signer.name}</p>
+                          <p className="text-xs text-muted-foreground">{signer.role}</p>
+                        </div>
+                        <Input
+                          type="email"
+                          placeholder="email@exemple.com"
+                          value={bulkEmails[signer.name] || ''}
+                          onChange={(e) => setBulkEmails(prev => ({
+                            ...prev,
+                            [signer.name]: e.target.value
+                          }))}
+                          className="w-[200px]"
+                        />
+                      </div>
+                    ))}
+                </div>
+              </ScrollArea>
+
+              {generatedBulkLinks.length > 0 && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm text-primary">
+                        ✓ {generatedBulkLinks.length} lien(s) générés
+                      </h4>
+                      <Button variant="outline" size="sm" onClick={copyAllLinks}>
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copier tous
+                      </Button>
+                    </div>
+                    <ScrollArea className="max-h-[150px]">
+                      <div className="space-y-2">
+                        {generatedBulkLinks.map((token) => (
+                          <div key={token.id} className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/20">
+                            <div className="text-sm">
+                              <p className="font-medium">{token.signerName}</p>
+                              <p className="text-xs text-muted-foreground">{token.signerEmail}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => copySigningLink(token)}>
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => openSigningLink(token)}>
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {generatedBulkLinks.length === 0 ? (
+              <Button 
+                onClick={generateBulkLinks}
+                disabled={Object.values(bulkEmails).filter(e => e.includes('@')).length === 0}
+                className="gap-2"
+              >
+                <LinkIcon className="w-4 h-4" />
+                Générer les liens
+              </Button>
+            ) : (
+              <Button onClick={sendBulkEmails} className="gap-2">
+                <Send className="w-4 h-4" />
+                Envoyer les demandes par email
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowBulkLinkDialog(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Settings Dialog */}
+      <Dialog open={showReminderSettings} onOpenChange={setShowReminderSettings}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5" />
+              Paramètres des rappels automatiques
+            </DialogTitle>
+            <DialogDescription>
+              Configurez les rappels pour les signatures en attente
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Rappels automatiques</Label>
+                <p className="text-sm text-muted-foreground">
+                  Recevoir des notifications pour les signatures en retard
+                </p>
+              </div>
+              <Switch
+                checked={reminderSettings.autoRemindersEnabled}
+                onCheckedChange={(checked) => 
+                  saveReminderSettings({ ...reminderSettings, autoRemindersEnabled: checked })
+                }
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label>Délai avant rappel</Label>
+              <Select
+                value={reminderSettings.reminderAfterDays.toString()}
+                onValueChange={(value) => 
+                  saveReminderSettings({ ...reminderSettings, reminderAfterDays: parseInt(value) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 jour</SelectItem>
+                  <SelectItem value="2">2 jours</SelectItem>
+                  <SelectItem value="3">3 jours</SelectItem>
+                  <SelectItem value="5">5 jours</SelectItem>
+                  <SelectItem value="7">7 jours</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Envoyer un rappel si la signature n'a pas été effectuée après ce délai
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Nombre maximum de rappels</Label>
+              <Select
+                value={reminderSettings.maxReminders.toString()}
+                onValueChange={(value) => 
+                  saveReminderSettings({ ...reminderSettings, maxReminders: parseInt(value) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 rappel</SelectItem>
+                  <SelectItem value="2">2 rappels</SelectItem>
+                  <SelectItem value="3">3 rappels</SelectItem>
+                  <SelectItem value="5">5 rappels</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {overdueTokens.length > 0 && (
+              <>
+                <Separator />
+                <Alert>
+                  <MailWarning className="h-4 w-4" />
+                  <AlertTitle>Signatures en retard</AlertTitle>
+                  <AlertDescription className="mt-2">
+                    <p className="mb-2">
+                      {overdueTokens.length} signature(s) en attente depuis plus de {reminderSettings.reminderAfterDays} jour(s)
+                    </p>
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        sendBulkReminders(overdueTokens);
+                        setShowReminderSettings(false);
+                      }}
+                    >
+                      <Mail className="w-4 h-4 mr-1" />
+                      Envoyer tous les rappels
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
