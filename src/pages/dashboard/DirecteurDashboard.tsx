@@ -6,10 +6,13 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Users, GraduationCap, TrendingUp, TrendingDown, DollarSign, 
   Calendar, AlertTriangle, CheckCircle, Clock, BarChart3,
-  School, Award, BookOpen, Target, Activity, Bell, ArrowUpRight, ArrowDownRight
+  School, Award, BookOpen, Target, Activity, Bell, ArrowUpRight, ArrowDownRight,
+  Download, Loader2
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 const statsGenerales = {
   effectifTotal: 2450,
@@ -68,6 +71,83 @@ const evolutionFinances = [
 ];
 
 export default function DirecteurDashboard() {
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState("Trimestre 1");
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport de Direction",
+        subtitle: "Vue stratégique de l'établissement",
+        establishment: "NextGen Éducation",
+        period: "Année scolaire 2024-2025 - " + selectedPeriod,
+        kpis: [
+          { label: "Effectif Total", value: statsGenerales.effectifTotal.toLocaleString(), change: `+${statsGenerales.effectifChange}`, trend: "up" },
+          { label: "Taux de Réussite", value: `${statsGenerales.tauxReussite}%`, change: `+${statsGenerales.tauxReussiteChange}%`, trend: "up" },
+          { label: "Taux Absentéisme", value: `${statsGenerales.tauxAbsenteisme}%`, change: `${statsGenerales.tauxAbsenteismeChange}%`, trend: "up" },
+          { label: "Recouvrement", value: `${statsGenerales.recouvrementFrais}%` },
+        ],
+        alerts: alertesRecentes.map(a => ({ type: a.priorite === "haute" ? "urgent" : a.priorite === "moyenne" ? "warning" : "info", message: a.message })),
+        tables: [
+          {
+            title: "Évolution des Effectifs",
+            headers: ["Mois", "Primaire", "Collège", "Lycée", "Total"],
+            rows: evolutionEffectifs.map(e => [e.mois, e.primaire, e.college, e.lycee, e.primaire + e.college + e.lycee]),
+          },
+          {
+            title: "Performances par Niveau",
+            headers: ["Niveau", "Moyenne", "Taux de Réussite"],
+            rows: performancesParNiveau.map(p => [p.niveau, `${p.moyenne}/20`, `${p.tauxReussite}%`]),
+          },
+          {
+            title: "Objectifs Annuels",
+            headers: ["Objectif", "Actuel", "Cible", "Statut"],
+            rows: objectifsAnnuels.map(o => [o.objectif, `${o.actuel}%`, `${o.cible}%`, o.statut === "atteint" ? "✓ Atteint" : "En cours"]),
+          },
+          {
+            title: "Évolution Financière",
+            headers: ["Mois", "Recettes (FCFA)", "Dépenses (FCFA)", "Solde"],
+            rows: evolutionFinances.map(f => [f.mois, f.recettes.toLocaleString("fr-FR"), f.depenses.toLocaleString("fr-FR"), (f.recettes - f.depenses).toLocaleString("fr-FR")]),
+          },
+        ],
+        chartData: [
+          {
+            title: "Répartition par Cycle",
+            type: "pie",
+            data: repartitionCycles.map(r => ({ name: r.name, value: r.value })),
+          },
+        ],
+        additionalInfo: [
+          { label: "Total élèves", value: statsGenerales.effectifTotal.toLocaleString() },
+          { label: "Taux de recouvrement", value: `${statsGenerales.recouvrementFrais}%` },
+          { label: "Alertes actives", value: `${alertesRecentes.filter(a => a.priorite === "haute").length} urgentes` },
+        ],
+      });
+      toast({
+        title: "Rapport généré avec succès",
+        description: "Le rapport de direction a été téléchargé.",
+      });
+    } catch (error) {
+      console.error("Erreur génération rapport:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePeriodSelect = () => {
+    toast({
+      title: "Sélection de période",
+      description: "La période Trimestre 1 est actuellement sélectionnée.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -76,13 +156,17 @@ export default function DirecteurDashboard() {
           <p className="text-muted-foreground">Vue stratégique de l'établissement • Année 2024-2025</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handlePeriodSelect}>
             <Calendar className="mr-2 h-4 w-4" />
-            Trimestre 1
+            {selectedPeriod}
           </Button>
-          <Button>
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Rapport complet
+          <Button onClick={handleGenerateReport} disabled={isGenerating}>
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isGenerating ? "Génération..." : "Rapport complet"}
           </Button>
         </div>
       </div>

@@ -68,8 +68,10 @@ const Directeur = () => {
   ];
 
   const handleGenerateReport = async () => {
+    console.log("handleGenerateReport called");
     setIsGenerating(true);
     try {
+      console.log("Starting PDF generation...");
       generateDashboardReport({
         title: "Rapport de Direction",
         subtitle: "Vue stratégique de l'établissement",
@@ -122,11 +124,13 @@ const Directeur = () => {
           { label: "Satisfaction parents", value: "82%" },
         ],
       });
+      console.log("PDF generation completed");
       toast({
         title: "Rapport généré",
         description: "Le rapport de direction a été téléchargé avec succès.",
       });
     } catch (error) {
+      console.error("PDF generation error:", error);
       toast({
         title: "Erreur",
         description: "Impossible de générer le rapport.",
