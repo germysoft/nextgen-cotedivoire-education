@@ -20,10 +20,13 @@ import {
   Users,
   Calendar,
   Search,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 // Données de suivi des absences
 const absenceData = [
@@ -143,12 +146,107 @@ const convocationsAttente = [
 
 export default function CPEDashboard() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   
   const filteredElevesRisque = elevesRisque.filter(e => 
     e.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.classe.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleGenerateWeeklyReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport Hebdomadaire CPE",
+        subtitle: "Suivi de la vie scolaire et de la discipline",
+        establishment: "NextGen Éducation",
+        period: "Semaine du 13 au 19 janvier 2025",
+        kpis: [
+          { label: "Élèves à risque", value: String(elevesRisque.length), trend: "down" },
+          { label: "Absences ce mois", value: "176", change: "68 non justifiées" },
+          { label: "Retards ce mois", value: "95", change: "-12%", trend: "up" },
+          { label: "Incidents actifs", value: "7", change: "2 conseils à venir" },
+          { label: "Convocations", value: String(convocationsAttente.length) },
+        ],
+        alerts: [
+          { type: "urgent", message: `${elevesRisque.filter(e => e.alerteType === "urgent").length} élèves en alerte urgente` },
+          { type: "warning", message: `${incidentsRecents.filter(i => i.statut === "en_cours").length} incidents en cours de traitement` },
+          { type: "info", message: `${convocationsAttente.length} convocations programmées cette semaine` },
+        ],
+        tables: [
+          {
+            title: "Élèves à Risque",
+            headers: ["Nom", "Classe", "Absences", "Retards", "Incidents", "Conduite", "Alerte"],
+            rows: elevesRisque.map(e => [
+              e.nom,
+              e.classe,
+              String(e.absences),
+              String(e.retards),
+              String(e.incidents),
+              `${e.moyenneConduite}/20`,
+              e.alerteType,
+            ]),
+          },
+          {
+            title: "Incidents Récents",
+            headers: ["Date", "Élève", "Classe", "Type", "Gravité", "Mesure", "Statut"],
+            rows: incidentsRecents.map(i => [
+              i.date,
+              i.eleve,
+              i.classe,
+              i.type,
+              i.gravite,
+              i.mesure,
+              i.statut === "en_cours" ? "En cours" : "Traité",
+            ]),
+          },
+          {
+            title: "Convocations Programmées",
+            headers: ["Élève", "Parent", "Date", "Heure", "Motif"],
+            rows: convocationsAttente.map(c => [c.eleve, c.parent, c.date, c.heure, c.motif]),
+          },
+          {
+            title: "Évolution des Absences (4 semaines)",
+            headers: ["Semaine", "Absences", "Retards", "Justifiées"],
+            rows: absenceData.map(a => [a.semaine, String(a.absences), String(a.retards), String(a.justifiees)]),
+          },
+        ],
+        chartData: [
+          {
+            title: "Répartition des Sanctions",
+            type: "pie",
+            data: sanctionsData.map(s => ({ name: s.name, value: s.value })),
+          },
+        ],
+        additionalInfo: [
+          { label: "Taux justification", value: "68%" },
+          { label: "Tendance absences", value: "En baisse" },
+          { label: "Conseils à venir", value: "2" },
+        ],
+      });
+      toast({
+        title: "Rapport généré",
+        description: "Le rapport hebdomadaire CPE a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleShowAlerts = () => {
+    toast({
+      title: "Alertes actives",
+      description: `${elevesRisque.filter(e => e.alerteType === "urgent").length} élèves en alerte urgente, ${incidentsRecents.filter(i => i.statut === "en_cours").length} incidents en cours.`,
+    });
+  };
 
   const getAlertBadge = (type: string) => {
     switch (type) {
@@ -191,13 +289,17 @@ export default function CPEDashboard() {
           <p className="text-muted-foreground mt-2">Suivi de la vie scolaire et de la discipline</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Rapport hebdo
+          <Button variant="outline" onClick={handleGenerateWeeklyReport} disabled={isGeneratingReport}>
+            {isGeneratingReport ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isGeneratingReport ? "Génération..." : "Rapport hebdo"}
           </Button>
-          <Button>
+          <Button onClick={handleShowAlerts}>
             <Bell className="mr-2 h-4 w-4" />
-            Alertes (3)
+            Alertes ({elevesRisque.filter(e => e.alerteType === "urgent").length})
           </Button>
         </div>
       </div>

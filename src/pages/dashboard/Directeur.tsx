@@ -7,15 +7,19 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Users, GraduationCap, DollarSign, TrendingUp, AlertTriangle, CheckCircle, 
   Calendar, BookOpen, Building2, Bell, ArrowUpRight, ArrowDownRight, Clock,
-  Target, Award, FileText, BarChart3, PieChart
+  Target, Award, FileText, BarChart3, PieChart, Download, Loader2
 } from "lucide-react";
 import { 
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, PieChart as RePieChart, Pie, Cell, BarChart, Bar, Legend 
 } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 const Directeur = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("trimestre");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const kpis = [
     { label: "Effectif Total", value: 1247, change: "+3.2%", trend: "up", icon: Users, color: "text-blue-500" },
@@ -63,6 +67,83 @@ const Directeur = () => {
     { label: "Assiduité enseignants", actuel: 96, objectif: 98 },
   ];
 
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport de Direction",
+        subtitle: "Vue stratégique de l'établissement",
+        establishment: "NextGen Éducation",
+        period: "Année scolaire 2024-2025",
+        kpis: kpis.map(k => ({
+          label: k.label,
+          value: String(k.value),
+          change: k.change,
+          trend: k.trend as "up" | "down",
+        })),
+        alerts: alertes.map(a => ({ type: a.type, message: a.message })),
+        tables: [
+          {
+            title: "Évolution Mensuelle",
+            headers: ["Mois", "Effectif", "Paiements (%)", "Présence (%)"],
+            rows: evolutionData.map(e => [e.mois, e.effectif, `${e.paiements}%`, `${e.presence}%`]),
+          },
+          {
+            title: "Performance par Matière",
+            headers: ["Matière", "Moyenne", "Objectif", "Écart"],
+            rows: performanceMatiere.map(p => [
+              p.matiere,
+              `${p.moyenne}/20`,
+              `${p.objectif}/20`,
+              `${(p.moyenne - p.objectif).toFixed(1)}`,
+            ]),
+          },
+          {
+            title: "Objectifs Annuels",
+            headers: ["Indicateur", "Actuel", "Objectif", "Progression"],
+            rows: objectifsAnnuels.map(o => [
+              o.label,
+              `${o.actuel}%`,
+              `${o.objectif}%`,
+              `${((o.actuel / o.objectif) * 100).toFixed(0)}%`,
+            ]),
+          },
+        ],
+        chartData: [
+          {
+            title: "Répartition par Niveau",
+            type: "pie",
+            data: repartitionClasses.map(r => ({ name: r.name, value: r.value })),
+          },
+        ],
+        additionalInfo: [
+          { label: "Total élèves", value: "1,247" },
+          { label: "Taux de recouvrement", value: "78%" },
+          { label: "Satisfaction parents", value: "82%" },
+        ],
+      });
+      toast({
+        title: "Rapport généré",
+        description: "Le rapport de direction a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleShowAlerts = () => {
+    toast({
+      title: "Alertes actives",
+      description: `${alertes.length} alertes en cours. Consultez le tableau de bord pour plus de détails.`,
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -71,11 +152,12 @@ const Directeur = () => {
           <p className="text-muted-foreground">Vue stratégique de l'établissement</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <FileText className="h-4 w-4 mr-2" />Rapport
+          <Button variant="outline" size="sm" onClick={handleGenerateReport} disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            {isGenerating ? "Génération..." : "Rapport"}
           </Button>
-          <Button size="sm">
-            <Bell className="h-4 w-4 mr-2" />4 alertes
+          <Button size="sm" onClick={handleShowAlerts}>
+            <Bell className="h-4 w-4 mr-2" />{alertes.length} alertes
           </Button>
         </div>
       </div>

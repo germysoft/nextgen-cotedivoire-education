@@ -6,11 +6,13 @@ import { Progress } from "@/components/ui/progress";
 import { 
   DollarSign, TrendingUp, TrendingDown, Wallet, Receipt,
   CreditCard, AlertTriangle, CheckCircle, Clock, PiggyBank,
-  ArrowUpRight, ArrowDownRight, Calendar, FileText, Users
+  ArrowUpRight, ArrowDownRight, Calendar, FileText, Users, Download, Loader2
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 const statsFinancieres = {
   soldeTresorerie: 125000000,
@@ -60,6 +62,101 @@ const echeancesProchaines = [
 ];
 
 export default function ComptableDashboard() {
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showPeriodSelector, setShowPeriodSelector] = useState(false);
+
+  const handleExportReport = async () => {
+    setIsGenerating(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport Financier",
+        subtitle: "Suivi comptable et trésorerie",
+        establishment: "NextGen Éducation",
+        period: "Décembre 2024",
+        kpis: [
+          { label: "Trésorerie", value: `${(statsFinancieres.soldeTresorerie / 1000000).toFixed(0)}M FCFA`, change: "+7M", trend: "up" },
+          { label: "Recettes Mois", value: `${(statsFinancieres.recettesMois / 1000000).toFixed(0)}M FCFA`, trend: "up" },
+          { label: "Dépenses Mois", value: `${(statsFinancieres.depensesMois / 1000000).toFixed(0)}M FCFA`, trend: "down" },
+          { label: "Créances", value: `${(statsFinancieres.creances / 1000000).toFixed(0)}M FCFA` },
+          { label: "Recouvrement", value: `${statsFinancieres.recouvrementTaux}%` },
+        ],
+        alerts: [
+          { type: "warning", message: `${impayesParClasse.reduce((sum, i) => sum + i.eleves, 0)} élèves avec impayés` },
+          { type: "info", message: `${echeancesProchaines.length} échéances à venir` },
+        ],
+        tables: [
+          {
+            title: "Dernières Transactions",
+            headers: ["Date", "Libellé", "Type", "Montant (FCFA)", "Statut"],
+            rows: dernièresTransactions.map(t => [
+              t.date,
+              t.libelle,
+              t.type,
+              t.montant.toLocaleString("fr-FR"),
+              t.statut,
+            ]),
+          },
+          {
+            title: "Impayés par Classe",
+            headers: ["Classe", "Montant (FCFA)", "Nombre d'élèves"],
+            rows: impayesParClasse.map(i => [
+              i.classe,
+              i.montant.toLocaleString("fr-FR"),
+              String(i.eleves),
+            ]),
+          },
+          {
+            title: "Échéances Prochaines",
+            headers: ["Libellé", "Date", "Montant (FCFA)", "Statut"],
+            rows: echeancesProchaines.map(e => [
+              e.libelle,
+              e.date,
+              e.montant.toLocaleString("fr-FR"),
+              e.statut,
+            ]),
+          },
+          {
+            title: "Évolution Trésorerie",
+            headers: ["Mois", "Solde (FCFA)"],
+            rows: evolutionTresorerie.map(e => [e.mois, e.solde.toLocaleString("fr-FR")]),
+          },
+        ],
+        chartData: [
+          {
+            title: "Répartition des Dépenses",
+            type: "pie",
+            data: repartitionDepenses.map(d => ({ name: d.name, value: d.value })),
+          },
+        ],
+        additionalInfo: [
+          { label: "Solde disponible", value: `${(statsFinancieres.soldeTresorerie / 1000000).toFixed(1)}M FCFA` },
+          { label: "Total créances", value: `${(statsFinancieres.creances / 1000000).toFixed(1)}M FCFA` },
+          { label: "Taux recouvrement", value: `${statsFinancieres.recouvrementTaux}%` },
+        ],
+      });
+      toast({
+        title: "Rapport généré",
+        description: "Le rapport financier a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePeriodSelector = () => {
+    toast({
+      title: "Sélection de période",
+      description: "Utilisez les filtres pour sélectionner la période souhaitée.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -68,13 +165,17 @@ export default function ComptableDashboard() {
           <p className="text-muted-foreground">Suivi financier en temps réel • Décembre 2024</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handlePeriodSelector}>
             <Calendar className="mr-2 h-4 w-4" />
             Période
           </Button>
-          <Button>
-            <FileText className="mr-2 h-4 w-4" />
-            Export
+          <Button onClick={handleExportReport} disabled={isGenerating}>
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isGenerating ? "Génération..." : "Export"}
           </Button>
         </div>
       </div>

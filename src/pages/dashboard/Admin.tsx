@@ -1,9 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, GraduationCap, BookOpen, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { Users, GraduationCap, BookOpen, TrendingUp, AlertCircle, CheckCircle, Download, Loader2 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 const performanceData = [
   { mois: "Sep", effectif: 450, presence: 425, absences: 25 },
@@ -31,6 +34,59 @@ const alertes = [
 ];
 
 const Admin = () => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport Administratif",
+        subtitle: "Vue d'ensemble de la gestion administrative",
+        establishment: "NextGen Éducation",
+        period: "Année scolaire 2024-2025",
+        kpis: [
+          { label: "Effectif Total", value: "465", change: "+2.1%", trend: "up" },
+          { label: "Personnel", value: "42", change: "32 ens., 10 admin" },
+          { label: "Classes Actives", value: "18", change: "6 niveaux" },
+          { label: "Taux Présence", value: "97.8%", change: "+0.5%", trend: "up" },
+        ],
+        alerts: alertes.map(a => ({ type: a.type, message: a.message })),
+        tables: [
+          {
+            title: "Évolution de l'Effectif et Présence",
+            headers: ["Mois", "Effectif", "Présence", "Absences"],
+            rows: performanceData.map(p => [p.mois, p.effectif, p.presence, p.absences]),
+          },
+          {
+            title: "Répartition Budgétaire",
+            headers: ["Catégorie", "Montant (FCFA)", "Pourcentage"],
+            rows: budgetData.map(b => [b.categorie, b.montant.toLocaleString("fr-FR"), `${b.pourcentage}%`]),
+          },
+        ],
+        chartData: [
+          {
+            title: "Répartition du Budget",
+            type: "pie",
+            data: budgetData.map(b => ({ name: b.categorie, value: b.pourcentage })),
+          },
+        ],
+      });
+      toast({
+        title: "Rapport généré",
+        description: "Le rapport administratif a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -38,7 +94,14 @@ const Admin = () => {
           <h1 className="text-4xl font-bold text-foreground">Tableau de Bord Administratif</h1>
           <p className="text-muted-foreground mt-2">Vue d'ensemble de la gestion administrative</p>
         </div>
-        <Button>Générer Rapport</Button>
+        <Button onClick={handleGenerateReport} disabled={isGenerating}>
+          {isGenerating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          {isGenerating ? "Génération..." : "Générer Rapport"}
+        </Button>
       </div>
 
       {/* Stats Cards */}
