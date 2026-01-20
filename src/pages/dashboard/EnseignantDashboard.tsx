@@ -5,11 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   BookOpen, Users, Clock, Calendar, CheckCircle, AlertTriangle,
-  FileText, TrendingUp, GraduationCap, Bell, ClipboardList, Edit
+  FileText, TrendingUp, GraduationCap, Bell, ClipboardList, Edit,
+  Download, Loader2
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 const statsEnseignant = {
   classesAttribuees: 6,
@@ -58,6 +61,77 @@ const notificationsRecentes = [
 ];
 
 export default function EnseignantDashboard() {
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleViewPlanning = () => {
+    toast({
+      title: "Planning hebdomadaire",
+      description: "Consultez votre emploi du temps complet dans la section Planning.",
+    });
+  };
+
+  const handleSaisirNotes = () => {
+    toast({
+      title: "Saisie des notes",
+      description: `${statsEnseignant.notesASaisir} classes en attente de saisie de notes.`,
+    });
+  };
+
+  const handleExportRapport = async () => {
+    setIsGenerating(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport Enseignant",
+        subtitle: "M. KOFFI - Mathématiques",
+        establishment: "NextGen Éducation",
+        period: "Année scolaire 2024-2025",
+        kpis: [
+          { label: "Classes attribuées", value: String(statsEnseignant.classesAttribuees) },
+          { label: "Total élèves", value: String(statsEnseignant.totalEleves) },
+          { label: "Heures/semaine", value: String(statsEnseignant.heuresSemaine) },
+          { label: "Cours effectués", value: `${statsEnseignant.coursEffectues}%` },
+          { label: "Devoirs planifiés", value: String(statsEnseignant.devoirs) },
+        ],
+        alerts: notificationsRecentes.map(n => ({ type: n.type, message: n.message })),
+        tables: [
+          {
+            title: "Mes Classes",
+            headers: ["Classe", "Effectif", "Moyenne", "Présence", "Prochain devoir"],
+            rows: mesClasses.map(c => [c.classe, c.effectif, `${c.moyenne}/20`, `${c.tauxPresence}%`, c.prochainDevoir]),
+          },
+          {
+            title: "Emploi du Temps - Aujourd'hui",
+            headers: ["Heure", "Classe", "Matière", "Salle", "Statut"],
+            rows: emploiDuTempsAujourdhui.map(e => [e.heure, e.classe, e.matiere, e.salle, e.statut]),
+          },
+          {
+            title: "Devoirs à Venir",
+            headers: ["Classe", "Type", "Date", "Sujet", "Statut"],
+            rows: devoirsAVenir.map(d => [d.classe, d.type, d.date, d.sujet, d.statut]),
+          },
+        ],
+        additionalInfo: [
+          { label: "Enseignant", value: "M. KOFFI" },
+          { label: "Matière", value: "Mathématiques" },
+          { label: "Notes à saisir", value: `${statsEnseignant.notesASaisir} classes` },
+        ],
+      });
+      toast({
+        title: "Rapport généré",
+        description: "Votre rapport personnel a été téléchargé.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -66,11 +140,15 @@ export default function EnseignantDashboard() {
           <p className="text-muted-foreground">Bienvenue, M. KOFFI • Mathématiques</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleViewPlanning}>
             <Calendar className="mr-2 h-4 w-4" />
             Mon Planning
           </Button>
-          <Button>
+          <Button variant="outline" onClick={handleExportRapport} disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {isGenerating ? "Export..." : "Rapport"}
+          </Button>
+          <Button onClick={handleSaisirNotes}>
             <Edit className="mr-2 h-4 w-4" />
             Saisir Notes
           </Button>
