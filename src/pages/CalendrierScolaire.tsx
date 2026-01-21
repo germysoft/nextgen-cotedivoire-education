@@ -20,11 +20,14 @@ import {
   Download,
   Bell,
   Edit,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { format, addDays, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 
 // Types d'événements
 type EventType = "academique" | "examen" | "reunion" | "ferie" | "activite" | "conseil";
@@ -149,9 +152,11 @@ const vacances = [
 
 export default function CalendrierScolaire() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [events, setEvents] = useState<SchoolEvent[]>(mockEvents);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
@@ -246,6 +251,97 @@ export default function CalendrierScolaire() {
       setEvents([...events, event]);
       setNewEvent({ title: "", description: "", type: "academique", location: "" });
       setIsAddDialogOpen(false);
+      toast({
+        title: "Événement ajouté",
+        description: `"${event.title}" a été ajouté au calendrier.`,
+      });
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(0, 51, 102);
+      doc.text("Calendrier Scolaire 2024-2025", 105, 20, { align: "center" });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      doc.text("NextGen Éducation", 105, 28, { align: "center" });
+      
+      let yPos = 45;
+      
+      // Trimestres
+      doc.setFontSize(14);
+      doc.setTextColor(0, 51, 102);
+      doc.text("Trimestres", 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(50);
+      trimestres.forEach(trim => {
+        doc.text(`• ${trim.name}: Du ${trim.debut} au ${trim.fin}`, 25, yPos);
+        yPos += 7;
+      });
+      
+      yPos += 10;
+      
+      // Vacances
+      doc.setFontSize(14);
+      doc.setTextColor(0, 51, 102);
+      doc.text("Périodes de Vacances", 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(50);
+      vacances.forEach(vac => {
+        doc.text(`• ${vac.name}: Du ${vac.debut} au ${vac.fin}`, 25, yPos);
+        yPos += 7;
+      });
+      
+      yPos += 10;
+      
+      // Événements
+      doc.setFontSize(14);
+      doc.setTextColor(0, 51, 102);
+      doc.text("Événements Importants", 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(10);
+      doc.setTextColor(50);
+      const sortedEvents = [...events].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+      sortedEvents.forEach(event => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        const dateStr = format(event.startDate, "dd/MM/yyyy", { locale: fr });
+        doc.text(`• ${dateStr} - ${event.title} (${getEventTypeLabel(event.type)})`, 25, yPos);
+        yPos += 7;
+      });
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Généré le ${format(new Date(), "dd/MM/yyyy à HH:mm", { locale: fr })}`, 105, 285, { align: "center" });
+      
+      doc.save("calendrier-scolaire-2024-2025.pdf");
+      
+      toast({
+        title: "Export réussi",
+        description: "Le calendrier scolaire a été exporté en PDF.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter le calendrier.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -269,9 +365,9 @@ export default function CalendrierScolaire() {
           <p className="text-muted-foreground mt-2">Année scolaire 2024-2025</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exporter PDF
+          <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {isExporting ? "Export..." : "Exporter PDF"}
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>

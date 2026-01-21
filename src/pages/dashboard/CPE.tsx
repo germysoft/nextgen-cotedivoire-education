@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   AlertTriangle, 
   UserX, 
@@ -21,10 +25,12 @@ import {
   Calendar,
   Search,
   Download,
-  Loader2
+  Loader2,
+  Plus
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
@@ -147,8 +153,13 @@ const convocationsAttente = [
 export default function CPEDashboard() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isNewIncidentOpen, setIsNewIncidentOpen] = useState(false);
+  const [isNewConvocationOpen, setIsNewConvocationOpen] = useState(false);
+  const [newIncident, setNewIncident] = useState({ eleve: "", classe: "", type: "", gravite: "", description: "" });
+  const [newConvocation, setNewConvocation] = useState({ eleve: "", parent: "", date: "", heure: "", motif: "" });
   
   const filteredElevesRisque = elevesRisque.filter(e => 
     e.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -246,6 +257,55 @@ export default function CPEDashboard() {
       title: "Alertes actives",
       description: `${elevesRisque.filter(e => e.alerteType === "urgent").length} élèves en alerte urgente, ${incidentsRecents.filter(i => i.statut === "en_cours").length} incidents en cours.`,
     });
+  };
+
+  const handleViewProfile = (eleve: typeof elevesRisque[0]) => {
+    toast({ title: "Profil élève", description: `Ouverture du profil de ${eleve.nom}` });
+    navigate(`/students`);
+  };
+
+  const handleCallParent = (nom: string) => {
+    toast({ title: "Appel parent", description: `Initiation de l'appel pour le parent de ${nom}` });
+  };
+
+  const handleSendSMS = (nom: string) => {
+    toast({ title: "SMS envoyé", description: `Rappel SMS envoyé au parent de ${nom}` });
+  };
+
+  const handleSendEmail = (nom: string) => {
+    toast({ title: "Email envoyé", description: `Email de convocation envoyé au parent de ${nom}` });
+  };
+
+  const handleViewFiche = (nom: string) => {
+    toast({ title: "Fiche de suivi", description: `Ouverture de la fiche de suivi pour ${nom}` });
+  };
+
+  const handleViewIncident = (incident: typeof incidentsRecents[0]) => {
+    toast({ title: "Détails incident", description: `${incident.type} - ${incident.eleve}: ${incident.mesure}` });
+  };
+
+  const handleDownloadIncidentReport = (incident: typeof incidentsRecents[0]) => {
+    toast({ title: "Téléchargement", description: `Rapport d'incident pour ${incident.eleve} téléchargé` });
+  };
+
+  const handleAddIncident = () => {
+    if (newIncident.eleve && newIncident.type && newIncident.gravite) {
+      toast({ title: "Incident enregistré", description: `Nouvel incident créé pour ${newIncident.eleve}` });
+      setNewIncident({ eleve: "", classe: "", type: "", gravite: "", description: "" });
+      setIsNewIncidentOpen(false);
+    } else {
+      toast({ title: "Erreur", description: "Veuillez remplir tous les champs obligatoires", variant: "destructive" });
+    }
+  };
+
+  const handleAddConvocation = () => {
+    if (newConvocation.eleve && newConvocation.parent && newConvocation.date) {
+      toast({ title: "Convocation créée", description: `Rendez-vous planifié pour ${newConvocation.parent}` });
+      setNewConvocation({ eleve: "", parent: "", date: "", heure: "", motif: "" });
+      setIsNewConvocationOpen(false);
+    } else {
+      toast({ title: "Erreur", description: "Veuillez remplir tous les champs obligatoires", variant: "destructive" });
+    }
   };
 
   const getAlertBadge = (type: string) => {
@@ -431,16 +491,16 @@ export default function CPEDashboard() {
                       <TableCell className="text-sm text-muted-foreground">{eleve.dernierContact}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" title="Voir profil">
+                          <Button size="sm" variant="ghost" title="Voir profil" onClick={() => handleViewProfile(eleve)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="Appeler parent">
+                          <Button size="sm" variant="ghost" title="Appeler parent" onClick={() => handleCallParent(eleve.nom)}>
                             <Phone className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="Envoyer SMS">
+                          <Button size="sm" variant="ghost" title="Envoyer SMS" onClick={() => handleSendSMS(eleve.nom)}>
                             <MessageSquare className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="Fiche suivi">
+                          <Button size="sm" variant="ghost" title="Fiche suivi" onClick={() => handleViewFiche(eleve.nom)}>
                             <FileText className="h-4 w-4" />
                           </Button>
                         </div>
@@ -462,10 +522,73 @@ export default function CPEDashboard() {
                   <CardTitle>Incidents disciplinaires récents</CardTitle>
                   <CardDescription>Gestion et suivi des mesures disciplinaires</CardDescription>
                 </div>
-                <Button>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Nouvel incident
-                </Button>
+                <Dialog open={isNewIncidentOpen} onOpenChange={setIsNewIncidentOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Nouvel incident
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Signaler un nouvel incident</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Élève *</Label>
+                          <Input value={newIncident.eleve} onChange={(e) => setNewIncident({...newIncident, eleve: e.target.value})} placeholder="Nom de l'élève" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Classe</Label>
+                          <Select onValueChange={(v) => setNewIncident({...newIncident, classe: v})}>
+                            <SelectTrigger><SelectValue placeholder="Classe" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="3emeA">3ème A</SelectItem>
+                              <SelectItem value="4emeB">4ème B</SelectItem>
+                              <SelectItem value="5emeA">5ème A</SelectItem>
+                              <SelectItem value="6emeA">6ème A</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Type d'incident *</Label>
+                          <Select onValueChange={(v) => setNewIncident({...newIncident, type: v})}>
+                            <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bagarre">Bagarre</SelectItem>
+                              <SelectItem value="insolence">Insolence</SelectItem>
+                              <SelectItem value="retards">Retards répétés</SelectItem>
+                              <SelectItem value="degradation">Dégradation</SelectItem>
+                              <SelectItem value="autre">Autre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Gravité *</Label>
+                          <Select onValueChange={(v) => setNewIncident({...newIncident, gravite: v})}>
+                            <SelectTrigger><SelectValue placeholder="Gravité" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="leger">Léger</SelectItem>
+                              <SelectItem value="moyen">Moyen</SelectItem>
+                              <SelectItem value="grave">Grave</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea value={newIncident.description} onChange={(e) => setNewIncident({...newIncident, description: e.target.value})} placeholder="Détails de l'incident..." />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsNewIncidentOpen(false)}>Annuler</Button>
+                      <Button onClick={handleAddIncident}>Enregistrer</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
@@ -494,10 +617,10 @@ export default function CPEDashboard() {
                       <TableCell>{getStatutBadge(incident.statut)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" title="Voir détails">
+                          <Button size="sm" variant="ghost" title="Voir détails" onClick={() => handleViewIncident(incident)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="Télécharger rapport">
+                          <Button size="sm" variant="ghost" title="Télécharger rapport" onClick={() => handleDownloadIncidentReport(incident)}>
                             <Download className="h-4 w-4" />
                           </Button>
                         </div>
@@ -587,10 +710,58 @@ export default function CPEDashboard() {
                   <CardTitle>Convocations parents planifiées</CardTitle>
                   <CardDescription>Rendez-vous à venir avec les parents</CardDescription>
                 </div>
-                <Button>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Nouvelle convocation
-                </Button>
+                <Dialog open={isNewConvocationOpen} onOpenChange={setIsNewConvocationOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Nouvelle convocation
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Planifier une convocation</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Élève *</Label>
+                          <Input value={newConvocation.eleve} onChange={(e) => setNewConvocation({...newConvocation, eleve: e.target.value})} placeholder="Nom de l'élève" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Parent/Tuteur *</Label>
+                          <Input value={newConvocation.parent} onChange={(e) => setNewConvocation({...newConvocation, parent: e.target.value})} placeholder="Nom du parent" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Date *</Label>
+                          <Input type="date" value={newConvocation.date} onChange={(e) => setNewConvocation({...newConvocation, date: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Heure</Label>
+                          <Input type="time" value={newConvocation.heure} onChange={(e) => setNewConvocation({...newConvocation, heure: e.target.value})} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Motif</Label>
+                        <Select onValueChange={(v) => setNewConvocation({...newConvocation, motif: v})}>
+                          <SelectTrigger><SelectValue placeholder="Motif de convocation" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="comportement">Comportement</SelectItem>
+                            <SelectItem value="absences">Absences répétées</SelectItem>
+                            <SelectItem value="difficultes">Difficultés scolaires</SelectItem>
+                            <SelectItem value="incident">Suite à incident</SelectItem>
+                            <SelectItem value="autre">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsNewConvocationOpen(false)}>Annuler</Button>
+                      <Button onClick={handleAddConvocation}>Planifier</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
@@ -615,13 +786,13 @@ export default function CPEDashboard() {
                       <TableCell><Badge variant="outline">{conv.motif}</Badge></TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" title="Appeler">
+                          <Button size="sm" variant="ghost" title="Appeler" onClick={() => handleCallParent(conv.parent)}>
                             <Phone className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="Envoyer rappel SMS">
+                          <Button size="sm" variant="ghost" title="Envoyer rappel SMS" onClick={() => handleSendSMS(conv.eleve)}>
                             <MessageSquare className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="Envoyer email">
+                          <Button size="sm" variant="ghost" title="Envoyer email" onClick={() => handleSendEmail(conv.eleve)}>
                             <Mail className="h-4 w-4" />
                           </Button>
                         </div>
