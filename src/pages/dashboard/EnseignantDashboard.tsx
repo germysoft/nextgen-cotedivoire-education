@@ -3,14 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   BookOpen, Users, Clock, Calendar, CheckCircle, AlertTriangle,
   FileText, TrendingUp, GraduationCap, Bell, ClipboardList, Edit,
-  Download, Loader2
+  Download, Loader2, Plus
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from "recharts";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
@@ -62,13 +68,17 @@ const notificationsRecentes = [
 
 export default function EnseignantDashboard() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProgrammerOpen, setIsProgrammerOpen] = useState(false);
+  const [newDevoir, setNewDevoir] = useState({ classe: "", type: "", date: "", sujet: "" });
 
   const handleViewPlanning = () => {
     toast({
       title: "Planning hebdomadaire",
-      description: "Consultez votre emploi du temps complet dans la section Planning.",
+      description: "Redirection vers votre emploi du temps complet.",
     });
+    navigate("/enseignants/planning");
   };
 
   const handleSaisirNotes = () => {
@@ -76,6 +86,31 @@ export default function EnseignantDashboard() {
       title: "Saisie des notes",
       description: `${statsEnseignant.notesASaisir} classes en attente de saisie de notes.`,
     });
+    navigate("/grades");
+  };
+
+  const handleClassNotes = (classe: string) => {
+    toast({ title: "Saisie notes", description: `Ouverture saisie notes pour ${classe}` });
+    navigate("/grades");
+  };
+
+  const handleClassAppel = (classe: string) => {
+    toast({ title: "Appel", description: `Faire l'appel pour ${classe}` });
+    navigate("/scolarite/absences");
+  };
+
+  const handleModifyDevoir = (devoir: typeof devoirsAVenir[0]) => {
+    toast({ title: "Modification", description: `Modification du devoir ${devoir.type} - ${devoir.classe}` });
+  };
+
+  const handleProgrammerDevoir = () => {
+    if (newDevoir.classe && newDevoir.type && newDevoir.date && newDevoir.sujet) {
+      toast({ title: "Devoir programmé", description: `${newDevoir.type} pour ${newDevoir.classe} planifié le ${newDevoir.date}` });
+      setNewDevoir({ classe: "", type: "", date: "", sujet: "" });
+      setIsProgrammerOpen(false);
+    } else {
+      toast({ title: "Erreur", description: "Veuillez remplir tous les champs", variant: "destructive" });
+    }
   };
 
   const handleExportRapport = async () => {
@@ -336,8 +371,8 @@ export default function EnseignantDashboard() {
                       <TableCell>{classe.prochainDevoir}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline">Notes</Button>
-                          <Button size="sm" variant="ghost">Appel</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleClassNotes(classe.classe)}>Notes</Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleClassAppel(classe.classe)}>Appel</Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -353,10 +388,58 @@ export default function EnseignantDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Devoirs & Évaluations à Venir</CardTitle>
-                <Button size="sm">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Programmer
-                </Button>
+                <Dialog open={isProgrammerOpen} onOpenChange={setIsProgrammerOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Programmer
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Programmer un devoir/évaluation</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Classe *</Label>
+                          <Select onValueChange={(v) => setNewDevoir({...newDevoir, classe: v})}>
+                            <SelectTrigger><SelectValue placeholder="Classe" /></SelectTrigger>
+                            <SelectContent>
+                              {mesClasses.map(c => (
+                                <SelectItem key={c.classe} value={c.classe}>{c.classe}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Type *</Label>
+                          <Select onValueChange={(v) => setNewDevoir({...newDevoir, type: v})}>
+                            <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="interrogation">Interrogation</SelectItem>
+                              <SelectItem value="devoir_surveille">Devoir surveillé</SelectItem>
+                              <SelectItem value="devoir_maison">Devoir maison</SelectItem>
+                              <SelectItem value="composition">Composition</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Date *</Label>
+                        <Input type="date" value={newDevoir.date} onChange={(e) => setNewDevoir({...newDevoir, date: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sujet *</Label>
+                        <Textarea value={newDevoir.sujet} onChange={(e) => setNewDevoir({...newDevoir, sujet: e.target.value})} placeholder="Sujet du devoir..." />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsProgrammerOpen(false)}>Annuler</Button>
+                      <Button onClick={handleProgrammerDevoir}>Programmer</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
@@ -386,7 +469,7 @@ export default function EnseignantDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline">Modifier</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleModifyDevoir(devoir)}>Modifier</Button>
                       </TableCell>
                     </TableRow>
                   ))}
