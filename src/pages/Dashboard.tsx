@@ -2,7 +2,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { 
   Users, GraduationCap, BookOpen, DollarSign, TrendingUp, UserCheck, 
   AlertCircle, Calendar, MessageSquare, Clock, Archive, Wallet, FileText,
-  Bell, Activity, BarChart3, PieChart, Users2, School, ClipboardCheck
+  Bell, Activity, BarChart3, PieChart, Users2, School, ClipboardCheck,
+  Loader2, Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPie, Pie, Cell, Area, AreaChart } from "recharts";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { generateDashboardReport } from "@/components/dashboard/DashboardReportGenerator";
 
 const enrollmentData = [
   { name: "6ème", students: 120 },
@@ -41,6 +46,9 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--chart-2)
 
 export default function Dashboard() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const recentActivities = [
     { id: 1, type: t('students.addNew'), description: "KOUASSI Jean", time: `${t('time.ago')} 2h`, icon: Users, color: "bg-primary" },
@@ -50,10 +58,10 @@ export default function Dashboard() {
   ];
 
   const alerts = [
-    { id: 1, type: "urgent", title: t('finance.overdue'), description: "15 élèves avec plus de 3 mois d'impayés", count: 15 },
-    { id: 2, type: "warning", title: t('hr.absent'), description: "8 élèves absents plus de 5 jours", count: 8 },
-    { id: 3, type: "info", title: "Documents", description: "23 dossiers incomplets", count: 23 },
-    { id: 4, type: "success", title: t('bulletins.title'), description: "Tous les bulletins T1 sont prêts", count: 28 },
+    { id: 1, type: "urgent", title: t('finance.overdue'), description: "15 élèves avec plus de 3 mois d'impayés", count: 15, route: "/scolarite/paiements" },
+    { id: 2, type: "warning", title: t('hr.absent'), description: "8 élèves absents plus de 5 jours", count: 8, route: "/scolarite/absences" },
+    { id: 3, type: "info", title: "Documents", description: "23 dossiers incomplets", count: 23, route: "/scolarite/documents" },
+    { id: 4, type: "success", title: t('bulletins.title'), description: "Tous les bulletins T1 sont prêts", count: 28, route: "/notes/bulletins" },
   ];
 
   const messageStats = [
@@ -62,6 +70,79 @@ export default function Dashboard() {
     { type: t('messaging.notifications'), value: 2340, change: "+25%", icon: Bell },
   ];
 
+  const handleExportReport = async () => {
+    setIsGenerating(true);
+    try {
+      generateDashboardReport({
+        title: "Rapport Tableau de Bord Principal",
+        subtitle: "Vue d'ensemble complète de l'établissement",
+        establishment: "NextGen Éducation",
+        period: "Année scolaire 2024-2025",
+        kpis: [
+          { label: "Effectif Élèves", value: "700", change: "+12%", trend: "up" },
+          { label: "Enseignants", value: "45", change: "3 nouveaux" },
+          { label: "Classes", value: "28" },
+          { label: "Taux Présence", value: "94.5%", change: "+2.1%", trend: "up" },
+          { label: "Recettes Totales", value: "63.2M FCFA" },
+          { label: "Taux Recouvrement", value: "78.5%" },
+        ],
+        alerts: alerts.map(a => ({ type: a.type, message: `${a.title}: ${a.description}` })),
+        tables: [
+          {
+            title: "Effectifs par Niveau",
+            headers: ["Niveau", "Nombre d'élèves"],
+            rows: enrollmentData.map(e => [e.name, e.students]),
+          },
+          {
+            title: "Performance Mensuelle",
+            headers: ["Mois", "Moyenne", "Taux Présence"],
+            rows: performanceData.map(p => [p.month, `${p.moyenne}/20`, `${p.taux}%`]),
+          },
+          {
+            title: "Répartition Financière",
+            headers: ["Catégorie", "Montant (FCFA)"],
+            rows: financialData.map(f => [f.name, f.value.toLocaleString("fr-FR")]),
+          },
+        ],
+        chartData: [
+          {
+            title: "Répartition des Recettes",
+            type: "pie",
+            data: financialData.map(f => ({ name: f.name, value: Math.round(f.value / 632000) })),
+          },
+        ],
+      });
+      toast({
+        title: "Rapport exporté",
+        description: "Le rapport du tableau de bord a été téléchargé avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le rapport.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleQuickAction = (action: string, route: string) => {
+    toast({
+      title: action,
+      description: `Redirection vers ${action}...`,
+    });
+    navigate(route);
+  };
+
+  const handleViewAlertDetails = (alert: typeof alerts[0]) => {
+    toast({
+      title: alert.title,
+      description: `${alert.count} éléments concernés. Redirection...`,
+    });
+    navigate(alert.route);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -69,9 +150,13 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
           <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
         </div>
-        <Button>
-          <FileText className="mr-2 h-4 w-4" />
-          {t('dashboard.exportReport')}
+        <Button onClick={handleExportReport} disabled={isGenerating}>
+          {isGenerating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          {isGenerating ? "Génération..." : t('dashboard.exportReport')}
         </Button>
       </div>
 
@@ -194,19 +279,35 @@ export default function Dashboard() {
                 <CardTitle>{t('dashboard.quickActions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button className="w-full justify-start" variant="outline">
+                <Button 
+                  className="w-full justify-start" 
+                  variant="outline"
+                  onClick={() => handleQuickAction(t('dashboard.newEnrollment'), "/students")}
+                >
                   <Users className="mr-2 h-4 w-4" />
                   {t('dashboard.newEnrollment')}
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button 
+                  className="w-full justify-start" 
+                  variant="outline"
+                  onClick={() => handleQuickAction(t('dashboard.enterGrades'), "/grades")}
+                >
                   <BookOpen className="mr-2 h-4 w-4" />
                   {t('dashboard.enterGrades')}
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button 
+                  className="w-full justify-start" 
+                  variant="outline"
+                  onClick={() => handleQuickAction(t('dashboard.recordPayment'), "/scolarite/paiements")}
+                >
                   <DollarSign className="mr-2 h-4 w-4" />
                   {t('dashboard.recordPayment')}
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button 
+                  className="w-full justify-start" 
+                  variant="outline"
+                  onClick={() => handleQuickAction(t('dashboard.addTeacher'), "/teachers")}
+                >
                   <GraduationCap className="mr-2 h-4 w-4" />
                   {t('dashboard.addTeacher')}
                 </Button>
@@ -646,7 +747,12 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => handleViewAlertDetails(alert)}
+                  >
                     Voir les détails
                   </Button>
                 </CardContent>
