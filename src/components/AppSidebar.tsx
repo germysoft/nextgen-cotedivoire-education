@@ -328,6 +328,7 @@ const menuStructure: MenuItem[] = [
     icon: BarChart3,
     subItems: [
       { titleKey: "sidebar.globalReports", url: "/statistiques/rapports" },
+      { titleKey: "sidebar.advancedStatistics", url: "/statistiques/avancees" },
       { titleKey: "sidebar.crossTables", url: "/statistiques/tableaux" },
       { titleKey: "sidebar.multiFormatExport", url: "/statistiques/export" },
       { titleKey: "sidebar.scheduledReports", url: "/statistiques/planifies" },
