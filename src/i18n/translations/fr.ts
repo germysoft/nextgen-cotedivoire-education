@@ -184,6 +184,7 @@ export const fr = {
   'sidebar.secureCloud': 'Cloud Sécurisé',
   'sidebar.statisticsReports': 'Statistiques & Rapports',
   'sidebar.globalReports': 'Rapports Globaux',
+  'sidebar.advancedStatistics': 'Statistiques Avancées',
   'sidebar.crossTables': 'Tableaux Croisés',
   'sidebar.multiFormatExport': 'Export Multi-format',
   'sidebar.scheduledReports': 'Rapports Planifiés',

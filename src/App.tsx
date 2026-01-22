@@ -103,6 +103,7 @@ import TableauxCroises from "./pages/statistiques/TableauxCroises";
 import ExportMultiformat from "./pages/statistiques/ExportMultiformat";
 import RapportsPlanifies from "./pages/statistiques/RapportsPlanifies";
 import RapportsGlobaux from "./pages/statistiques/RapportsGlobaux";
+import StatistiquesAvancees from "./pages/statistiques/StatistiquesAvancees";
 import Contrats from "./pages/hr/Contrats";
 import Entretiens from "./pages/hr/Entretiens";
 import Formations from "./pages/hr/Formations";
@@ -407,6 +408,7 @@ const App = () => (
           <Route path="/statistiques/tableaux" element={<MainLayout><TableauxCroises /></MainLayout>} />
           <Route path="/statistiques/export" element={<MainLayout><ExportMultiformat /></MainLayout>} />
           <Route path="/statistiques/planifies" element={<MainLayout><RapportsPlanifies /></MainLayout>} />
+          <Route path="/statistiques/avancees" element={<MainLayout><StatistiquesAvancees /></MainLayout>} />
           
           {/* Modules Optionnels Routes */}
           <Route path="/modules/elearning" element={<MainLayout><ElearningAvance /></MainLayout>} />
