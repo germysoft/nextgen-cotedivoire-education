@@ -17,8 +17,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-const students = [
+const initialStudents = [
   { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=150&h=150&fit=crop&crop=faces" },
   { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1595956246544-e697b3b12ac0?w=150&h=150&fit=crop&crop=faces" },
   { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "active", fees: "partial", photo: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=150&h=150&fit=crop&crop=faces" },
@@ -30,6 +36,11 @@ const students = [
 
 export default function Students() {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [students, setStudents] = useState(initialStudents);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<typeof initialStudents[0] | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", class: "", age: 0, fees: "" });
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -113,6 +124,42 @@ export default function Students() {
       default:
         return "";
     }
+  };
+
+  const handleEditClick = (student: typeof initialStudents[0]) => {
+    setSelectedStudent(student);
+    setEditForm({
+      name: student.name,
+      class: student.class,
+      age: student.age,
+      fees: student.fees
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = () => {
+    if (!selectedStudent) return;
+    
+    setStudents(students.map(s => 
+      s.id === selectedStudent.id 
+        ? { ...s, name: editForm.name, class: editForm.class, age: editForm.age, fees: editForm.fees }
+        : s
+    ));
+    setEditDialogOpen(false);
+    toast.success("Élève modifié avec succès");
+  };
+
+  const handleDeleteClick = (student: typeof initialStudents[0]) => {
+    setSelectedStudent(student);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!selectedStudent) return;
+    
+    setStudents(students.filter(s => s.id !== selectedStudent.id));
+    setDeleteDialogOpen(false);
+    toast.success("Élève supprimé avec succès");
   };
 
   const displayTitle = filters.class 
@@ -208,10 +255,22 @@ export default function Students() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="hover:bg-primary/10 hover:text-primary" title={t('common.edit')}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="hover:bg-primary/10 hover:text-primary" 
+                          title={t('common.edit')}
+                          onClick={() => handleEditClick(student)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="hover:bg-destructive/10 hover:text-destructive" title={t('common.delete')}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="hover:bg-destructive/10 hover:text-destructive" 
+                          title={t('common.delete')}
+                          onClick={() => handleDeleteClick(student)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -223,6 +282,89 @@ export default function Students() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifier l'élève</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Matricule</Label>
+              <Input value={selectedStudent?.id || ""} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label>Nom complet</Label>
+              <Input 
+                value={editForm.name} 
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Classe</Label>
+              <Select value={editForm.class} onValueChange={(v) => setEditForm({ ...editForm, class: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="6ème A">6ème A</SelectItem>
+                  <SelectItem value="5ème B">5ème B</SelectItem>
+                  <SelectItem value="4ème C">4ème C</SelectItem>
+                  <SelectItem value="3ème A">3ème A</SelectItem>
+                  <SelectItem value="2nde C">2nde C</SelectItem>
+                  <SelectItem value="1ère D">1ère D</SelectItem>
+                  <SelectItem value="Tle A">Tle A</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Âge</Label>
+              <Input 
+                type="number" 
+                value={editForm.age} 
+                onChange={(e) => setEditForm({ ...editForm, age: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Statut scolarité</Label>
+              <Select value={editForm.fees} onValueChange={(v) => setEditForm({ ...editForm, fees: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paid">Payé</SelectItem>
+                  <SelectItem value="partial">Partiel</SelectItem>
+                  <SelectItem value="pending">En attente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleEditSave}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'élève <strong>{selectedStudent?.name}</strong> (Matricule: {selectedStudent?.id}) ?
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
