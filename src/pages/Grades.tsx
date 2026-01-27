@@ -6,12 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, Calculator, TrendingUp, AlertCircle, UserCheck } from "lucide-react";
+import { Download, FileText, Calculator, TrendingUp, AlertCircle, UserCheck, Printer } from "lucide-react";
 import { GradeEntryWizard } from "@/components/grades/GradeEntryWizard";
 import { ConduiteEditor } from "@/components/grades/ConduiteEditor";
 import { useGradeCalculation } from "@/hooks/useGradeCalculation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Mock data avec note de conduite
 const mockStudentGrades = [
@@ -74,6 +77,85 @@ export default function Grades() {
     return "destructive";
   };
 
+  const generateBulletinPDF = (student: typeof studentGrades[0]) => {
+    const doc = new jsPDF();
+    const studentAverage = getStudentAverage(student);
+    
+    // En-tête
+    doc.setFontSize(16);
+    doc.text("BULLETIN DE NOTES", 105, 20, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(`Année scolaire 2024-2025`, 105, 28, { align: "center" });
+    
+    // Informations élève
+    doc.setFontSize(12);
+    doc.text(`Élève: ${student.studentName}`, 14, 45);
+    doc.text(`Matricule: ${student.matricule}`, 14, 52);
+    doc.text(`Classe: ${student.class}`, 120, 45);
+    doc.text(`Trimestre: ${student.trimester}`, 120, 52);
+    
+    // Tableau des notes
+    autoTable(doc, {
+      startY: 60,
+      head: [['Matière', 'Professeur', 'Note/20', 'Coef.', 'Total']],
+      body: [
+        ...student.subjects.map(s => [
+          s.name, s.teacher, s.grade.toString(), s.coef.toString(), (s.grade * s.coef).toFixed(2)
+        ]),
+        ...(includeConduite ? [['Conduite', '-', student.conduiteNote.toString(), '1', student.conduiteNote.toFixed(2)]] : [])
+      ],
+      foot: [['', '', 'MOYENNE GÉNÉRALE', '', studentAverage.toFixed(2) + '/20']]
+    });
+    
+    // Appréciation
+    const appreciation = studentAverage >= 16 ? "Excellent travail. Félicitations !" :
+                        studentAverage >= 14 ? "Très bon trimestre. Continuez ainsi." :
+                        studentAverage >= 12 ? "Bon travail. Des efforts à poursuivre." :
+                        studentAverage >= 10 ? "Résultats satisfaisants. Peut mieux faire." :
+                        "Résultats insuffisants. Travail à intensifier.";
+    
+    doc.setFontSize(11);
+    doc.text(`Appréciation générale: ${appreciation}`, 14, (doc as any).lastAutoTable.finalY + 15);
+    
+    // Signature
+    doc.text("Signature du Chef d'Établissement", 14, (doc as any).lastAutoTable.finalY + 35);
+    doc.text("Signature du Parent", 140, (doc as any).lastAutoTable.finalY + 35);
+    
+    doc.save(`Bulletin_${student.studentName.replace(' ', '_')}_${student.trimester.replace(' ', '_')}.pdf`);
+    toast({ title: "Bulletin généré", description: `Le bulletin de ${student.studentName} a été téléchargé` });
+  };
+
+  const handleExportAllGrades = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`Relevé de notes - ${selectedClass}`, 105, 20, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(`Trimestre ${selectedTrimester} - Année 2024-2025`, 105, 28, { align: "center" });
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, 35, { align: "center" });
+    
+    autoTable(doc, {
+      startY: 45,
+      head: [['#', 'Élève', 'Matricule', 'Moyenne', 'Rang', 'Mention']],
+      body: studentGrades
+        .map((s, i) => {
+          const avg = getStudentAverage(s);
+          return { ...s, avg, rank: i + 1 };
+        })
+        .sort((a, b) => b.avg - a.avg)
+        .map((s, i) => [
+          (i + 1).toString(),
+          s.studentName,
+          s.matricule,
+          s.avg.toFixed(2) + '/20',
+          (i + 1).toString() + '°',
+          s.avg >= 16 ? 'TB' : s.avg >= 14 ? 'B' : s.avg >= 12 ? 'AB' : s.avg >= 10 ? 'P' : 'I'
+        ])
+    });
+    
+    doc.save(`Releve_Notes_${selectedClass}_T${selectedTrimester}.pdf`);
+    toast({ title: "Export réussi", description: "Le relevé de notes a été téléchargé" });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -82,7 +164,7 @@ export default function Grades() {
           <p className="text-muted-foreground">{t('grades.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportAllGrades}>
             <Download className="mr-2 h-4 w-4" />
             {t('grades.export')}
           </Button>
@@ -282,11 +364,11 @@ export default function Grades() {
                       </TableBody>
                     </Table>
                     <div className="flex justify-end gap-2 mt-4">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => generateBulletinPDF(student)}>
                         <FileText className="mr-2 h-4 w-4" />
                         {t('grades.generateBulletin')}
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => generateBulletinPDF(student)}>
                         <Download className="mr-2 h-4 w-4" />
                         {t('grades.downloadPDF')}
                       </Button>
