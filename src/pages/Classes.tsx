@@ -4,17 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Eye, Edit, Trash2, Users, GraduationCap, Clock, TrendingUp, BarChart3 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Search, Eye, Edit, Trash2, Users, GraduationCap, Clock, TrendingUp, BarChart3, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Mock data
-const mockClasses = [
+const initialClasses = [
   { id: 1, name: "6èmeA", level: "6ème", cycle: "1er Cycle", capacity: 45, enrolled: 42, teacher: "M. Kouassi Jean", avgGrade: 12.5, successRate: 85 },
   { id: 2, name: "5èmeB", level: "5ème", cycle: "1er Cycle", capacity: 40, enrolled: 38, teacher: "Mme Diallo Fatou", avgGrade: 13.2, successRate: 88 },
   { id: 3, name: "4èmeC", level: "4ème", cycle: "1er Cycle", capacity: 40, enrolled: 35, teacher: "M. Traoré Yao", avgGrade: 11.8, successRate: 78 },
@@ -79,14 +82,36 @@ const cycleDistribution = [
   { name: "2nd Cycle", value: 3, color: "#10b981" },
 ];
 
+const mockTeachers = [
+  { id: "1", name: "M. Kouassi Jean" },
+  { id: "2", name: "Mme Diallo Fatou" },
+  { id: "3", name: "M. Traoré Yao" },
+  { id: "4", name: "Mme Bamba Aya" },
+  { id: "5", name: "M. Koné Serge" },
+  { id: "6", name: "M. Yao Martin" },
+  { id: "7", name: "Mme Coulibaly Marie" },
+];
+
 export default function Classes() {
   const { t } = useLanguage();
+  const [classes, setClasses] = useState(initialClasses);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedClass, setSelectedClass] = useState<typeof mockClasses[0] | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<typeof initialClasses[0] | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
 
-  const filteredClasses = mockClasses.filter((classe) =>
+  // Form state for new/edit class
+  const [formData, setFormData] = useState({
+    name: "",
+    cycle: "",
+    level: "",
+    capacity: 45,
+    teacher: ""
+  });
+
+  const filteredClasses = classes.filter((classe) =>
     classe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classe.level.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classe.teacher.toLowerCase().includes(searchQuery.toLowerCase())
@@ -123,14 +148,95 @@ export default function Classes() {
     }
   };
 
-  const totalStudents = mockClasses.reduce((acc, c) => acc + c.enrolled, 0);
-  const avgOccupancy = Math.round((totalStudents / mockClasses.reduce((acc, c) => acc + c.capacity, 0)) * 100);
-  const avgClassGrade = (mockClasses.reduce((acc, c) => acc + c.avgGrade, 0) / mockClasses.length).toFixed(1);
-  const totalHours = mockClasses.length * 32;
+  const totalStudents = classes.reduce((acc, c) => acc + c.enrolled, 0);
+  const avgOccupancy = Math.round((totalStudents / classes.reduce((acc, c) => acc + c.capacity, 0)) * 100);
+  const avgClassGrade = (classes.reduce((acc, c) => acc + c.avgGrade, 0) / classes.length).toFixed(1);
+  const totalHours = classes.length * 32;
 
-  const handleViewClass = (classe: typeof mockClasses[0]) => {
+  const handleViewClass = (classe: typeof initialClasses[0]) => {
     setSelectedClass(classe);
     setViewMode("detail");
+  };
+
+  const handleAddClass = () => {
+    if (!formData.name.trim() || !formData.cycle || !formData.level || !formData.teacher) {
+      toast({ title: "Erreur", description: "Veuillez remplir tous les champs obligatoires", variant: "destructive" });
+      return;
+    }
+
+    const newClass = {
+      id: Math.max(...classes.map(c => c.id)) + 1,
+      name: formData.name.trim(),
+      level: formData.level,
+      cycle: formData.cycle,
+      capacity: formData.capacity,
+      enrolled: 0,
+      teacher: formData.teacher,
+      avgGrade: 0,
+      successRate: 0
+    };
+
+    setClasses([...classes, newClass]);
+    setIsDialogOpen(false);
+    setFormData({ name: "", cycle: "", level: "", capacity: 45, teacher: "" });
+    toast({ title: "Classe créée", description: `La classe ${newClass.name} a été ajoutée avec succès` });
+  };
+
+  const handleEditClass = (classe: typeof initialClasses[0]) => {
+    setSelectedClass(classe);
+    setFormData({
+      name: classe.name,
+      cycle: classe.cycle,
+      level: classe.level,
+      capacity: classe.capacity,
+      teacher: classe.teacher
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateClass = () => {
+    if (!selectedClass) return;
+
+    setClasses(classes.map(c => 
+      c.id === selectedClass.id 
+        ? { ...c, name: formData.name, cycle: formData.cycle, level: formData.level, capacity: formData.capacity, teacher: formData.teacher }
+        : c
+    ));
+    setIsEditDialogOpen(false);
+    setFormData({ name: "", cycle: "", level: "", capacity: 45, teacher: "" });
+    toast({ title: "Classe modifiée", description: `La classe ${formData.name} a été mise à jour` });
+  };
+
+  const handleDeleteClass = (classe: typeof initialClasses[0]) => {
+    setSelectedClass(classe);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteClass = () => {
+    if (!selectedClass) return;
+
+    setClasses(classes.filter(c => c.id !== selectedClass.id));
+    setIsDeleteDialogOpen(false);
+    toast({ title: "Classe supprimée", description: `La classe ${selectedClass.name} a été supprimée` });
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Liste des Classes", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [['Classe', 'Niveau', 'Cycle', 'Effectif', 'Capacité', 'Professeur Principal', 'Moyenne', 'Réussite']],
+      body: classes.map(c => [
+        c.name, c.level, c.cycle, c.enrolled.toString(), c.capacity.toString(), c.teacher, `${c.avgGrade}/20`, `${c.successRate}%`
+      ])
+    });
+
+    doc.save('liste-classes.pdf');
+    toast({ title: "Export réussi", description: "Le PDF a été généré" });
   };
 
   return (
@@ -157,17 +263,17 @@ export default function Classes() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="className">{t('common.name')}</Label>
-                      <Input id="className" placeholder="Ex: 6èmeA" />
+                      <Input id="className" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Ex: 6èmeA" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="cycle">{t('academic.cycle')}</Label>
-                      <Select>
+                      <Select value={formData.cycle} onValueChange={(v) => setFormData({...formData, cycle: v})}>
                         <SelectTrigger>
                           <SelectValue placeholder={t('common.select')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1er">1er Cycle</SelectItem>
-                          <SelectItem value="2nd">2nd Cycle</SelectItem>
+                          <SelectItem value="1er Cycle">1er Cycle</SelectItem>
+                          <SelectItem value="2nd Cycle">2nd Cycle</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -175,44 +281,129 @@ export default function Classes() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="level">{t('classes.level')}</Label>
-                      <Select>
+                      <Select value={formData.level} onValueChange={(v) => setFormData({...formData, level: v})}>
                         <SelectTrigger>
                           <SelectValue placeholder={t('common.select')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="6eme">6ème</SelectItem>
-                          <SelectItem value="5eme">5ème</SelectItem>
-                          <SelectItem value="4eme">4ème</SelectItem>
-                          <SelectItem value="3eme">3ème</SelectItem>
+                          <SelectItem value="6ème">6ème</SelectItem>
+                          <SelectItem value="5ème">5ème</SelectItem>
+                          <SelectItem value="4ème">4ème</SelectItem>
+                          <SelectItem value="3ème">3ème</SelectItem>
                           <SelectItem value="2nde">2nde</SelectItem>
-                          <SelectItem value="1ere">1ère</SelectItem>
-                          <SelectItem value="tle">Tle</SelectItem>
+                          <SelectItem value="1ère">1ère</SelectItem>
+                          <SelectItem value="Tle">Tle</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="capacity">{t('classes.capacity')}</Label>
-                      <Input id="capacity" type="number" placeholder="45" />
+                      <Input id="capacity" type="number" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value) || 45})} placeholder="45" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="teacher">{t('classes.mainTeacher')}</Label>
-                    <Select>
+                    <Select value={formData.teacher} onValueChange={(v) => setFormData({...formData, teacher: v})}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('common.select')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">M. Kouassi Jean</SelectItem>
-                        <SelectItem value="2">Mme Diallo Fatou</SelectItem>
-                        <SelectItem value="3">M. Traoré Yao</SelectItem>
+                        {mockTeachers.map(t => (
+                          <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
-                    <Button onClick={() => setIsDialogOpen(false)}>{t('common.save')}</Button>
+                    <Button onClick={handleAddClass}>{t('common.save')}</Button>
                   </div>
                 </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Class Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Modifier la classe</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editClassName">{t('common.name')}</Label>
+                      <Input id="editClassName" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Ex: 6èmeA" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editCycle">{t('academic.cycle')}</Label>
+                      <Select value={formData.cycle} onValueChange={(v) => setFormData({...formData, cycle: v})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('common.select')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1er Cycle">1er Cycle</SelectItem>
+                          <SelectItem value="2nd Cycle">2nd Cycle</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editLevel">{t('classes.level')}</Label>
+                      <Select value={formData.level} onValueChange={(v) => setFormData({...formData, level: v})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('common.select')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="6ème">6ème</SelectItem>
+                          <SelectItem value="5ème">5ème</SelectItem>
+                          <SelectItem value="4ème">4ème</SelectItem>
+                          <SelectItem value="3ème">3ème</SelectItem>
+                          <SelectItem value="2nde">2nde</SelectItem>
+                          <SelectItem value="1ère">1ère</SelectItem>
+                          <SelectItem value="Tle">Tle</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editCapacity">{t('classes.capacity')}</Label>
+                      <Input id="editCapacity" type="number" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value) || 45})} placeholder="45" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editTeacher">{t('classes.mainTeacher')}</Label>
+                    <Select value={formData.teacher} onValueChange={(v) => setFormData({...formData, teacher: v})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('common.select')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockTeachers.map(t => (
+                          <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>{t('common.cancel')}</Button>
+                    <Button onClick={handleUpdateClass}>{t('common.save')}</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Supprimer la classe</DialogTitle>
+                  <DialogDescription>
+                    Êtes-vous sûr de vouloir supprimer la classe "{selectedClass?.name}" ? Cette action est irréversible.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
+                  <Button variant="destructive" onClick={confirmDeleteClass}>{t('common.delete')}</Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
@@ -225,7 +416,7 @@ export default function Classes() {
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockClasses.length}</div>
+                <div className="text-2xl font-bold">{classes.length}</div>
                 <p className="text-xs text-muted-foreground">{t('common.active')}</p>
               </CardContent>
             </Card>
@@ -335,10 +526,10 @@ export default function Classes() {
                             <Button size="sm" variant="ghost" onClick={() => handleViewClass(classe)} title={t('common.view')}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" title={t('common.edit')}>
+                            <Button size="sm" variant="ghost" onClick={() => handleEditClass(classe)} title={t('common.edit')}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" title={t('common.delete')}>
+                            <Button size="sm" variant="ghost" onClick={() => handleDeleteClass(classe)} title={t('common.delete')}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
