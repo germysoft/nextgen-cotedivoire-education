@@ -6,44 +6,233 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bus, MapPin, User, Clock, AlertCircle, CheckCircle2, Navigation } from "lucide-react";
+import { Bus, MapPin, User, Clock, AlertCircle, CheckCircle2, Navigation, Plus, Edit, Trash2, Eye, DollarSign, Search, Wrench } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
-const bus = [
-  { id: 1, numero: "BUS-01", chauffeur: "KOUAME Yao", capacite: 45, inscrits: 42, itineraire: "Cocody - École", statut: "En service", derniere_maintenance: "2024-11-15" },
-  { id: 2, numero: "BUS-02", chauffeur: "DIALLO Moussa", capacite: 50, inscrits: 48, itineraire: "Yopougon - École", statut: "En service", derniere_maintenance: "2024-11-20" },
-  { id: 3, numero: "BUS-03", chauffeur: "TRAORE Sekou", capacite: 40, inscrits: 35, itineraire: "Abobo - École", statut: "En service", derniere_maintenance: "2024-11-10" },
+interface BusVehicle {
+  id: number;
+  numero: string;
+  chauffeur: string;
+  capacite: number;
+  inscrits: number;
+  itineraire: string;
+  statut: "En service" | "Maintenance" | "Hors service";
+  derniere_maintenance: string;
+  telephone?: string;
+}
+
+interface Itineraire {
+  id: number;
+  nom: string;
+  arrets: string[];
+  duree: string;
+  distance: string;
+}
+
+interface EleveTransport {
+  id: number;
+  nom: string;
+  classe: string;
+  bus: string;
+  arret: string;
+  statut: "Payé" | "Partiel" | "Impayé";
+  montant: number;
+  paye: number;
+  contact?: string;
+}
+
+const initialBus: BusVehicle[] = [
+  { id: 1, numero: "BUS-01", chauffeur: "KOUAME Yao", capacite: 45, inscrits: 42, itineraire: "Cocody - École", statut: "En service", derniere_maintenance: "2024-11-15", telephone: "+225 07 12 34 56" },
+  { id: 2, numero: "BUS-02", chauffeur: "DIALLO Moussa", capacite: 50, inscrits: 48, itineraire: "Yopougon - École", statut: "En service", derniere_maintenance: "2024-11-20", telephone: "+225 05 98 76 54" },
+  { id: 3, numero: "BUS-03", chauffeur: "TRAORE Sekou", capacite: 40, inscrits: 35, itineraire: "Abobo - École", statut: "En service", derniere_maintenance: "2024-11-10", telephone: "+225 01 23 45 67" },
   { id: 4, numero: "BUS-04", chauffeur: "KONE Ibrahim", capacite: 45, inscrits: 0, itineraire: "-", statut: "Maintenance", derniere_maintenance: "2024-12-01" },
 ];
 
-const itineraires = [
+const initialItineraires: Itineraire[] = [
   { id: 1, nom: "Cocody - École", arrets: ["Angré", "Riviera Palmeraie", "II Plateaux", "École"], duree: "35 min", distance: "12 km" },
   { id: 2, nom: "Yopougon - École", arrets: ["Maroc", "Sicogi", "Wassakara", "École"], duree: "45 min", distance: "18 km" },
   { id: 3, nom: "Abobo - École", arrets: ["Anyama", "Abobo Gare", "Adjamé", "École"], duree: "50 min", distance: "22 km" },
 ];
 
-const eleves = [
-  { id: 1, nom: "BAMBA Koffi", classe: "6ème A", bus: "BUS-01", arret: "Angré", statut: "Payé", montant: 25000 },
-  { id: 2, nom: "SORO Aya", classe: "5ème B", bus: "BUS-02", arret: "Maroc", statut: "Payé", montant: 30000 },
-  { id: 3, nom: "N'GORAN Marie", classe: "4ème A", bus: "BUS-01", arret: "II Plateaux", statut: "Impayé", montant: 25000 },
-  { id: 4, nom: "KOFFI Jean", classe: "3ème C", bus: "BUS-03", arret: "Anyama", statut: "Partiel", montant: 35000 },
+const initialEleves: EleveTransport[] = [
+  { id: 1, nom: "BAMBA Koffi", classe: "6ème A", bus: "BUS-01", arret: "Angré", statut: "Payé", montant: 25000, paye: 25000, contact: "+225 07 12 34 56" },
+  { id: 2, nom: "SORO Aya", classe: "5ème B", bus: "BUS-02", arret: "Maroc", statut: "Payé", montant: 30000, paye: 30000 },
+  { id: 3, nom: "N'GORAN Marie", classe: "4ème A", bus: "BUS-01", arret: "II Plateaux", statut: "Impayé", montant: 25000, paye: 0, contact: "+225 05 67 89 01" },
+  { id: 4, nom: "KOFFI Jean", classe: "3ème C", bus: "BUS-03", arret: "Anyama", statut: "Partiel", montant: 35000, paye: 20000 },
+  { id: 5, nom: "TRAORE Mariam", classe: "2nde B", bus: "BUS-02", arret: "Sicogi", statut: "Payé", montant: 30000, paye: 30000 },
 ];
 
-const Transport = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+const classesListe = ["6ème A", "6ème B", "5ème A", "5ème B", "4ème A", "4ème B", "3ème A", "3ème B", "3ème C", "2nde A", "2nde B", "1ère A", "Tle D"];
 
-  const handleNewInscription = () => {
-    toast.success("Inscription transport enregistrée avec succès");
-    setIsDialogOpen(false);
+const Transport = () => {
+  const [buses, setBuses] = useState<BusVehicle[]>(initialBus);
+  const [itineraires] = useState<Itineraire[]>(initialItineraires);
+  const [eleves, setEleves] = useState<EleveTransport[]>(initialEleves);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Dialog states
+  const [isInscriptionOpen, setIsInscriptionOpen] = useState(false);
+  const [isBusDialogOpen, setIsBusDialogOpen] = useState(false);
+  const [isEditEleveOpen, setIsEditEleveOpen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
+  const [selectedBus, setSelectedBus] = useState<BusVehicle | null>(null);
+  const [selectedEleve, setSelectedEleve] = useState<EleveTransport | null>(null);
+  
+  // Form states
+  const [inscriptionForm, setInscriptionForm] = useState({
+    nom: "",
+    classe: "",
+    bus: "",
+    arret: "",
+    contact: ""
+  });
+  const [paymentAmount, setPaymentAmount] = useState("");
+
+  // Statistiques dynamiques
+  const totalCapacite = buses.reduce((sum, b) => sum + b.capacite, 0);
+  const totalInscrits = buses.reduce((sum, b) => sum + b.inscrits, 0);
+  const tauxOccupation = ((totalInscrits / totalCapacite) * 100).toFixed(1);
+  const busActifs = buses.filter(b => b.statut === "En service").length;
+
+  // Filtrer les élèves
+  const filteredEleves = eleves.filter(e =>
+    e.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.classe.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.bus.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handlers Bus
+  const openBusDialog = (bus: BusVehicle) => {
+    setSelectedBus(bus);
+    setIsBusDialogOpen(true);
   };
 
-  const totalCapacite = bus.reduce((sum, b) => sum + b.capacite, 0);
-  const totalInscrits = bus.reduce((sum, b) => sum + b.inscrits, 0);
-  const tauxOccupation = ((totalInscrits / totalCapacite) * 100).toFixed(1);
-  const busActifs = bus.filter(b => b.statut === "En service").length;
+  const openMaintenanceDialog = (bus: BusVehicle) => {
+    setSelectedBus(bus);
+    setIsMaintenanceOpen(true);
+  };
+
+  const handleToggleMaintenance = () => {
+    if (!selectedBus) return;
+    
+    const newStatut = selectedBus.statut === "Maintenance" ? "En service" : "Maintenance";
+    setBuses(prev => prev.map(b =>
+      b.id === selectedBus.id
+        ? { ...b, statut: newStatut as BusVehicle["statut"], derniere_maintenance: newStatut === "En service" ? new Date().toISOString().split('T')[0] : b.derniere_maintenance }
+        : b
+    ));
+    
+    toast.success(`${selectedBus.numero} ${newStatut === "Maintenance" ? "mis en maintenance" : "remis en service"}`);
+    setIsMaintenanceOpen(false);
+    setSelectedBus(null);
+  };
+
+  // Handlers Inscription
+  const handleNewInscription = () => {
+    if (!inscriptionForm.nom || !inscriptionForm.classe || !inscriptionForm.bus || !inscriptionForm.arret) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
+    const busSelected = buses.find(b => b.numero === inscriptionForm.bus);
+    const itineraire = itineraires.find(i => i.nom === busSelected?.itineraire);
+    const montant = itineraire ? (itineraire.arrets.indexOf(inscriptionForm.arret) + 1) * 10000 : 25000;
+
+    const newEleve: EleveTransport = {
+      id: Math.max(...eleves.map(e => e.id)) + 1,
+      nom: inscriptionForm.nom,
+      classe: inscriptionForm.classe,
+      bus: inscriptionForm.bus,
+      arret: inscriptionForm.arret,
+      statut: "Impayé",
+      montant,
+      paye: 0,
+      contact: inscriptionForm.contact
+    };
+
+    setEleves([...eleves, newEleve]);
+    setIsInscriptionOpen(false);
+    setInscriptionForm({ nom: "", classe: "", bus: "", arret: "", contact: "" });
+    toast.success(`${inscriptionForm.nom} inscrit(e) au transport`, {
+      description: `Bus ${inscriptionForm.bus} - Arrêt ${inscriptionForm.arret}`
+    });
+  };
+
+  // Handlers Edit Eleve
+  const openEditEleve = (eleve: EleveTransport) => {
+    setSelectedEleve(eleve);
+    setInscriptionForm({
+      nom: eleve.nom,
+      classe: eleve.classe,
+      bus: eleve.bus,
+      arret: eleve.arret,
+      contact: eleve.contact || ""
+    });
+    setIsEditEleveOpen(true);
+  };
+
+  const handleSaveEditEleve = () => {
+    if (!selectedEleve) return;
+
+    setEleves(prev => prev.map(e =>
+      e.id === selectedEleve.id
+        ? { ...e, bus: inscriptionForm.bus, arret: inscriptionForm.arret, contact: inscriptionForm.contact }
+        : e
+    ));
+
+    toast.success(`Inscription de ${selectedEleve.nom} mise à jour`);
+    setIsEditEleveOpen(false);
+    setSelectedEleve(null);
+    setInscriptionForm({ nom: "", classe: "", bus: "", arret: "", contact: "" });
+  };
+
+  // Handler Paiement
+  const openPayment = (eleve: EleveTransport) => {
+    setSelectedEleve(eleve);
+    setPaymentAmount("");
+    setIsPaymentOpen(true);
+  };
+
+  const handlePayment = () => {
+    if (!selectedEleve || !paymentAmount) return;
+
+    const amount = parseInt(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Montant invalide");
+      return;
+    }
+
+    const newPaye = Math.min(selectedEleve.paye + amount, selectedEleve.montant);
+    const newStatut = newPaye >= selectedEleve.montant ? "Payé" : "Partiel";
+
+    setEleves(prev => prev.map(e =>
+      e.id === selectedEleve.id
+        ? { ...e, paye: newPaye, statut: newStatut as EleveTransport["statut"] }
+        : e
+    ));
+
+    toast.success(`Paiement de ${amount.toLocaleString()} F enregistré`);
+    setIsPaymentOpen(false);
+    setSelectedEleve(null);
+  };
+
+  // Handler Delete
+  const handleDeleteEleve = (id: number) => {
+    setEleves(prev => prev.filter(e => e.id !== id));
+    toast.success("Inscription supprimée");
+  };
+
+  // Get arrets for selected bus
+  const getArretsForBus = (busNumero: string) => {
+    const bus = buses.find(b => b.numero === busNumero);
+    if (!bus) return [];
+    const itineraire = itineraires.find(i => i.nom === bus.itineraire);
+    return itineraire?.arrets.filter(a => a !== "École") || [];
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -52,83 +241,10 @@ const Transport = () => {
           <h1 className="text-4xl font-bold text-foreground">Gestion du Transport Scolaire</h1>
           <p className="text-muted-foreground mt-2">Suivi des bus, itinéraires, chauffeurs et inscriptions</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Bus className="mr-2 h-4 w-4" />
-              Nouvelle Inscription
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Inscrire un Élève au Transport</DialogTitle>
-              <DialogDescription>Ajouter un élève à un itinéraire de bus</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Matricule Élève</Label>
-                  <Input placeholder="2024001" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Élève</Label>
-                  <Input disabled value="KOUAME Koffi - 6ème A" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Itinéraire</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Cocody - École (BUS-01)</SelectItem>
-                      <SelectItem value="2">Yopougon - École (BUS-02)</SelectItem>
-                      <SelectItem value="3">Abobo - École (BUS-03)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Arrêt</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="angre">Angré</SelectItem>
-                      <SelectItem value="riviera">Riviera Palmeraie</SelectItem>
-                      <SelectItem value="plateaux">II Plateaux</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Montant Annuel (FCFA)</Label>
-                  <Input type="number" placeholder="25000" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Période</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="annuel">Annuel</SelectItem>
-                      <SelectItem value="trimestriel">Trimestriel</SelectItem>
-                      <SelectItem value="mensuel">Mensuel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-              <Button onClick={handleNewInscription}>Valider Inscription</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsInscriptionOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle Inscription
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -139,8 +255,8 @@ const Transport = () => {
             <Bus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{busActifs}/{bus.length}</div>
-            <Progress value={(busActifs / bus.length) * 100} className="mt-2" />
+            <div className="text-2xl font-bold">{busActifs}/{buses.length}</div>
+            <Progress value={(busActifs / buses.length) * 100} className="mt-2" />
           </CardContent>
         </Card>
 
@@ -150,7 +266,7 @@ const Transport = () => {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInscrits}</div>
+            <div className="text-2xl font-bold">{eleves.length}</div>
             <p className="text-xs text-muted-foreground">Sur {totalCapacite} places</p>
           </CardContent>
         </Card>
@@ -202,12 +318,12 @@ const Transport = () => {
                     <TableHead>Occupation</TableHead>
                     <TableHead>Itinéraire</TableHead>
                     <TableHead>Statut</TableHead>
-                    <TableHead>Dernière Maintenance</TableHead>
+                    <TableHead>Maintenance</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {bus.map((vehicle) => {
+                  {buses.map((vehicle) => {
                     const occupation = (vehicle.inscrits / vehicle.capacite) * 100;
                     return (
                       <TableRow key={vehicle.id}>
@@ -234,7 +350,14 @@ const Transport = () => {
                         </TableCell>
                         <TableCell className="text-sm">{vehicle.derniere_maintenance}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">Gérer</Button>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openBusDialog(vehicle)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => openMaintenanceDialog(vehicle)}>
+                              <Wrench className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -281,7 +404,9 @@ const Transport = () => {
                       <div className="font-medium">{itineraire.distance}</div>
                     </div>
                   </div>
-                  <Button className="w-full" variant="outline">Voir Carte GPS</Button>
+                  <Button className="w-full" variant="outline" onClick={() => toast.info("Ouverture de la carte GPS...")}>
+                    Voir Carte GPS
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -291,8 +416,21 @@ const Transport = () => {
         <TabsContent value="eleves" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Élèves Inscrits au Transport</CardTitle>
-              <CardDescription>Liste des inscriptions actives</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Élèves Inscrits au Transport</CardTitle>
+                  <CardDescription>Liste des inscriptions actives</CardDescription>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher..."
+                    className="pl-10 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -303,12 +441,13 @@ const Transport = () => {
                     <TableHead>Bus</TableHead>
                     <TableHead>Arrêt</TableHead>
                     <TableHead>Montant</TableHead>
-                    <TableHead>Statut Paiement</TableHead>
+                    <TableHead>Payé</TableHead>
+                    <TableHead>Statut</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {eleves.map((eleve) => (
+                  {filteredEleves.map((eleve) => (
                     <TableRow key={eleve.id}>
                       <TableCell className="font-medium">{eleve.nom}</TableCell>
                       <TableCell>{eleve.classe}</TableCell>
@@ -322,6 +461,7 @@ const Transport = () => {
                         </div>
                       </TableCell>
                       <TableCell>{eleve.montant.toLocaleString()} F</TableCell>
+                      <TableCell className="text-green-600 font-medium">{eleve.paye.toLocaleString()} F</TableCell>
                       <TableCell>
                         <Badge variant={
                           eleve.statut === "Payé" ? "default" :
@@ -332,7 +472,19 @@ const Transport = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">Modifier</Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openEditEleve(eleve)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          {eleve.statut !== "Payé" && (
+                            <Button variant="outline" size="sm" onClick={() => openPayment(eleve)}>
+                              <DollarSign className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteEleve(eleve.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -342,6 +494,273 @@ const Transport = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog Nouvelle Inscription */}
+      <Dialog open={isInscriptionOpen} onOpenChange={setIsInscriptionOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Inscrire un Élève au Transport</DialogTitle>
+            <DialogDescription>Ajouter un élève à un itinéraire de bus</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nom de l'élève *</Label>
+                <Input
+                  value={inscriptionForm.nom}
+                  onChange={(e) => setInscriptionForm({ ...inscriptionForm, nom: e.target.value })}
+                  placeholder="NOM Prénom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Classe *</Label>
+                <Select
+                  value={inscriptionForm.classe}
+                  onValueChange={(v) => setInscriptionForm({ ...inscriptionForm, classe: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {classesListe.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Bus *</Label>
+                <Select
+                  value={inscriptionForm.bus}
+                  onValueChange={(v) => setInscriptionForm({ ...inscriptionForm, bus: v, arret: "" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {buses.filter(b => b.statut === "En service").map(b => (
+                      <SelectItem key={b.id} value={b.numero}>
+                        {b.numero} - {b.itineraire}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Arrêt *</Label>
+                <Select
+                  value={inscriptionForm.arret}
+                  onValueChange={(v) => setInscriptionForm({ ...inscriptionForm, arret: v })}
+                  disabled={!inscriptionForm.bus}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {getArretsForBus(inscriptionForm.bus).map(a => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Contact parent (optionnel)</Label>
+              <Input
+                value={inscriptionForm.contact}
+                onChange={(e) => setInscriptionForm({ ...inscriptionForm, contact: e.target.value })}
+                placeholder="+225 XX XX XX XX"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInscriptionOpen(false)}>Annuler</Button>
+            <Button onClick={handleNewInscription}>Valider Inscription</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Détails Bus */}
+      <Dialog open={isBusDialogOpen} onOpenChange={setIsBusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Détails du Bus {selectedBus?.numero}</DialogTitle>
+          </DialogHeader>
+          {selectedBus && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Chauffeur</Label>
+                  <p className="font-medium">{selectedBus.chauffeur}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Téléphone</Label>
+                  <p className="font-medium">{selectedBus.telephone || "Non renseigné"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Capacité</Label>
+                  <p className="font-medium">{selectedBus.capacite} places</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Inscrits</Label>
+                  <p className="font-medium">{selectedBus.inscrits} élèves</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Itinéraire</Label>
+                  <p className="font-medium">{selectedBus.itineraire}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Dernière maintenance</Label>
+                  <p className="font-medium">{selectedBus.derniere_maintenance}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Statut</Label>
+                <div className="mt-1">
+                  <Badge variant={selectedBus.statut === "En service" ? "default" : "secondary"}>
+                    {selectedBus.statut}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsBusDialogOpen(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Maintenance */}
+      <Dialog open={isMaintenanceOpen} onOpenChange={setIsMaintenanceOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gestion Maintenance - {selectedBus?.numero}</DialogTitle>
+            <DialogDescription>
+              Mettre le bus en maintenance ou le remettre en service
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <p><strong>Statut actuel:</strong> {selectedBus?.statut}</p>
+              <p><strong>Dernière maintenance:</strong> {selectedBus?.derniere_maintenance}</p>
+              <p><strong>Chauffeur:</strong> {selectedBus?.chauffeur}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMaintenanceOpen(false)}>Annuler</Button>
+            <Button onClick={handleToggleMaintenance}>
+              {selectedBus?.statut === "Maintenance" ? "Remettre en service" : "Mettre en maintenance"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Edit Élève */}
+      <Dialog open={isEditEleveOpen} onOpenChange={setIsEditEleveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier l'inscription</DialogTitle>
+            <DialogDescription>Changer de bus ou d'arrêt</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="bg-muted p-3 rounded-lg">
+              <p className="font-medium">{selectedEleve?.nom}</p>
+              <p className="text-sm text-muted-foreground">{selectedEleve?.classe}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Bus</Label>
+                <Select
+                  value={inscriptionForm.bus}
+                  onValueChange={(v) => setInscriptionForm({ ...inscriptionForm, bus: v, arret: "" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {buses.filter(b => b.statut === "En service").map(b => (
+                      <SelectItem key={b.id} value={b.numero}>
+                        {b.numero} - {b.itineraire}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Arrêt</Label>
+                <Select
+                  value={inscriptionForm.arret}
+                  onValueChange={(v) => setInscriptionForm({ ...inscriptionForm, arret: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {getArretsForBus(inscriptionForm.bus).map(a => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Contact parent</Label>
+              <Input
+                value={inscriptionForm.contact}
+                onChange={(e) => setInscriptionForm({ ...inscriptionForm, contact: e.target.value })}
+                placeholder="+225 XX XX XX XX"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditEleveOpen(false)}>Annuler</Button>
+            <Button onClick={handleSaveEditEleve}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Paiement */}
+      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enregistrer un Paiement</DialogTitle>
+            <DialogDescription>Paiement pour {selectedEleve?.nom}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span>Montant dû:</span>
+                <span className="font-bold">{selectedEleve?.montant.toLocaleString()} F</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Déjà payé:</span>
+                <span className="font-bold text-green-600">{selectedEleve?.paye.toLocaleString()} F</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span>Reste à payer:</span>
+                <span className="font-bold text-orange-600">
+                  {((selectedEleve?.montant || 0) - (selectedEleve?.paye || 0)).toLocaleString()} F
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Montant du paiement (FCFA)</Label>
+              <Input
+                type="number"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="Montant"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Annuler</Button>
+            <Button onClick={handlePayment}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

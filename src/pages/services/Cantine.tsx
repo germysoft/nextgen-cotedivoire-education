@@ -2,12 +2,49 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Utensils, Users, TrendingUp, Calendar, CheckCircle, DollarSign } from "lucide-react";
+import { Utensils, Users, TrendingUp, Calendar, CheckCircle, DollarSign, Plus, Edit, Trash2, Search, Eye } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
-const menusJournaliers = [
+interface Menu {
+  jour: string;
+  entree: string;
+  plat: string;
+  dessert: string;
+  participants: number;
+}
+
+interface Inscrit {
+  id: number;
+  nom: string;
+  classe: string;
+  formule: string;
+  montant: number;
+  paye: number;
+  statut: string;
+  contact?: string;
+}
+
+const initialMenus: Menu[] = [
   { jour: "Lundi", entree: "Salade verte", plat: "Poulet braisé + Riz", dessert: "Fruits", participants: 285 },
   { jour: "Mardi", entree: "Soupe de légumes", plat: "Poisson + Attiéké", dessert: "Yaourt", participants: 290 },
   { jour: "Mercredi", entree: "Salade de tomates", plat: "Spaghetti bolognaise", dessert: "Gâteau", participants: 275 },
@@ -15,18 +52,137 @@ const menusJournaliers = [
   { jour: "Vendredi", entree: "Salade mixte", plat: "Poulet + Frites", dessert: "Fruits", participants: 300 },
 ];
 
-const inscrits = [
-  { id: 1, nom: "KOUAME Koffi", classe: "6ème A", formule: "Annuelle", montant: 120000, paye: 120000, statut: "Soldé" },
-  { id: 2, nom: "DIALLO Aissatou", classe: "5ème B", formule: "Trimestrielle", montant: 45000, paye: 30000, statut: "Partiel" },
-  { id: 3, nom: "TRAORE Mohamed", classe: "4ème A", formule: "Annuelle", montant: 120000, paye: 0, statut: "Impayé" },
+const initialInscrits: Inscrit[] = [
+  { id: 1, nom: "KOUAME Koffi", classe: "6ème A", formule: "Annuelle", montant: 120000, paye: 120000, statut: "Soldé", contact: "+225 07 12 34 56" },
+  { id: 2, nom: "DIALLO Aissatou", classe: "5ème B", formule: "Trimestrielle", montant: 45000, paye: 30000, statut: "Partiel", contact: "+225 05 98 76 54" },
+  { id: 3, nom: "TRAORE Mohamed", classe: "4ème A", formule: "Annuelle", montant: 120000, paye: 0, statut: "Impayé", contact: "+225 01 23 45 67" },
   { id: 4, nom: "KONE Aminata", classe: "3ème C", formule: "Mensuelle", montant: 12000, paye: 12000, statut: "Soldé" },
+  { id: 5, nom: "BAMBA Sekou", classe: "2nde B", formule: "Annuelle", montant: 120000, paye: 80000, statut: "Partiel", contact: "+225 07 89 01 23" },
 ];
 
+const classesListe = ["6ème A", "6ème B", "5ème A", "5ème B", "4ème A", "4ème B", "3ème A", "3ème B", "3ème C", "2nde A", "2nde B", "1ère A", "1ère B", "Tle D"];
+
 const Cantine = () => {
+  const [menus, setMenus] = useState<Menu[]>(initialMenus);
+  const [inscrits, setInscrits] = useState<Inscrit[]>(initialInscrits);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Dialog states
+  const [isMenuDialogOpen, setIsMenuDialogOpen] = useState(false);
+  const [isInscriptionOpen, setIsInscriptionOpen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
+  const [selectedInscrit, setSelectedInscrit] = useState<Inscrit | null>(null);
+  
+  // Form states
+  const [menuForm, setMenuForm] = useState({ jour: "", entree: "", plat: "", dessert: "" });
+  const [inscriptionForm, setInscriptionForm] = useState({ nom: "", classe: "", formule: "Annuelle", contact: "" });
+  const [paymentAmount, setPaymentAmount] = useState("");
+
+  // Statistiques dynamiques
   const totalInscrits = inscrits.length;
-  const participationMoyenne = menusJournaliers.reduce((sum, m) => sum + m.participants, 0) / menusJournaliers.length;
+  const participationMoyenne = menus.reduce((sum, m) => sum + m.participants, 0) / menus.length;
   const totalDu = inscrits.reduce((sum, i) => sum + i.montant, 0);
   const totalPaye = inscrits.reduce((sum, i) => sum + i.paye, 0);
+
+  // Filtrer les inscrits
+  const filteredInscrits = inscrits.filter(i => 
+    i.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    i.classe.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handlers Menu
+  const handleEditMenu = (menu: Menu) => {
+    setSelectedMenu(menu);
+    setMenuForm({ jour: menu.jour, entree: menu.entree, plat: menu.plat, dessert: menu.dessert });
+    setIsEditMenuOpen(true);
+  };
+
+  const handleSaveMenu = () => {
+    if (!menuForm.entree || !menuForm.plat || !menuForm.dessert) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (selectedMenu) {
+      setMenus(prev => prev.map(m => 
+        m.jour === selectedMenu.jour 
+          ? { ...m, entree: menuForm.entree, plat: menuForm.plat, dessert: menuForm.dessert }
+          : m
+      ));
+      toast.success(`Menu de ${selectedMenu.jour} mis à jour`);
+    }
+    
+    setIsEditMenuOpen(false);
+    setSelectedMenu(null);
+    setMenuForm({ jour: "", entree: "", plat: "", dessert: "" });
+  };
+
+  // Handlers Inscriptions
+  const handleNewInscription = () => {
+    if (!inscriptionForm.nom || !inscriptionForm.classe) {
+      toast.error("Veuillez remplir les champs obligatoires");
+      return;
+    }
+
+    const montants: Record<string, number> = {
+      "Annuelle": 120000,
+      "Trimestrielle": 45000,
+      "Mensuelle": 12000
+    };
+
+    const newInscrit: Inscrit = {
+      id: Math.max(...inscrits.map(i => i.id)) + 1,
+      nom: inscriptionForm.nom,
+      classe: inscriptionForm.classe,
+      formule: inscriptionForm.formule,
+      montant: montants[inscriptionForm.formule],
+      paye: 0,
+      statut: "Impayé",
+      contact: inscriptionForm.contact
+    };
+
+    setInscrits([...inscrits, newInscrit]);
+    setIsInscriptionOpen(false);
+    setInscriptionForm({ nom: "", classe: "", formule: "Annuelle", contact: "" });
+    toast.success(`${inscriptionForm.nom} inscrit(e) à la cantine`);
+  };
+
+  // Handler Paiement
+  const openPaymentDialog = (inscrit: Inscrit) => {
+    setSelectedInscrit(inscrit);
+    setPaymentAmount("");
+    setIsPaymentOpen(true);
+  };
+
+  const handlePayment = () => {
+    if (!selectedInscrit || !paymentAmount) return;
+    
+    const amount = parseInt(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Montant invalide");
+      return;
+    }
+
+    const newPaye = selectedInscrit.paye + amount;
+    const newStatut = newPaye >= selectedInscrit.montant ? "Soldé" : "Partiel";
+
+    setInscrits(prev => prev.map(i => 
+      i.id === selectedInscrit.id 
+        ? { ...i, paye: Math.min(newPaye, i.montant), statut: newStatut }
+        : i
+    ));
+
+    toast.success(`Paiement de ${amount.toLocaleString()} F enregistré pour ${selectedInscrit.nom}`);
+    setIsPaymentOpen(false);
+    setSelectedInscrit(null);
+  };
+
+  const handleDeleteInscrit = (id: number) => {
+    setInscrits(prev => prev.filter(i => i.id !== id));
+    toast.success("Inscription supprimée");
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -35,9 +191,9 @@ const Cantine = () => {
           <h1 className="text-4xl font-bold text-foreground">Gestion de la Cantine</h1>
           <p className="text-muted-foreground mt-2">Menus, inscriptions, présences et paiements</p>
         </div>
-        <Button>
-          <Utensils className="mr-2 h-4 w-4" />
-          Nouveau Menu
+        <Button onClick={() => setIsInscriptionOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle Inscription
         </Button>
       </div>
 
@@ -115,7 +271,7 @@ const Cantine = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {menusJournaliers.map((menu) => (
+                  {menus.map((menu) => (
                     <TableRow key={menu.jour}>
                       <TableCell className="font-bold">{menu.jour}</TableCell>
                       <TableCell>{menu.entree}</TableCell>
@@ -125,7 +281,10 @@ const Cantine = () => {
                         <Badge variant="secondary">{menu.participants}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">Modifier</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEditMenu(menu)}>
+                          <Edit className="mr-1 h-3 w-3" />
+                          Modifier
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -134,8 +293,8 @@ const Cantine = () => {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-7">
-            {menusJournaliers.map((menu) => (
+          <div className="grid gap-4 md:grid-cols-5">
+            {menus.map((menu) => (
               <Card key={menu.jour} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -169,8 +328,21 @@ const Cantine = () => {
         <TabsContent value="inscrits" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Liste des Inscrits</CardTitle>
-              <CardDescription>Élèves abonnés à la cantine</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Liste des Inscrits</CardTitle>
+                  <CardDescription>Élèves abonnés à la cantine</CardDescription>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    placeholder="Rechercher..." 
+                    className="pl-10 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -187,7 +359,7 @@ const Cantine = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inscrits.map((inscrit) => {
+                  {filteredInscrits.map((inscrit) => {
                     const reste = inscrit.montant - inscrit.paye;
                     return (
                       <TableRow key={inscrit.id}>
@@ -209,7 +381,25 @@ const Cantine = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">Gérer</Button>
+                          <div className="flex gap-1">
+                            {inscrit.statut !== "Soldé" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => openPaymentDialog(inscrit)}
+                              >
+                                <DollarSign className="mr-1 h-3 w-3" />
+                                Payer
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteInscrit(inscrit.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -228,7 +418,7 @@ const Cantine = () => {
                 <CardDescription>Affluence hebdomadaire</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {menusJournaliers.map((menu) => (
+                {menus.map((menu) => (
                   <div key={menu.jour} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{menu.jour}</span>
@@ -249,29 +439,174 @@ const Cantine = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Soldés</span>
-                    <Badge variant="default">2 élèves</Badge>
+                    <Badge variant="default">{inscrits.filter(i => i.statut === "Soldé").length} élèves</Badge>
                   </div>
-                  <Progress value={50} />
+                  <Progress value={(inscrits.filter(i => i.statut === "Soldé").length / inscrits.length) * 100} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Partiels</span>
-                    <Badge variant="secondary">1 élève</Badge>
+                    <Badge variant="secondary">{inscrits.filter(i => i.statut === "Partiel").length} élèves</Badge>
                   </div>
-                  <Progress value={25} />
+                  <Progress value={(inscrits.filter(i => i.statut === "Partiel").length / inscrits.length) * 100} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Impayés</span>
-                    <Badge variant="destructive">1 élève</Badge>
+                    <Badge variant="destructive">{inscrits.filter(i => i.statut === "Impayé").length} élèves</Badge>
                   </div>
-                  <Progress value={25} />
+                  <Progress value={(inscrits.filter(i => i.statut === "Impayé").length / inscrits.length) * 100} />
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog Modifier Menu */}
+      <Dialog open={isEditMenuOpen} onOpenChange={setIsEditMenuOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le Menu - {selectedMenu?.jour}</DialogTitle>
+            <DialogDescription>Mettre à jour les plats du jour</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Entrée</Label>
+              <Input 
+                value={menuForm.entree}
+                onChange={(e) => setMenuForm({...menuForm, entree: e.target.value})}
+                placeholder="Entrée du jour"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Plat Principal</Label>
+              <Input 
+                value={menuForm.plat}
+                onChange={(e) => setMenuForm({...menuForm, plat: e.target.value})}
+                placeholder="Plat principal"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Dessert</Label>
+              <Input 
+                value={menuForm.dessert}
+                onChange={(e) => setMenuForm({...menuForm, dessert: e.target.value})}
+                placeholder="Dessert"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditMenuOpen(false)}>Annuler</Button>
+            <Button onClick={handleSaveMenu}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Nouvelle Inscription */}
+      <Dialog open={isInscriptionOpen} onOpenChange={setIsInscriptionOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nouvelle Inscription Cantine</DialogTitle>
+            <DialogDescription>Inscrire un élève à la cantine</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Nom de l'élève *</Label>
+              <Input 
+                value={inscriptionForm.nom}
+                onChange={(e) => setInscriptionForm({...inscriptionForm, nom: e.target.value})}
+                placeholder="NOM Prénom"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Classe *</Label>
+              <Select 
+                value={inscriptionForm.classe} 
+                onValueChange={(v) => setInscriptionForm({...inscriptionForm, classe: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  {classesListe.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Formule *</Label>
+              <Select 
+                value={inscriptionForm.formule} 
+                onValueChange={(v) => setInscriptionForm({...inscriptionForm, formule: v})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectItem value="Annuelle">Annuelle (120 000 F)</SelectItem>
+                  <SelectItem value="Trimestrielle">Trimestrielle (45 000 F)</SelectItem>
+                  <SelectItem value="Mensuelle">Mensuelle (12 000 F)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Contact parent (optionnel)</Label>
+              <Input 
+                value={inscriptionForm.contact}
+                onChange={(e) => setInscriptionForm({...inscriptionForm, contact: e.target.value})}
+                placeholder="+225 XX XX XX XX"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInscriptionOpen(false)}>Annuler</Button>
+            <Button onClick={handleNewInscription}>Inscrire</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Paiement */}
+      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enregistrer un Paiement</DialogTitle>
+            <DialogDescription>Paiement pour {selectedInscrit?.nom}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span>Montant dû:</span>
+                <span className="font-bold">{selectedInscrit?.montant.toLocaleString()} F</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Déjà payé:</span>
+                <span className="font-bold text-green-600">{selectedInscrit?.paye.toLocaleString()} F</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span>Reste à payer:</span>
+                <span className="font-bold text-orange-600">
+                  {((selectedInscrit?.montant || 0) - (selectedInscrit?.paye || 0)).toLocaleString()} F
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Montant du paiement (FCFA)</Label>
+              <Input 
+                type="number"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="Montant"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Annuler</Button>
+            <Button onClick={handlePayment}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
