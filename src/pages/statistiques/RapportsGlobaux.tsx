@@ -38,6 +38,8 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function RapportsGlobauxPage() {
   const { toast } = useToast();
@@ -104,13 +106,6 @@ export default function RapportsGlobauxPage() {
     { exam: 'BAC 2024', inscrits: 105, admis: 91, tauxReussite: 86.7 },
   ];
 
-  const handleExportReport = () => {
-    toast({
-      title: "Export en cours",
-      description: "Le rapport global est en cours de génération...",
-    });
-  };
-
   const stats = {
     totalStudents: 1439,
     studentGrowth: 4.3,
@@ -121,6 +116,99 @@ export default function RapportsGlobauxPage() {
     collectionRate: 87.4,
     collectionChange: 2.1,
   };
+
+  const handleExportReport = () => {
+    const doc = new jsPDF();
+    const periodLabel = selectedPeriod === 'current-year' ? 'Année en cours' : 
+                        selectedPeriod === 'last-year' ? 'Année précédente' : 
+                        selectedPeriod === '3-years' ? '3 dernières années' : '5 dernières années';
+    
+    // Header
+    doc.setFontSize(20);
+    doc.text("RAPPORT GLOBAL DE L'ÉTABLISSEMENT", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`Période: ${periodLabel}`, 105, 30, { align: "center" });
+    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 105, 38, { align: "center" });
+    
+    // KPIs
+    doc.setFontSize(14);
+    doc.text("INDICATEURS CLÉS", 14, 55);
+    doc.setFontSize(11);
+    doc.text(`Effectif Total: ${stats.totalStudents} élèves (+${stats.studentGrowth}%)`, 14, 65);
+    doc.text(`Moyenne Générale: ${stats.averageGrade}/20 (+${stats.gradeChange} pts)`, 14, 73);
+    doc.text(`Taux de Présence: ${stats.attendanceRate}%`, 14, 81);
+    doc.text(`Taux de Recouvrement: ${stats.collectionRate}%`, 14, 89);
+    
+    // Performance by subject
+    doc.setFontSize(14);
+    doc.text("PERFORMANCE PAR MATIÈRE", 14, 105);
+    
+    autoTable(doc, {
+      head: [['Matière', 'Moyenne', 'Taux Réussite']],
+      body: performanceBySubject.map(p => [p.subject, `${p.moyenne}/20`, `${p.tauxReussite}%`]),
+      startY: 110,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    // Enrollment evolution
+    const yPosEnroll = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.text("ÉVOLUTION DES EFFECTIFS", 14, yPosEnroll);
+    
+    autoTable(doc, {
+      head: [['Année', 'Garçons', 'Filles', 'Total']],
+      body: enrollmentTrend.map(e => [e.year, e.garcons, e.filles, e.total]),
+      startY: yPosEnroll + 5,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [34, 197, 94] }
+    });
+    
+    // Exam results
+    const yPosExam = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.text("RÉSULTATS AUX EXAMENS", 14, yPosExam);
+    
+    autoTable(doc, {
+      head: [['Examen', 'Inscrits', 'Admis', 'Taux Réussite']],
+      body: examResults.map(e => [e.exam, e.inscrits, e.admis, `${e.tauxReussite}%`]),
+      startY: yPosExam + 5,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [139, 92, 246] }
+    });
+    
+    // Financial summary
+    const yPosFinance = (doc as any).lastAutoTable.finalY + 15;
+    if (yPosFinance < 250) {
+      doc.setFontSize(14);
+      doc.text("SITUATION FINANCIÈRE", 14, yPosFinance);
+      
+      const totalRecettes = financialData.reduce((s, f) => s + f.recettes, 0);
+      const totalDepenses = financialData.reduce((s, f) => s + f.depenses, 0);
+      
+      autoTable(doc, {
+        head: [['Mois', 'Recettes (M)', 'Dépenses (M)', 'Solde (M)']],
+        body: financialData.map(f => [
+          f.month, 
+          (f.recettes / 1000000).toFixed(1), 
+          (f.depenses / 1000000).toFixed(1),
+          ((f.recettes - f.depenses) / 1000000).toFixed(1)
+        ]),
+        startY: yPosFinance + 5,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [245, 158, 11] }
+      });
+    }
+    
+    doc.save(`rapport-global-${selectedPeriod}.pdf`);
+    
+    toast({
+      title: "Export réussi",
+      description: "Le rapport global a été téléchargé en PDF.",
+    });
+  };
+
+  // stats already defined above
 
   return (
     <div className="space-y-6">

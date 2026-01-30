@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { toast } from "sonner";
 
 const balanceData = [
   { compte: "445100 - Scolarité", debit: 45000000, credit: 42800000, solde: 2200000, type: "Recette" },
@@ -52,25 +66,164 @@ const evolutionData = [
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
 
 export default function Bilan() {
+  const [isPeriodDialogOpen, setIsPeriodDialogOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState("T1");
+  const [selectedYear, setSelectedYear] = useState("2024");
+  const [dateDebut, setDateDebut] = useState("2024-01-01");
+  const [dateFin, setDateFin] = useState("2024-12-31");
+
   const totalActif = bilanActif.reduce((sum, item) => sum + item.valeur, 0);
   const totalPassif = bilanPassif.reduce((sum, item) => sum + item.valeur, 0);
   const totalRecettes = balanceData.filter(b => b.type === "Recette").reduce((sum, b) => sum + b.debit, 0);
   const totalDepenses = balanceData.filter(b => b.type === "Dépense").reduce((sum, b) => sum + b.debit, 0);
   const resultat = totalRecettes - totalDepenses;
 
+  const handleApplyPeriod = () => {
+    setIsPeriodDialogOpen(false);
+    toast.success(`Période appliquée: ${selectedPeriod} ${selectedYear}`);
+  };
+
+  const handleExportBilan = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(18);
+    doc.text("BILAN COMPTABLE", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`Période: ${selectedPeriod} ${selectedYear}`, 105, 30, { align: "center" });
+    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 105, 38, { align: "center" });
+    
+    // Summary
+    doc.setFontSize(14);
+    doc.text("RÉSUMÉ FINANCIER", 14, 55);
+    doc.setFontSize(11);
+    doc.text(`Total Actif: ${(totalActif / 1000000).toFixed(1)}M FCFA`, 14, 65);
+    doc.text(`Total Passif: ${(totalPassif / 1000000).toFixed(1)}M FCFA`, 14, 73);
+    doc.text(`Résultat Net: ${(resultat / 1000000).toFixed(1)}M FCFA`, 14, 81);
+    doc.text(`Marge Nette: ${((resultat / totalRecettes) * 100).toFixed(1)}%`, 14, 89);
+    
+    // Balance table
+    doc.setFontSize(14);
+    doc.text("BALANCE GÉNÉRALE", 14, 105);
+    
+    autoTable(doc, {
+      head: [['Compte', 'Débit (M)', 'Crédit (M)', 'Solde (M)', 'Type']],
+      body: balanceData.map(b => [
+        b.compte,
+        (b.debit / 1000000).toFixed(2),
+        (b.credit / 1000000).toFixed(2),
+        (b.solde / 1000000).toFixed(2),
+        b.type
+      ]),
+      startY: 110,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    // Actif table
+    const yPosActif = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.text("ACTIF", 14, yPosActif);
+    
+    autoTable(doc, {
+      head: [['Poste', 'Valeur (M)', '%']],
+      body: [...bilanActif.map(a => [
+        a.poste,
+        (a.valeur / 1000000).toFixed(1),
+        `${a.percent}%`
+      ]), ['TOTAL ACTIF', (totalActif / 1000000).toFixed(1), '100%']],
+      startY: yPosActif + 5,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [34, 197, 94] }
+    });
+    
+    // Passif table
+    const yPosPassif = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.text("PASSIF", 14, yPosPassif);
+    
+    autoTable(doc, {
+      head: [['Poste', 'Valeur (M)', '%']],
+      body: [...bilanPassif.map(p => [
+        p.poste,
+        (p.valeur / 1000000).toFixed(1),
+        `${p.percent}%`
+      ]), ['TOTAL PASSIF', (totalPassif / 1000000).toFixed(1), '100%']],
+      startY: yPosPassif + 5,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    doc.save(`bilan-comptable-${selectedPeriod}-${selectedYear}.pdf`);
+    toast.success("Bilan comptable exporté en PDF");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Balance & Bilan</h1>
-          <p className="text-muted-foreground">Analyse comptable et situation financière</p>
+          <p className="text-muted-foreground">Analyse comptable et situation financière - {selectedPeriod} {selectedYear}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            Période
-          </Button>
-          <Button>
+          <Dialog open={isPeriodDialogOpen} onOpenChange={setIsPeriodDialogOpen}>
+            <Button variant="outline" onClick={() => setIsPeriodDialogOpen(true)}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Période
+            </Button>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Sélectionner la Période</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Année</Label>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2024">2024</SelectItem>
+                        <SelectItem value="2023">2023</SelectItem>
+                        <SelectItem value="2022">2022</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Période</Label>
+                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="T1">Trimestre 1</SelectItem>
+                        <SelectItem value="T2">Trimestre 2</SelectItem>
+                        <SelectItem value="T3">Trimestre 3</SelectItem>
+                        <SelectItem value="T4">Trimestre 4</SelectItem>
+                        <SelectItem value="Annuel">Année complète</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Date début</Label>
+                    <Input type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date fin</Label>
+                    <Input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsPeriodDialogOpen(false)}>Annuler</Button>
+                <Button onClick={handleApplyPeriod}>Appliquer</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button onClick={handleExportBilan}>
             <Download className="mr-2 h-4 w-4" />
             Exporter
           </Button>
