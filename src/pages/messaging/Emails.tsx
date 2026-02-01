@@ -11,25 +11,53 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Mail, Send, Plus, Clock, CheckCircle2, Eye, Paperclip, 
   FileText, Trash2, Edit, Copy, Search, Filter, Download,
-  TrendingUp, MousePointer, AlertCircle, Calendar, Users
+  TrendingUp, MousePointer, AlertCircle, Calendar, Users, Save
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { toast } from "sonner";
 import { 
-  sentEmails, emailTemplates, contactGroups, emailStatistics, 
-  Email, EmailTemplate 
+  sentEmails as initialEmails, emailTemplates as initialTemplates, contactGroups as initialGroups, emailStatistics, 
+  Email, EmailTemplate, ContactGroup
 } from "@/data/mockMessaging";
 
 export default function EmailsPage() {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false);
+  const [isDeleteTemplateOpen, setIsDeleteTemplateOpen] = useState(false);
+  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+  const [isDeleteGroupOpen, setIsDeleteGroupOpen] = useState(false);
+  
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<ContactGroup | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // State for templates and groups (CRUD)
+  const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
+  const [groups, setGroups] = useState<ContactGroup[]>(initialGroups);
+  const [emails, setEmails] = useState<Email[]>(initialEmails);
+  
+  // Template form
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    category: 'general' as EmailTemplate['category'],
+    subject: '',
+    content: '',
+  });
+  
+  // Group form
+  const [groupForm, setGroupForm] = useState({
+    name: '',
+    description: '',
+    type: 'parents' as ContactGroup['type'],
+    memberCount: 0,
+  });
   
   // Compose form state
   const [composeData, setComposeData] = useState({
@@ -48,10 +76,26 @@ export default function EmailsPage() {
       return;
     }
     
+    const newEmail: Email = {
+      id: `email_${Date.now()}`,
+      subject: composeData.subject,
+      to: composeData.recipients,
+      content: composeData.content,
+      template: composeData.template,
+      attachments: [],
+      status: composeData.schedule ? 'scheduled' : 'sent',
+      sentAt: composeData.schedule ? undefined : new Date().toLocaleString('fr-FR'),
+      scheduledAt: composeData.schedule ? `${composeData.scheduledDate} ${composeData.scheduledTime}` : undefined,
+      createdAt: new Date().toLocaleString('fr-FR'),
+      recipientCount: composeData.recipients.length * 50, // Estimation
+    };
+    
+    setEmails([newEmail, ...emails]);
+    
     if (composeData.schedule) {
       toast.success(`Email programmé pour le ${composeData.scheduledDate} à ${composeData.scheduledTime}`);
     } else {
-      toast.success(`Email envoyé à ${composeData.recipients.length} destinataires`);
+      toast.success(`Email envoyé à ${composeData.recipients.length} groupe(s) de destinataires`);
     }
     setIsComposeOpen(false);
     setComposeData({ recipients: [], subject: "", content: "", template: "", schedule: false, scheduledDate: "", scheduledTime: "" });
@@ -69,7 +113,118 @@ export default function EmailsPage() {
     toast.success(`Modèle "${template.name}" appliqué`);
   };
 
-  const filteredEmails = sentEmails.filter(email => {
+  // Template CRUD
+  const openEditTemplate = (template?: EmailTemplate) => {
+    if (template) {
+      setSelectedTemplate(template);
+      setTemplateForm({
+        name: template.name,
+        category: template.category,
+        subject: template.subject,
+        content: template.content,
+      });
+    } else {
+      setSelectedTemplate(null);
+      setTemplateForm({ name: '', category: 'general', subject: '', content: '' });
+    }
+    setIsEditTemplateOpen(true);
+  };
+
+  const handleSaveTemplate = () => {
+    if (!templateForm.name || !templateForm.subject || !templateForm.content) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    const variableMatches = templateForm.content.match(/\{\{(\w+)\}\}/g);
+    const variables = variableMatches 
+      ? variableMatches.map(v => v.replace(/\{\{|\}\}/g, ''))
+      : [];
+
+    if (selectedTemplate) {
+      setTemplates(templates.map(t => 
+        t.id === selectedTemplate.id 
+          ? { ...t, ...templateForm, variables }
+          : t
+      ));
+      toast.success("Modèle mis à jour");
+    } else {
+      const newTemplate: EmailTemplate = {
+        id: `tpl_${Date.now()}`,
+        ...templateForm,
+        variables,
+        usageCount: 0,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      setTemplates([...templates, newTemplate]);
+      toast.success("Modèle créé");
+    }
+    
+    setIsEditTemplateOpen(false);
+    setSelectedTemplate(null);
+  };
+
+  const handleDeleteTemplate = () => {
+    if (!selectedTemplate) return;
+    setTemplates(templates.filter(t => t.id !== selectedTemplate.id));
+    setIsDeleteTemplateOpen(false);
+    setSelectedTemplate(null);
+    toast.success("Modèle supprimé");
+  };
+
+  // Group CRUD
+  const openEditGroup = (group?: ContactGroup) => {
+    if (group) {
+      setSelectedGroup(group);
+      setGroupForm({
+        name: group.name,
+        description: group.description,
+        type: group.type,
+        memberCount: group.memberCount,
+      });
+    } else {
+      setSelectedGroup(null);
+      setGroupForm({ name: '', description: '', type: 'parents', memberCount: 0 });
+    }
+    setIsEditGroupOpen(true);
+  };
+
+  const handleSaveGroup = () => {
+    if (!groupForm.name) {
+      toast.error("Veuillez entrer un nom pour le groupe");
+      return;
+    }
+
+    if (selectedGroup) {
+      setGroups(groups.map(g => 
+        g.id === selectedGroup.id 
+          ? { ...g, ...groupForm }
+          : g
+      ));
+      toast.success("Groupe mis à jour");
+    } else {
+      const newGroup: ContactGroup = {
+        id: `grp_${Date.now()}`,
+        ...groupForm,
+        members: [],
+      };
+      setGroups([...groups, newGroup]);
+      toast.success("Groupe créé");
+    }
+    
+    setIsEditGroupOpen(false);
+    setSelectedGroup(null);
+  };
+
+  const handleDeleteGroup = () => {
+    if (!selectedGroup) return;
+    setGroups(groups.filter(g => g.id !== selectedGroup.id));
+    setIsDeleteGroupOpen(false);
+    setSelectedGroup(null);
+    toast.success("Groupe supprimé");
+  };
+
+  const filteredEmails = emails.filter(email => {
     const matchesSearch = email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          email.to.join(" ").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || email.status === statusFilter;
@@ -103,7 +258,7 @@ export default function EmailsPage() {
               </DialogHeader>
               <ScrollArea className="h-[500px] pr-4">
                 <div className="grid gap-4">
-                  {emailTemplates.map((template) => (
+                  {templates.map((template) => (
                     <Card key={template.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => setSelectedTemplate(template)}>
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between">
@@ -157,7 +312,7 @@ export default function EmailsPage() {
                       <SelectValue placeholder="Ajouter des destinataires..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {contactGroups.map((group) => (
+                      {groups.map((group) => (
                         <SelectItem key={group.id} value={group.name}>
                           {group.name} ({group.memberCount})
                         </SelectItem>
@@ -432,13 +587,13 @@ export default function EmailsPage() {
         <TabsContent value="templates" className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Modèles d'Emails</h2>
-            <Button>
+            <Button onClick={() => openEditTemplate()}>
               <Plus className="mr-2 h-4 w-4" />
               Créer un Modèle
             </Button>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {emailTemplates.map((template) => (
+            {templates.map((template) => (
               <Card key={template.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -456,9 +611,20 @@ export default function EmailsPage() {
                       Utilisé {template.usageCount} fois
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => openEditTemplate(template)}>
                         <Edit className="mr-1 h-3 w-3" />
                         Modifier
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-destructive"
+                        onClick={() => {
+                          setSelectedTemplate(template);
+                          setIsDeleteTemplateOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                       <Button size="sm" onClick={() => handleUseTemplate(template)}>
                         Utiliser
@@ -474,13 +640,13 @@ export default function EmailsPage() {
         <TabsContent value="contacts" className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Groupes de Contact</h2>
-            <Button>
+            <Button onClick={() => openEditGroup()}>
               <Plus className="mr-2 h-4 w-4" />
               Créer un Groupe
             </Button>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {contactGroups.map((group) => (
+            {groups.map((group) => (
               <Card key={group.id}>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-4">
@@ -499,7 +665,21 @@ export default function EmailsPage() {
                     <Badge variant="outline">{group.type}</Badge>
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button size="sm" variant="outline" className="flex-1">Voir</Button>
+                    <Button size="sm" variant="outline" onClick={() => openEditGroup(group)}>
+                      <Edit className="mr-1 h-3 w-3" />
+                      Modifier
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-destructive"
+                      onClick={() => {
+                        setSelectedGroup(group);
+                        setIsDeleteGroupOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                     <Button size="sm" className="flex-1" onClick={() => {
                       setComposeData(prev => ({ ...prev, recipients: [group.name] }));
                       setIsComposeOpen(true);
@@ -694,6 +874,184 @@ export default function EmailsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Edit Template */}
+      <Dialog open={isEditTemplateOpen} onOpenChange={setIsEditTemplateOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTemplate ? "Modifier le Modèle" : "Nouveau Modèle d'Email"}
+            </DialogTitle>
+            <DialogDescription>
+              Utilisez {"{{variable}}"} pour insérer des champs dynamiques
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nom du modèle *</Label>
+                <Input
+                  placeholder="Ex: Convocation réunion"
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Catégorie</Label>
+                <Select 
+                  value={templateForm.category} 
+                  onValueChange={(value: EmailTemplate['category']) => setTemplateForm({ ...templateForm, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">Général</SelectItem>
+                    <SelectItem value="scolarite">Scolarité</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="evenement">Événement</SelectItem>
+                    <SelectItem value="discipline">Discipline</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Objet de l'email *</Label>
+              <Input
+                placeholder="Ex: Convocation: Réunion du {{date}}"
+                value={templateForm.subject}
+                onChange={(e) => setTemplateForm({ ...templateForm, subject: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contenu *</Label>
+              <Textarea
+                placeholder="Chers Parents,&#10;&#10;Nous vous informons que..."
+                value={templateForm.content}
+                onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
+                rows={10}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditTemplateOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveTemplate}>
+              <Save className="mr-2 h-4 w-4" />
+              {selectedTemplate ? "Enregistrer" : "Créer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Delete Template */}
+      <AlertDialog open={isDeleteTemplateOpen} onOpenChange={setIsDeleteTemplateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le modèle ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer le modèle "{selectedTemplate?.name}" ?
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTemplate} className="bg-destructive text-destructive-foreground">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog Edit Group */}
+      <Dialog open={isEditGroupOpen} onOpenChange={setIsEditGroupOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedGroup ? "Modifier le Groupe" : "Nouveau Groupe de Contact"}
+            </DialogTitle>
+            <DialogDescription>
+              Créez ou modifiez un groupe de destinataires
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nom du groupe *</Label>
+              <Input
+                placeholder="Ex: Parents Terminale"
+                value={groupForm.name}
+                onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                placeholder="Description courte du groupe"
+                value={groupForm.description}
+                onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select 
+                  value={groupForm.type} 
+                  onValueChange={(value: ContactGroup['type']) => setGroupForm({ ...groupForm, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="parents">Parents</SelectItem>
+                    <SelectItem value="enseignants">Enseignants</SelectItem>
+                    <SelectItem value="eleves">Élèves</SelectItem>
+                    <SelectItem value="administration">Administration</SelectItem>
+                    <SelectItem value="mixte">Mixte</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Nombre de membres</Label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={groupForm.memberCount || ''}
+                  onChange={(e) => setGroupForm({ ...groupForm, memberCount: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditGroupOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveGroup}>
+              <Save className="mr-2 h-4 w-4" />
+              {selectedGroup ? "Enregistrer" : "Créer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Delete Group */}
+      <AlertDialog open={isDeleteGroupOpen} onOpenChange={setIsDeleteGroupOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le groupe ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer le groupe "{selectedGroup?.name}" ?
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGroup} className="bg-destructive text-destructive-foreground">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

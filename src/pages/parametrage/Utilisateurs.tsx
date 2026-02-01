@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Users, Plus, Search, Filter, Download, Upload, Mail, Phone, 
-  Calendar, Shield, CheckCircle2, XCircle, Edit, Trash2, MoreVertical 
+  Calendar, Shield, CheckCircle2, XCircle, Edit, Trash2, MoreVertical, FileSpreadsheet, FileText
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -53,6 +53,9 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserRole, roleLabels } from "@/types/roles";
 import { z } from "zod";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const userSchema = z.object({
   nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères").max(50, "Le nom ne peut pas dépasser 50 caractères"),
@@ -85,6 +88,8 @@ export default function UtilisateursPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [users, setUsers] = useState<User[]>([
     { 
@@ -318,6 +323,120 @@ export default function UtilisateursPage() {
     });
   };
 
+  // Export Excel
+  const handleExportExcel = () => {
+    const exportData = filteredUsers.map(user => ({
+      'Nom': user.nom,
+      'Prénom': user.prenom,
+      'Email': user.email,
+      'Téléphone': user.telephone,
+      'Rôle': roleLabels[user.role],
+      'Statut': user.statut === 'actif' ? 'Actif' : user.statut === 'inactif' ? 'Inactif' : 'Suspendu',
+      'Date Création': user.dateCreation,
+      'Dernière Connexion': user.derniereConnexion,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Utilisateurs');
+    XLSX.writeFile(wb, `utilisateurs_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: "Export réussi",
+      description: `${filteredUsers.length} utilisateur(s) exporté(s) en Excel.`,
+    });
+  };
+
+  // Export PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text("Liste des Utilisateurs", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+    doc.text(`Total: ${filteredUsers.length} utilisateur(s)`, 14, 36);
+
+    const headers = ['Nom', 'Prénom', 'Email', 'Rôle', 'Statut'];
+    const rows = filteredUsers.map(user => [
+      user.nom,
+      user.prenom,
+      user.email,
+      roleLabels[user.role],
+      user.statut === 'actif' ? 'Actif' : 'Inactif'
+    ]);
+
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: 42,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save(`utilisateurs_${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    toast({
+      title: "Export PDF réussi",
+      description: `${filteredUsers.length} utilisateur(s) exporté(s) en PDF.`,
+    });
+  };
+
+  // Import CSV/Excel
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet) as Record<string, string>[];
+
+        const importedUsers: User[] = jsonData.map((row, index) => ({
+          id: `imported_${Date.now()}_${index}`,
+          nom: row['Nom'] || row['nom'] || '',
+          prenom: row['Prénom'] || row['prenom'] || '',
+          email: row['Email'] || row['email'] || '',
+          telephone: row['Téléphone'] || row['telephone'] || '',
+          role: (row['Rôle'] || row['role'] || 'enseignant').toLowerCase() as UserRole,
+          statut: 'actif' as const,
+          dateCreation: new Date().toISOString().split('T')[0],
+          derniereConnexion: '-',
+        })).filter(u => u.nom && u.email);
+
+        if (importedUsers.length === 0) {
+          toast({
+            title: "Erreur d'import",
+            description: "Aucun utilisateur valide trouvé dans le fichier.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setUsers([...users, ...importedUsers]);
+        setIsImportDialogOpen(false);
+        toast({
+          title: "Import réussi",
+          description: `${importedUsers.length} utilisateur(s) importé(s) avec succès.`,
+        });
+      } catch {
+        toast({
+          title: "Erreur d'import",
+          description: "Le fichier n'a pas pu être lu. Vérifiez le format.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsBinaryString(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -371,14 +490,28 @@ export default function UtilisateursPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
             <Upload className="mr-2 h-4 w-4" />
             Importer
           </Button>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exporter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Exporter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="mr-2 h-4 w-4" />
+                PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={() => {
             resetForm();
             setIsAddDialogOpen(true);
@@ -818,6 +951,49 @@ export default function UtilisateursPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog Import */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importer des Utilisateurs</DialogTitle>
+            <DialogDescription>
+              Importez des utilisateurs depuis un fichier Excel ou CSV
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+              <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Glissez-déposez un fichier ou cliquez pour sélectionner
+              </p>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImportFile}
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+              />
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                Sélectionner un fichier
+              </Button>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium mb-2">Format attendu:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Colonnes: Nom, Prénom, Email, Téléphone, Rôle</li>
+                <li>Formats acceptés: Excel (.xlsx, .xls) ou CSV</li>
+                <li>L'email doit être unique pour chaque utilisateur</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+              Annuler
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
