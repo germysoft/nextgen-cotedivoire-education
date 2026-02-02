@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   BookOpen, Search, Plus, Edit, Trash2, Eye, Download, Filter,
-  QrCode, Barcode, BookCopy, MapPin
+  QrCode, Barcode, BookCopy, MapPin, Save, X
 } from "lucide-react";
 import {
   Table,
@@ -33,17 +33,70 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { mockBooks, bookCategories, bookSubcategories, locations, Book } from "@/data/mockLibrary";
+import { mockBooks as initialBooks, bookCategories, bookSubcategories, locations, Book } from "@/data/mockLibrary";
 import { generateCatalogPDF } from "@/components/bibliotheque/LibraryPDFGenerator";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function Catalogue() {
+  const [books, setBooks] = useState<Book[]>(initialBooks);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Formulaire nouveau livre
+  const [newBook, setNewBook] = useState({
+    code: "",
+    isbn: "",
+    title: "",
+    author: "",
+    publisher: "",
+    category: "",
+    subcategory: "",
+    year: new Date().getFullYear(),
+    pages: 0,
+    quantity: 1,
+    location: "",
+    shelf: "",
+    condition: "Neuf",
+    price: 0,
+    description: "",
+    keywords: ""
+  });
 
-  const filteredBooks = mockBooks.filter(book => {
+  const resetNewBook = () => {
+    setNewBook({
+      code: "",
+      isbn: "",
+      title: "",
+      author: "",
+      publisher: "",
+      category: "",
+      subcategory: "",
+      year: new Date().getFullYear(),
+      pages: 0,
+      quantity: 1,
+      location: "",
+      shelf: "",
+      condition: "Neuf",
+      price: 0,
+      description: "",
+      keywords: ""
+    });
+  };
+
+  const generateBookCode = (category: string) => {
+    const prefix = category.substring(0, 3).toUpperCase();
+    const number = String(books.length + 1).padStart(3, '0');
+    return `${prefix}-${number}`;
+  };
+
+  const filteredBooks = books.filter(book => {
     const matchesSearch = 
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,10 +106,118 @@ export default function Catalogue() {
     return matchesSearch && matchesCategory;
   });
 
+  const handleAddBook = () => {
+    if (!newBook.title || !newBook.author || !newBook.category) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
+    const bookCode = newBook.code || generateBookCode(newBook.category);
+    const newBookData: Book = {
+      id: `book-${Date.now()}`,
+      code: bookCode,
+      isbn: newBook.isbn || `978-2-XXX-${Date.now().toString().slice(-5)}`,
+      title: newBook.title,
+      author: newBook.author,
+      publisher: newBook.publisher || "Non spécifié",
+      category: newBook.category,
+      subcategory: newBook.subcategory || "-",
+      year: newBook.year,
+      pages: newBook.pages || 100,
+      language: "Français",
+      quantity: newBook.quantity,
+      available: newBook.quantity,
+      location: newBook.location || "A",
+      shelf: newBook.shelf || "01",
+      condition: newBook.condition as "Neuf" | "Bon" | "Acceptable" | "Usé",
+      price: newBook.price,
+      description: newBook.description || "",
+      keywords: newBook.keywords ? newBook.keywords.split(",").map(k => k.trim()) : [],
+      dateAdded: new Date().toISOString(),
+      lastInventory: new Date().toISOString()
+    };
+
+    setBooks([...books, newBookData]);
+    toast.success(`Livre "${newBook.title}" ajouté au catalogue`);
+    resetNewBook();
+    setIsAddDialogOpen(false);
+  };
+
+  const handleEditBook = () => {
+    if (!selectedBook) return;
+
+    setBooks(books.map(book => 
+      book.id === selectedBook.id ? selectedBook : book
+    ));
+    toast.success(`Livre "${selectedBook.title}" modifié`);
+    setIsEditDialogOpen(false);
+  };
+
+  const handleDeleteBook = () => {
+    if (!selectedBook) return;
+
+    setBooks(books.filter(book => book.id !== selectedBook.id));
+    toast.success(`Livre "${selectedBook.title}" supprimé du catalogue`);
+    setIsDeleteDialogOpen(false);
+    setSelectedBook(null);
+  };
+
   const handleExportCatalog = () => {
-    const pdf = generateCatalogPDF(filteredBooks);
-    pdf.save('catalogue-bibliotheque.pdf');
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Catalogue de la Bibliothèque", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Exporté le ${new Date().toLocaleDateString('fr-FR')}`, 14, 28);
+    doc.text(`Total: ${filteredBooks.length} ouvrages`, 14, 34);
+
+    autoTable(doc, {
+      startY: 42,
+      head: [["Code", "Titre", "Auteur", "Catégorie", "Dispo.", "État"]],
+      body: filteredBooks.map(book => [
+        book.code,
+        book.title,
+        book.author,
+        book.category,
+        `${book.available}/${book.quantity}`,
+        book.condition
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    doc.save('catalogue-bibliotheque.pdf');
     toast.success("Catalogue exporté en PDF");
+  };
+
+  const handleGenerateQR = (book: Book) => {
+    setSelectedBook(book);
+    setIsQrDialogOpen(true);
+  };
+
+  const handlePrintQRCode = () => {
+    if (!selectedBook) return;
+    
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text("Étiquette Livre", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Code: ${selectedBook.code}`, 14, 30);
+    doc.text(`Titre: ${selectedBook.title}`, 14, 38);
+    doc.text(`Auteur: ${selectedBook.author}`, 14, 46);
+    doc.text(`ISBN: ${selectedBook.isbn}`, 14, 54);
+    doc.text(`Emplacement: ${selectedBook.location} - ${selectedBook.shelf}`, 14, 62);
+    
+    // Simuler un code-barres
+    doc.setFillColor(0, 0, 0);
+    for (let i = 0; i < 30; i++) {
+      const width = Math.random() > 0.5 ? 2 : 1;
+      doc.rect(14 + i * 3, 70, width, 20, 'F');
+    }
+    doc.text(selectedBook.code, 14, 98);
+    
+    doc.save(`etiquette-${selectedBook.code}.pdf`);
+    toast.success("Étiquette QR générée");
+    setIsQrDialogOpen(false);
   };
 
   const getConditionColor = (condition: string) => {
@@ -96,32 +257,52 @@ export default function Catalogue() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Code *</Label>
-                    <Input placeholder="Ex: LIT-AFR-024" />
+                    <Label>Code (auto-généré si vide)</Label>
+                    <Input 
+                      placeholder="Ex: LIT-AFR-024" 
+                      value={newBook.code}
+                      onChange={(e) => setNewBook({...newBook, code: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>ISBN</Label>
-                    <Input placeholder="978-X-XXX-XXXXX-X" />
+                    <Input 
+                      placeholder="978-X-XXX-XXXXX-X"
+                      value={newBook.isbn}
+                      onChange={(e) => setNewBook({...newBook, isbn: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Titre *</Label>
-                  <Input placeholder="Titre du livre" />
+                  <Input 
+                    placeholder="Titre du livre"
+                    value={newBook.title}
+                    onChange={(e) => setNewBook({...newBook, title: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Auteur *</Label>
-                    <Input placeholder="Nom de l'auteur" />
+                    <Input 
+                      placeholder="Nom de l'auteur"
+                      value={newBook.author}
+                      onChange={(e) => setNewBook({...newBook, author: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Éditeur</Label>
-                    <Input placeholder="Maison d'édition" />
+                    <Input 
+                      placeholder="Maison d'édition"
+                      value={newBook.publisher}
+                      onChange={(e) => setNewBook({...newBook, publisher: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Catégorie</Label>
-                    <Select>
+                    <Label>Catégorie *</Label>
+                    <Select value={newBook.category} onValueChange={(v) => setNewBook({...newBook, category: v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
@@ -134,34 +315,46 @@ export default function Catalogue() {
                   </div>
                   <div className="space-y-2">
                     <Label>Sous-catégorie</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">-</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input 
+                      placeholder="Sous-catégorie"
+                      value={newBook.subcategory}
+                      onChange={(e) => setNewBook({...newBook, subcategory: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Année</Label>
-                    <Input type="number" placeholder="2024" />
+                    <Input 
+                      type="number" 
+                      placeholder="2024"
+                      value={newBook.year}
+                      onChange={(e) => setNewBook({...newBook, year: parseInt(e.target.value) || new Date().getFullYear()})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Nombre de pages</Label>
-                    <Input type="number" placeholder="200" />
+                    <Input 
+                      type="number" 
+                      placeholder="200"
+                      value={newBook.pages || ""}
+                      onChange={(e) => setNewBook({...newBook, pages: parseInt(e.target.value) || 0})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Quantité *</Label>
-                    <Input type="number" placeholder="1" />
+                    <Input 
+                      type="number" 
+                      placeholder="1"
+                      value={newBook.quantity}
+                      onChange={(e) => setNewBook({...newBook, quantity: parseInt(e.target.value) || 1})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Emplacement</Label>
-                    <Select>
+                    <Select value={newBook.location} onValueChange={(v) => setNewBook({...newBook, location: v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
@@ -174,13 +367,17 @@ export default function Catalogue() {
                   </div>
                   <div className="space-y-2">
                     <Label>Étagère</Label>
-                    <Input placeholder="Ex: A-01" />
+                    <Input 
+                      placeholder="Ex: A-01"
+                      value={newBook.shelf}
+                      onChange={(e) => setNewBook({...newBook, shelf: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>État</Label>
-                    <Select>
+                    <Select value={newBook.condition} onValueChange={(v) => setNewBook({...newBook, condition: v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
@@ -194,26 +391,37 @@ export default function Catalogue() {
                   </div>
                   <div className="space-y-2">
                     <Label>Prix (FCFA)</Label>
-                    <Input type="number" placeholder="5000" />
+                    <Input 
+                      type="number" 
+                      placeholder="5000"
+                      value={newBook.price || ""}
+                      onChange={(e) => setNewBook({...newBook, price: parseInt(e.target.value) || 0})}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Textarea placeholder="Description du livre..." />
+                  <Textarea 
+                    placeholder="Description du livre..."
+                    value={newBook.description}
+                    onChange={(e) => setNewBook({...newBook, description: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Mots-clés (séparés par des virgules)</Label>
-                  <Input placeholder="roman, afrique, colonisation" />
+                  <Input 
+                    placeholder="roman, afrique, colonisation"
+                    value={newBook.keywords}
+                    onChange={(e) => setNewBook({...newBook, keywords: e.target.value})}
+                  />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button variant="outline" onClick={() => { resetNewBook(); setIsAddDialogOpen(false); }}>
                   Annuler
                 </Button>
-                <Button onClick={() => {
-                  toast.success("Livre ajouté au catalogue");
-                  setIsAddDialogOpen(false);
-                }}>
+                <Button onClick={handleAddBook}>
+                  <Plus className="mr-2 h-4 w-4" />
                   Ajouter
                 </Button>
               </div>
@@ -229,8 +437,8 @@ export default function Catalogue() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockBooks.reduce((sum, b) => sum + b.quantity, 0)}</div>
-            <p className="text-xs text-muted-foreground">{mockBooks.length} titres différents</p>
+            <div className="text-2xl font-bold">{books.reduce((sum, b) => sum + b.quantity, 0)}</div>
+            <p className="text-xs text-muted-foreground">{books.length} titres différents</p>
           </CardContent>
         </Card>
         <Card>
@@ -240,7 +448,7 @@ export default function Catalogue() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {mockBooks.reduce((sum, b) => sum + b.available, 0)}
+              {books.reduce((sum, b) => sum + b.available, 0)}
             </div>
             <p className="text-xs text-muted-foreground">Prêts à emprunter</p>
           </CardContent>
@@ -252,7 +460,7 @@ export default function Catalogue() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {mockBooks.reduce((sum, b) => sum + (b.quantity - b.available), 0)}
+              {books.reduce((sum, b) => sum + (b.quantity - b.available), 0)}
             </div>
             <p className="text-xs text-muted-foreground">Actuellement empruntés</p>
           </CardContent>
@@ -354,11 +562,32 @@ export default function Catalogue() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedBook({...book});
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleGenerateQR(book)}
+                      >
                         <QrCode className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedBook(book);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -414,13 +643,185 @@ export default function Catalogue() {
               <div>
                 <strong>Mots-clés:</strong>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {selectedBook.keywords.map(kw => (
-                    <Badge key={kw} variant="secondary" className="text-xs">{kw}</Badge>
+                  {selectedBook.keywords?.map((keyword, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">{keyword}</Badge>
                   ))}
                 </div>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Book Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier le livre</DialogTitle>
+          </DialogHeader>
+          {selectedBook && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Code</Label>
+                  <Input 
+                    value={selectedBook.code}
+                    onChange={(e) => setSelectedBook({...selectedBook, code: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>ISBN</Label>
+                  <Input 
+                    value={selectedBook.isbn}
+                    onChange={(e) => setSelectedBook({...selectedBook, isbn: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Titre</Label>
+                <Input 
+                  value={selectedBook.title}
+                  onChange={(e) => setSelectedBook({...selectedBook, title: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Auteur</Label>
+                  <Input 
+                    value={selectedBook.author}
+                    onChange={(e) => setSelectedBook({...selectedBook, author: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Éditeur</Label>
+                  <Input 
+                    value={selectedBook.publisher}
+                    onChange={(e) => setSelectedBook({...selectedBook, publisher: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Quantité</Label>
+                  <Input 
+                    type="number"
+                    value={selectedBook.quantity}
+                    onChange={(e) => setSelectedBook({...selectedBook, quantity: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Disponibles</Label>
+                  <Input 
+                    type="number"
+                    value={selectedBook.available}
+                    onChange={(e) => setSelectedBook({...selectedBook, available: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>État</Label>
+                  <Select 
+                    value={selectedBook.condition} 
+                    onValueChange={(v) => setSelectedBook({...selectedBook, condition: v as any})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Neuf">Neuf</SelectItem>
+                      <SelectItem value="Bon">Bon</SelectItem>
+                      <SelectItem value="Acceptable">Acceptable</SelectItem>
+                      <SelectItem value="Usé">Usé</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Emplacement</Label>
+                  <Input 
+                    value={selectedBook.location}
+                    onChange={(e) => setSelectedBook({...selectedBook, location: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Étagère</Label>
+                  <Input 
+                    value={selectedBook.shelf}
+                    onChange={(e) => setSelectedBook({...selectedBook, shelf: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleEditBook}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Enregistrer
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Étiquette & Code-barres</DialogTitle>
+          </DialogHeader>
+          {selectedBook && (
+            <div className="space-y-4">
+              <div className="p-4 border rounded-lg">
+                <div className="text-center space-y-2">
+                  <div className="font-mono text-lg font-bold">{selectedBook.code}</div>
+                  <div className="text-sm">{selectedBook.title}</div>
+                  <div className="text-xs text-muted-foreground">{selectedBook.author}</div>
+                  <div className="flex justify-center gap-1 my-2">
+                    {Array.from({length: 20}).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="bg-foreground" 
+                        style={{width: Math.random() > 0.5 ? 2 : 1, height: 40}}
+                      />
+                    ))}
+                  </div>
+                  <div className="font-mono text-xs">{selectedBook.isbn}</div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsQrDialogOpen(false)}>
+                  Fermer
+                </Button>
+                <Button onClick={handlePrintQRCode}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Imprimer l'étiquette
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer "{selectedBook?.title}" du catalogue ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteBook}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
