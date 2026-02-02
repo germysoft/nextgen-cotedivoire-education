@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Search, Plus, Pill, AlertTriangle, Package, Calendar,
   TrendingDown, TrendingUp, RefreshCw, Download, Filter,
-  Clock, CheckCircle, XCircle, BarChart3, ShoppingCart, Trash2, Edit
+  Clock, CheckCircle, XCircle, BarChart3, ShoppingCart, Trash2, Edit, Save
 } from "lucide-react";
 import {
   Table,
@@ -36,12 +36,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Types
 interface Medicament {
   id: number;
   nom: string;
-  dci: string; // Dénomination Commune Internationale
+  dci: string;
   categorie: string;
   forme: string;
   dosage: string;
@@ -69,8 +72,8 @@ interface Mouvement {
   eleve?: string;
 }
 
-// Mock data - Stock de médicaments
-const stockMedicaments: Medicament[] = [
+// Initial mock data
+const initialStockMedicaments: Medicament[] = [
   {
     id: 1,
     nom: "Paracétamol",
@@ -161,108 +164,14 @@ const stockMedicaments: Medicament[] = [
     derniereEntree: "05/12/2024",
     derniereSortie: "12/12/2024"
   },
-  {
-    id: 6,
-    nom: "Bétadine",
-    dci: "Povidone iodée",
-    categorie: "Antiseptique",
-    forme: "Solution",
-    dosage: "10%",
-    quantite: 25,
-    seuilAlerte: 20,
-    seuilCritique: 10,
-    datePeremption: "2025-08-15",
-    lot: "LOT-2024-006",
-    fournisseur: "Meda Pharma",
-    prixUnitaire: 1800,
-    emplacement: "Armoire C - Étagère 1",
-    derniereEntree: "10/11/2024",
-    derniereSortie: "15/12/2024"
-  },
-  {
-    id: 7,
-    nom: "Spasfon",
-    dci: "Phloroglucinol",
-    categorie: "Antispasmodique",
-    forme: "Comprimé",
-    dosage: "80mg",
-    quantite: 18,
-    seuilAlerte: 30,
-    seuilCritique: 10,
-    datePeremption: "2025-04-10",
-    lot: "LOT-2024-007",
-    fournisseur: "Teva",
-    prixUnitaire: 120,
-    emplacement: "Armoire A - Étagère 1",
-    derniereEntree: "25/10/2024",
-    derniereSortie: "13/12/2024"
-  },
-  {
-    id: 8,
-    nom: "Compresses stériles",
-    dci: "-",
-    categorie: "Pansement",
-    forme: "Compresse",
-    dosage: "10x10cm",
-    quantite: 200,
-    seuilAlerte: 100,
-    seuilCritique: 50,
-    datePeremption: "2027-12-31",
-    lot: "LOT-2024-008",
-    fournisseur: "Urgo",
-    prixUnitaire: 25,
-    emplacement: "Armoire C - Étagère 2",
-    derniereEntree: "01/12/2024",
-    derniereSortie: "15/12/2024"
-  },
-  {
-    id: 9,
-    nom: "Sérum physiologique",
-    dci: "Chlorure de sodium",
-    categorie: "Solution",
-    forme: "Dosette",
-    dosage: "0.9%",
-    quantite: 85,
-    seuilAlerte: 50,
-    seuilCritique: 20,
-    datePeremption: "2025-09-30",
-    lot: "LOT-2024-009",
-    fournisseur: "Gilbert",
-    prixUnitaire: 50,
-    emplacement: "Armoire C - Étagère 1",
-    derniereEntree: "15/11/2024",
-    derniereSortie: "14/12/2024"
-  },
-  {
-    id: 10,
-    nom: "Antihistaminique",
-    dci: "Cétirizine",
-    categorie: "Antiallergique",
-    forme: "Comprimé",
-    dosage: "10mg",
-    quantite: 35,
-    seuilAlerte: 40,
-    seuilCritique: 15,
-    datePeremption: "2025-05-20",
-    lot: "LOT-2024-010",
-    fournisseur: "Sandoz",
-    prixUnitaire: 85,
-    emplacement: "Armoire A - Étagère 2",
-    derniereEntree: "20/11/2024",
-    derniereSortie: "15/12/2024"
-  },
 ];
 
-// Historique des mouvements
-const mouvements: Mouvement[] = [
+const initialMouvements: Mouvement[] = [
   { id: 1, date: "15/12/2024", heure: "10:30", medicament: "Paracétamol 1000mg", type: "sortie", quantite: 2, motif: "Consultation - Fièvre", operateur: "Inf. DIABATÉ", eleve: "KOUASSI Jean" },
   { id: 2, date: "15/12/2024", heure: "11:15", medicament: "Ibuprofène 400mg", type: "sortie", quantite: 1, motif: "Consultation - Maux de tête", operateur: "Inf. DIABATÉ", eleve: "DIALLO Fatoumata" },
   { id: 3, date: "14/12/2024", heure: "15:30", medicament: "Ventoline 100µg", type: "sortie", quantite: 1, motif: "Urgence - Crise asthme", operateur: "Dr. KONÉ", eleve: "KONE Ibrahim" },
-  { id: 4, date: "14/12/2024", heure: "09:45", medicament: "Bétadine 10%", type: "sortie", quantite: 1, motif: "Consultation - Blessure", operateur: "Inf. DIABATÉ", eleve: "SANOGO Aminata" },
-  { id: 5, date: "13/12/2024", heure: "14:00", medicament: "Spasfon 80mg", type: "sortie", quantite: 2, motif: "Consultation - Douleurs", operateur: "Inf. DIABATÉ", eleve: "BAMBA Sarah" },
-  { id: 6, date: "05/12/2024", heure: "08:00", medicament: "Smecta 3g", type: "entree", quantite: 50, motif: "Réapprovisionnement", operateur: "Inf. DIABATÉ" },
-  { id: 7, date: "01/12/2024", heure: "09:00", medicament: "Paracétamol 1000mg", type: "entree", quantite: 100, motif: "Commande mensuelle", operateur: "Inf. DIABATÉ" },
-  { id: 8, date: "01/12/2024", heure: "09:00", medicament: "Compresses stériles", type: "entree", quantite: 150, motif: "Commande mensuelle", operateur: "Inf. DIABATÉ" },
+  { id: 4, date: "05/12/2024", heure: "08:00", medicament: "Smecta 3g", type: "entree", quantite: 50, motif: "Réapprovisionnement", operateur: "Inf. DIABATÉ" },
+  { id: 5, date: "01/12/2024", heure: "09:00", medicament: "Paracétamol 1000mg", type: "entree", quantite: 100, motif: "Commande mensuelle", operateur: "Inf. DIABATÉ" },
 ];
 
 // Statistiques de consommation mensuelle
@@ -273,17 +182,9 @@ const consommationMensuelle = [
   { mois: "Déc", paracetamol: 48, ibuprofene: 25, ventoline: 6, autres: 35 },
 ];
 
-// Statistiques globales
-const statsStock = [
-  { label: "Total références", value: "42", icon: Package, color: "text-blue-600" },
-  { label: "Stock bas", value: "5", icon: TrendingDown, color: "text-orange-600" },
-  { label: "Péremption proche", value: "3", icon: Clock, color: "text-red-600" },
-  { label: "Valeur stock", value: "485 000 FCFA", icon: BarChart3, color: "text-green-600" },
-];
-
 // Fonctions utilitaires
 const getStockStatus = (quantite: number, seuilAlerte: number, seuilCritique: number) => {
-  if (quantite <= seuilCritique) return { status: "critique", color: "bg-red-500", label: "Critique" };
+  if (quantite <= seuilCritique) return { status: "critique", color: "bg-destructive", label: "Critique" };
   if (quantite <= seuilAlerte) return { status: "bas", color: "bg-orange-500", label: "Bas" };
   return { status: "ok", color: "bg-green-500", label: "OK" };
 };
@@ -293,8 +194,8 @@ const getPeremptionStatus = (datePeremption: string) => {
   const peremption = new Date(datePeremption);
   const diffDays = Math.ceil((peremption.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
-  if (diffDays < 0) return { status: "expire", color: "bg-red-600", label: "Expiré", days: diffDays };
-  if (diffDays <= 30) return { status: "urgent", color: "bg-red-500", label: "Urgent", days: diffDays };
+  if (diffDays < 0) return { status: "expire", color: "bg-destructive", label: "Expiré", days: diffDays };
+  if (diffDays <= 30) return { status: "urgent", color: "bg-destructive", label: "Urgent", days: diffDays };
   if (diffDays <= 90) return { status: "proche", color: "bg-orange-500", label: "Proche", days: diffDays };
   return { status: "ok", color: "bg-green-500", label: "OK", days: diffDays };
 };
@@ -305,12 +206,40 @@ const formatDate = (dateStr: string) => {
 };
 
 export default function StockMedicaments() {
+  const [medicaments, setMedicaments] = useState<Medicament[]>(initialStockMedicaments);
+  const [mouvements, setMouvements] = useState<Mouvement[]>(initialMouvements);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategorie, setFilterCategorie] = useState("all");
   const [filterStock, setFilterStock] = useState("all");
+  
+  // Dialogs
+  const [isAddEntryOpen, setIsAddEntryOpen] = useState(false);
+  const [isAddExitOpen, setIsAddExitOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedMed, setSelectedMed] = useState<Medicament | null>(null);
+  
+  // Formulaire entrée
+  const [entryForm, setEntryForm] = useState({
+    medicamentId: "",
+    quantite: 0,
+    lot: "",
+    datePeremption: "",
+    fournisseur: "",
+    prixUnitaire: 0,
+    motif: "commande"
+  });
+  
+  // Formulaire sortie
+  const [exitForm, setExitForm] = useState({
+    medicamentId: "",
+    quantite: 1,
+    eleve: "",
+    motif: "consultation"
+  });
 
   // Filtrage des médicaments
-  const filteredMedicaments = stockMedicaments.filter(med => {
+  const filteredMedicaments = medicaments.filter(med => {
     const matchSearch = med.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        med.dci.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategorie = filterCategorie === "all" || med.categorie === filterCategorie;
@@ -322,16 +251,201 @@ export default function StockMedicaments() {
   });
 
   // Alertes actives
-  const alertesStock = stockMedicaments.filter(med => 
+  const alertesStock = medicaments.filter(med => 
     getStockStatus(med.quantite, med.seuilAlerte, med.seuilCritique).status !== "ok"
   );
-  const alertesPeremption = stockMedicaments.filter(med => {
+  const alertesPeremption = medicaments.filter(med => {
     const status = getPeremptionStatus(med.datePeremption);
     return status.status === "urgent" || status.status === "expire";
   });
 
   // Catégories uniques
-  const categories = [...new Set(stockMedicaments.map(m => m.categorie))];
+  const categories = [...new Set(medicaments.map(m => m.categorie))];
+
+  // Handlers
+  const handleAddEntry = () => {
+    if (!entryForm.medicamentId || entryForm.quantite <= 0) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
+    const medId = parseInt(entryForm.medicamentId);
+    const med = medicaments.find(m => m.id === medId);
+    
+    if (med) {
+      // Mettre à jour le stock
+      setMedicaments(medicaments.map(m => 
+        m.id === medId 
+          ? { 
+              ...m, 
+              quantite: m.quantite + entryForm.quantite,
+              lot: entryForm.lot || m.lot,
+              datePeremption: entryForm.datePeremption || m.datePeremption,
+              derniereEntree: new Date().toLocaleDateString('fr-FR')
+            }
+          : m
+      ));
+
+      // Ajouter le mouvement
+      const newMouvement: Mouvement = {
+        id: mouvements.length + 1,
+        date: new Date().toLocaleDateString('fr-FR'),
+        heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        medicament: `${med.nom} ${med.dosage}`,
+        type: "entree",
+        quantite: entryForm.quantite,
+        motif: entryForm.motif === "commande" ? "Commande mensuelle" : "Réapprovisionnement",
+        operateur: "Utilisateur"
+      };
+      setMouvements([newMouvement, ...mouvements]);
+
+      toast.success(`+${entryForm.quantite} ${med.nom} ajoutés au stock`);
+      setEntryForm({ medicamentId: "", quantite: 0, lot: "", datePeremption: "", fournisseur: "", prixUnitaire: 0, motif: "commande" });
+      setIsAddEntryOpen(false);
+    }
+  };
+
+  const handleAddExit = () => {
+    if (!exitForm.medicamentId || exitForm.quantite <= 0) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
+    const medId = parseInt(exitForm.medicamentId);
+    const med = medicaments.find(m => m.id === medId);
+    
+    if (med) {
+      if (med.quantite < exitForm.quantite) {
+        toast.error("Stock insuffisant");
+        return;
+      }
+
+      // Mettre à jour le stock
+      setMedicaments(medicaments.map(m => 
+        m.id === medId 
+          ? { ...m, quantite: m.quantite - exitForm.quantite, derniereSortie: new Date().toLocaleDateString('fr-FR') }
+          : m
+      ));
+
+      // Ajouter le mouvement
+      const newMouvement: Mouvement = {
+        id: mouvements.length + 1,
+        date: new Date().toLocaleDateString('fr-FR'),
+        heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        medicament: `${med.nom} ${med.dosage}`,
+        type: "sortie",
+        quantite: exitForm.quantite,
+        motif: exitForm.motif === "consultation" ? "Consultation" : exitForm.motif === "urgence" ? "Urgence" : "Autre",
+        operateur: "Utilisateur",
+        eleve: exitForm.eleve
+      };
+      setMouvements([newMouvement, ...mouvements]);
+
+      toast.success(`-${exitForm.quantite} ${med.nom} retirés du stock`);
+      setExitForm({ medicamentId: "", quantite: 1, eleve: "", motif: "consultation" });
+      setIsAddExitOpen(false);
+    }
+  };
+
+  const handleDeleteExpired = (med: Medicament) => {
+    setMedicaments(medicaments.map(m => 
+      m.id === med.id ? { ...m, quantite: 0 } : m
+    ));
+    
+    const newMouvement: Mouvement = {
+      id: mouvements.length + 1,
+      date: new Date().toLocaleDateString('fr-FR'),
+      heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      medicament: `${med.nom} ${med.dosage}`,
+      type: "sortie",
+      quantite: med.quantite,
+      motif: "Péremption - Destruction",
+      operateur: "Utilisateur"
+    };
+    setMouvements([newMouvement, ...mouvements]);
+    
+    toast.success(`${med.nom} retiré du stock (péremption)`);
+  };
+
+  const handleGenerateOrder = () => {
+    const toOrder = alertesStock.map(med => ({
+      nom: med.nom,
+      dosage: med.dosage,
+      stockActuel: med.quantite,
+      seuilAlerte: med.seuilAlerte,
+      suggere: Math.max(med.seuilAlerte * 2 - med.quantite, 0),
+      fournisseur: med.fournisseur,
+      cout: Math.max(med.seuilAlerte * 2 - med.quantite, 0) * med.prixUnitaire
+    }));
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Bon de Commande - Pharmacie", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 14, 28);
+    doc.text(`Établissement: Lycée Moderne d'Abidjan`, 14, 34);
+
+    autoTable(doc, {
+      startY: 44,
+      head: [["Médicament", "Stock actuel", "Quantité suggérée", "Fournisseur", "Coût estimé"]],
+      body: toOrder.map(item => [
+        `${item.nom} ${item.dosage}`,
+        item.stockActuel.toString(),
+        item.suggere.toString(),
+        item.fournisseur,
+        `${item.cout.toLocaleString()} FCFA`
+      ]),
+      foot: [["", "", "", "Total:", `${toOrder.reduce((sum, i) => sum + i.cout, 0).toLocaleString()} FCFA`]],
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    doc.save('bon-commande-pharmacie.pdf');
+    toast.success("Bon de commande généré");
+  };
+
+  const handleExportStock = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Inventaire - Stock Médicaments", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 14, 28);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Médicament", "DCI", "Catégorie", "Quantité", "Lot", "Péremption", "État"]],
+      body: medicaments.map(med => {
+        const stockStatus = getStockStatus(med.quantite, med.seuilAlerte, med.seuilCritique);
+        return [
+          `${med.nom} ${med.dosage}`,
+          med.dci,
+          med.categorie,
+          med.quantite.toString(),
+          med.lot,
+          formatDate(med.datePeremption),
+          stockStatus.label
+        ];
+      }),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    doc.save('inventaire-pharmacie.pdf');
+    toast.success("Inventaire exporté");
+  };
+
+  // Stats dynamiques
+  const totalRefs = medicaments.length;
+  const stockBas = alertesStock.length;
+  const peremptionProche = alertesPeremption.length;
+  const valeurStock = medicaments.reduce((sum, m) => sum + m.quantite * m.prixUnitaire, 0);
+
+  const statsStock = [
+    { label: "Total références", value: totalRefs.toString(), icon: Package, color: "text-primary" },
+    { label: "Stock bas", value: stockBas.toString(), icon: TrendingDown, color: "text-orange-600" },
+    { label: "Péremption proche", value: peremptionProche.toString(), icon: Clock, color: "text-destructive" },
+    { label: "Valeur stock", value: `${valeurStock.toLocaleString()} FCFA`, icon: BarChart3, color: "text-green-600" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -341,11 +455,82 @@ export default function StockMedicaments() {
           <p className="text-muted-foreground">Gestion de la pharmacie et des consommables médicaux</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportStock}>
             <Download className="mr-2 h-4 w-4" />
             Exporter
           </Button>
-          <Dialog>
+          
+          {/* Dialog Sortie */}
+          <Dialog open={isAddExitOpen} onOpenChange={setIsAddExitOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary">
+                <TrendingDown className="mr-2 h-4 w-4" />
+                Sortie
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Enregistrer une Sortie de Stock</DialogTitle>
+                <DialogDescription>Retirer des médicaments pour une consultation</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Médicament *</Label>
+                  <Select value={exitForm.medicamentId} onValueChange={(v) => setExitForm({...exitForm, medicamentId: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      {medicaments.filter(m => m.quantite > 0).map(med => (
+                        <SelectItem key={med.id} value={med.id.toString()}>
+                          {med.nom} {med.dosage} ({med.quantite} en stock)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Quantité *</Label>
+                    <Input 
+                      type="number" 
+                      min="1"
+                      value={exitForm.quantite}
+                      onChange={(e) => setExitForm({...exitForm, quantite: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Motif *</Label>
+                    <Select value={exitForm.motif} onValueChange={(v) => setExitForm({...exitForm, motif: v})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border shadow-lg z-50">
+                        <SelectItem value="consultation">Consultation</SelectItem>
+                        <SelectItem value="urgence">Urgence</SelectItem>
+                        <SelectItem value="perte">Perte/Casse</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Nom de l'élève (optionnel)</Label>
+                  <Input 
+                    placeholder="Nom de l'élève"
+                    value={exitForm.eleve}
+                    onChange={(e) => setExitForm({...exitForm, eleve: e.target.value})}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddExitOpen(false)}>Annuler</Button>
+                <Button onClick={handleAddExit}>Valider la sortie</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog Entrée */}
+          <Dialog open={isAddEntryOpen} onOpenChange={setIsAddEntryOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -360,51 +545,71 @@ export default function StockMedicaments() {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Médicament</Label>
-                    <Select>
+                    <Label>Médicament *</Label>
+                    <Select value={entryForm.medicamentId} onValueChange={(v) => setEntryForm({...entryForm, medicamentId: v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border shadow-lg z-50">
-                        {stockMedicaments.map(med => (
+                        {medicaments.map(med => (
                           <SelectItem key={med.id} value={med.id.toString()}>
                             {med.nom} {med.dosage}
                           </SelectItem>
                         ))}
-                        <SelectItem value="new">+ Nouveau médicament</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Quantité</Label>
-                    <Input type="number" placeholder="0" />
+                    <Label>Quantité *</Label>
+                    <Input 
+                      type="number" 
+                      min="1"
+                      value={entryForm.quantite || ""}
+                      onChange={(e) => setEntryForm({...entryForm, quantite: parseInt(e.target.value) || 0})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Numéro de Lot</Label>
-                    <Input placeholder="LOT-XXXX-XXX" />
+                    <Input 
+                      placeholder="LOT-XXXX-XXX"
+                      value={entryForm.lot}
+                      onChange={(e) => setEntryForm({...entryForm, lot: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Date de Péremption</Label>
-                    <Input type="date" />
+                    <Input 
+                      type="date"
+                      value={entryForm.datePeremption}
+                      onChange={(e) => setEntryForm({...entryForm, datePeremption: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Fournisseur</Label>
-                    <Input placeholder="Nom du fournisseur" />
+                    <Input 
+                      placeholder="Nom du fournisseur"
+                      value={entryForm.fournisseur}
+                      onChange={(e) => setEntryForm({...entryForm, fournisseur: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Prix Unitaire (FCFA)</Label>
-                    <Input type="number" placeholder="0" />
+                    <Input 
+                      type="number"
+                      value={entryForm.prixUnitaire || ""}
+                      onChange={(e) => setEntryForm({...entryForm, prixUnitaire: parseInt(e.target.value) || 0})}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Motif d'entrée</Label>
-                  <Select>
+                  <Select value={entryForm.motif} onValueChange={(v) => setEntryForm({...entryForm, motif: v})}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="commande">Commande mensuelle</SelectItem>
@@ -416,8 +621,8 @@ export default function StockMedicaments() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline">Annuler</Button>
-                <Button>Enregistrer</Button>
+                <Button variant="outline" onClick={() => setIsAddEntryOpen(false)}>Annuler</Button>
+                <Button onClick={handleAddEntry}>Enregistrer</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -462,7 +667,10 @@ export default function StockMedicaments() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm">{med.quantite} restant(s)</span>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEntryForm({...entryForm, medicamentId: med.id.toString()});
+                            setIsAddEntryOpen(true);
+                          }}>
                             <ShoppingCart className="h-3 w-3" />
                           </Button>
                         </div>
@@ -475,9 +683,9 @@ export default function StockMedicaments() {
           )}
 
           {alertesPeremption.length > 0 && (
-            <Card className="border-red-500">
+            <Card className="border-destructive">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 text-red-600">
+                <CardTitle className="text-sm flex items-center gap-2 text-destructive">
                   <Clock className="h-4 w-4" />
                   Alertes Péremption ({alertesPeremption.length})
                 </CardTitle>
@@ -496,7 +704,7 @@ export default function StockMedicaments() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm">{formatDate(med.datePeremption)}</span>
-                          <Button size="sm" variant="destructive">
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteExpired(med)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -829,7 +1037,7 @@ export default function StockMedicaments() {
                   <ShoppingCart className="h-5 w-5" />
                   Suggestions de Commande
                 </CardTitle>
-                <Button>
+                <Button onClick={handleGenerateOrder}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Générer bon de commande
                 </Button>
