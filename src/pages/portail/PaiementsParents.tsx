@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { 
   CreditCard,
   Download,
@@ -23,7 +25,8 @@ import {
   Smartphone,
   Building2,
   Banknote,
-  ArrowUpRight
+  ArrowUpRight,
+  Printer
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -115,8 +118,133 @@ export default function PaiementsParents() {
     setPaymentMethod("");
   };
 
-  const handleDownloadRecu = (reference: string) => {
-    toast.success(`Téléchargement du reçu ${reference}...`);
+  const handleDownloadRecu = (paiement: typeof paiementsEffectues[0]) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(10);
+    doc.text("RÉPUBLIQUE DE CÔTE D'IVOIRE", 105, 15, { align: "center" });
+    doc.text("Union - Discipline - Travail", 105, 20, { align: "center" });
+    
+    // Border
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(1);
+    doc.rect(15, 30, 180, 120);
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("REÇU DE PAIEMENT", 105, 45, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`N° ${paiement.reference}`, 105, 53, { align: "center" });
+    
+    // Student Info
+    doc.setFontSize(11);
+    doc.text(`Élève: ${mockStudent.name}`, 25, 70);
+    doc.text(`Matricule: ${mockStudent.matricule}`, 25, 77);
+    doc.text(`Classe: ${mockStudent.class}`, 120, 70);
+    doc.text(`Date: ${format(new Date(paiement.date), "dd/MM/yyyy", { locale: fr })}`, 120, 77);
+    
+    // Payment details
+    doc.setDrawColor(200, 200, 200);
+    doc.line(25, 85, 185, 85);
+    
+    doc.setFontSize(12);
+    doc.text("Type de paiement:", 25, 95);
+    doc.setFont("helvetica", "bold");
+    doc.text(paiement.type, 80, 95);
+    
+    doc.setFont("helvetica", "normal");
+    doc.text("Mode de paiement:", 25, 105);
+    doc.setFont("helvetica", "bold");
+    doc.text(paiement.methode, 80, 105);
+    
+    doc.line(25, 115, 185, 115);
+    
+    // Amount
+    doc.setFillColor(0, 51, 102);
+    doc.rect(25, 120, 160, 20, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.text("MONTANT PAYÉ:", 35, 133);
+    doc.setFontSize(16);
+    doc.text(`${paiement.montant.toLocaleString('fr-FR')} FCFA`, 150, 133, { align: "right" });
+    
+    // Footer
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.text("Ce reçu atteste du paiement effectué. Conserver précieusement.", 105, 155, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text(`Fait à Abidjan, le ${format(new Date(), "dd/MM/yyyy", { locale: fr })}`, 140, 170);
+    doc.text("Le Comptable", 155, 180);
+    doc.line(130, 195, 180, 195);
+    
+    doc.save(`Recu_${paiement.reference}.pdf`);
+    toast.success(`Reçu ${paiement.reference} téléchargé`);
+  };
+
+  const handleDownloadReleve = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(10);
+    doc.text("ÉTABLISSEMENT SCOLAIRE", 105, 15, { align: "center" });
+    doc.text("Abidjan, Côte d'Ivoire", 105, 20, { align: "center" });
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("RELEVÉ DE PAIEMENTS", 105, 35, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Année scolaire: 2023-2024`, 105, 43, { align: "center" });
+    
+    // Student Info
+    doc.text(`Élève: ${mockStudent.name}`, 20, 55);
+    doc.text(`Matricule: ${mockStudent.matricule}`, 20, 62);
+    doc.text(`Classe: ${mockStudent.class}`, 120, 55);
+    doc.text(`Date d'édition: ${format(new Date(), "dd/MM/yyyy", { locale: fr })}`, 120, 62);
+    
+    // Payments table
+    const tableData = paiementsEffectues.map(p => [
+      format(new Date(p.date), "dd/MM/yyyy"),
+      p.type,
+      p.methode,
+      p.reference,
+      `${p.montant.toLocaleString('fr-FR')} F`
+    ]);
+    
+    autoTable(doc, {
+      head: [['Date', 'Type', 'Mode', 'Référence', 'Montant']],
+      body: tableData,
+      startY: 70,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [0, 51, 102] },
+      foot: [['', '', '', 'TOTAL PAYÉ', `${totalPaye.toLocaleString('fr-FR')} F`]],
+      footStyles: { fillColor: [0, 102, 51], textColor: 255, fontStyle: 'bold' },
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Summary
+    doc.setFontSize(11);
+    doc.text(`Total annuel: ${fraisScolarite.total.toLocaleString('fr-FR')} FCFA`, 20, finalY);
+    doc.text(`Total payé: ${totalPaye.toLocaleString('fr-FR')} FCFA`, 20, finalY + 7);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Reste à payer: ${totalRestant.toLocaleString('fr-FR')} FCFA`, 20, finalY + 14);
+    
+    // Signature
+    doc.setFont("helvetica", "normal");
+    doc.text(`Fait à Abidjan, le ${format(new Date(), "dd/MM/yyyy", { locale: fr })}`, 120, finalY + 30);
+    doc.text("Le Comptable", 145, finalY + 40);
+    doc.line(120, finalY + 50, 180, finalY + 50);
+    
+    doc.save(`Releve_Paiements_${mockStudent.name.replace(/\s/g, '_')}.pdf`);
+    toast.success("Relevé de paiements téléchargé");
   };
 
   const getPaymentMethodIcon = (method: string) => {
@@ -141,7 +269,7 @@ export default function PaiementsParents() {
             Gestion des paiements pour {mockStudent.name} - {mockStudent.class}
           </p>
         </div>
-        <Button>
+        <Button onClick={handleDownloadReleve}>
           <Download className="h-4 w-4 mr-2" />
           Télécharger le relevé
         </Button>
@@ -280,7 +408,7 @@ export default function PaiementsParents() {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => handleDownloadRecu(paiement.reference)}
+                            onClick={() => handleDownloadRecu(paiement)}
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Reçu

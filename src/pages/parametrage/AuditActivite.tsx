@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { 
   Activity, Download, Search, Filter, Calendar, User, Database,
   FileText, Eye, Edit, Trash2, LogIn, LogOut, Settings, RefreshCw,
@@ -208,16 +212,149 @@ export default function AuditActivitePage() {
   };
 
   const handleExportAudit = (format: string) => {
-    toast({
-      title: "Export en cours",
-      description: `Export ${format.toUpperCase()} des logs d'audit...`,
-    });
+    if (format === 'csv' || format === 'excel') {
+      const exportData = filteredLogs.map(log => ({
+        'Date/Heure': log.timestamp,
+        'Utilisateur': log.user,
+        'Rôle': log.userRole,
+        'Action': log.action,
+        'Catégorie': log.category,
+        'Ressource': log.resource,
+        'Détails': log.details,
+        'Adresse IP': log.ip,
+        'Statut': log.success ? 'Succès' : 'Échec'
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Audit");
+      
+      if (format === 'csv') {
+        const csvContent = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        saveAs(blob, `audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+      } else {
+        XLSX.writeFile(wb, `audit_logs_${new Date().toISOString().split('T')[0]}.xlsx`);
+      }
+      
+      toast({
+        title: "Export réussi",
+        description: `${filteredLogs.length} entrées exportées en ${format.toUpperCase()}`,
+      });
+    } else if (format === 'pdf') {
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("JOURNAL D'AUDIT", 105, 20, { align: "center" });
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Généré le: ${new Date().toLocaleString('fr-FR')}`, 20, 30);
+      doc.text(`Période: ${dateRange === 'today' ? "Aujourd'hui" : dateRange}`, 120, 30);
+      doc.text(`Total: ${filteredLogs.length} entrées`, 20, 37);
+      
+      const tableData = filteredLogs.map(log => [
+        log.timestamp,
+        log.user.split('@')[0],
+        log.action,
+        log.category,
+        log.resource,
+        log.success ? '✓' : '✗'
+      ]);
+      
+      autoTable(doc, {
+        head: [['Date/Heure', 'Utilisateur', 'Action', 'Catégorie', 'Ressource', 'OK']],
+        body: tableData,
+        startY: 45,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [0, 51, 102] },
+      });
+      
+      doc.save(`audit_logs_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast({
+        title: "Export PDF réussi",
+        description: `${filteredLogs.length} entrées exportées`,
+      });
+    }
   };
 
   const handleExportRGPD = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("RAPPORT DE CONFORMITÉ RGPD", 105, 20, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Date du rapport: ${new Date().toLocaleDateString('fr-FR')}`, 20, 35);
+    doc.text(`Période analysée: ${dateRange === 'today' ? "Aujourd'hui" : dateRange}`, 20, 42);
+    
+    // Summary
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("1. RÉSUMÉ DES ACCÈS AUX DONNÉES", 20, 55);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`• Nombre total d'actions: ${activityLogs.length}`, 25, 65);
+    doc.text(`• Utilisateurs distincts: ${stats.uniqueUsers}`, 25, 72);
+    doc.text(`• Accès échoués: ${stats.failedActions}`, 25, 79);
+    doc.text(`• Connexions réussies: ${stats.todayLogins}`, 25, 86);
+    
+    // Data access summary
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("2. ACCÈS AUX DONNÉES PERSONNELLES", 20, 100);
+    
+    const dataAccessSummary = dataAccessLogs.reduce((acc, log) => {
+      acc[log.table] = (acc[log.table] || 0) + log.recordCount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    let yPos = 110;
+    Object.entries(dataAccessSummary).forEach(([table, count]) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`• Table "${table}": ${count} enregistrements consultés`, 25, yPos);
+      yPos += 7;
+    });
+    
+    // Login history
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("3. HISTORIQUE DES CONNEXIONS", 20, yPos + 10);
+    
+    const loginData = loginHistory.slice(0, 10).map(l => [
+      l.timestamp,
+      l.user,
+      l.action === 'login' ? 'Connexion' : l.action === 'logout' ? 'Déconnexion' : 'Échec',
+      l.ip,
+      l.location
+    ]);
+    
+    autoTable(doc, {
+      head: [['Date/Heure', 'Utilisateur', 'Action', 'IP', 'Localisation']],
+      body: loginData,
+      startY: yPos + 20,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 51, 102] },
+    });
+    
+    // Footer
+    const finalY = (doc as any).lastAutoTable.finalY + 20;
+    doc.setFontSize(10);
+    doc.text("Ce rapport est généré automatiquement pour la conformité RGPD.", 20, finalY);
+    doc.text("Conservation recommandée: 5 ans", 20, finalY + 7);
+    
+    doc.save(`Rapport_RGPD_${new Date().toISOString().split('T')[0]}.pdf`);
+    
     toast({
-      title: "Export RGPD généré",
-      description: "Le rapport de conformité RGPD a été généré avec succès.",
+      title: "Rapport RGPD généré",
+      description: "Le rapport de conformité a été téléchargé",
     });
   };
 

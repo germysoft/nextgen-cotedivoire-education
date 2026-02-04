@@ -5,10 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { 
   Shield, Lock, Key, Smartphone, Globe, AlertTriangle, 
   CheckCircle2, XCircle, Eye, EyeOff, RefreshCw, Plus, Trash2,
-  ShieldCheck, ShieldAlert, Clock, Users, Fingerprint, Wifi
+  ShieldCheck, ShieldAlert, Clock, Users, Fingerprint, Wifi,
+  Download, FileText
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -130,9 +133,141 @@ export default function SecuritePage() {
   const securityScore = 85;
 
   const handleSavePasswordPolicy = () => {
+    // Sauvegarder dans localStorage pour persistance
+    localStorage.setItem('security_password_policy', JSON.stringify(passwordSettings));
     toast({
       title: "Politique de mot de passe mise à jour",
       description: "Les nouvelles règles seront appliquées aux prochaines créations/modifications de mots de passe.",
+    });
+  };
+
+  const handleExportSecurityReport = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("RAPPORT DE SÉCURITÉ", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Date du rapport: ${new Date().toLocaleDateString('fr-FR')}`, 20, 35);
+    doc.text(`Score de sécurité: ${securityScore}/100`, 140, 35);
+    
+    // Password Policy Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("1. POLITIQUE DE MOT DE PASSE", 20, 50);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`• Longueur minimale: ${passwordSettings.minLength} caractères`, 25, 60);
+    doc.text(`• Majuscules requises: ${passwordSettings.requireUppercase ? 'Oui' : 'Non'}`, 25, 67);
+    doc.text(`• Minuscules requises: ${passwordSettings.requireLowercase ? 'Oui' : 'Non'}`, 25, 74);
+    doc.text(`• Chiffres requis: ${passwordSettings.requireNumbers ? 'Oui' : 'Non'}`, 25, 81);
+    doc.text(`• Caractères spéciaux: ${passwordSettings.requireSpecialChars ? 'Oui' : 'Non'}`, 25, 88);
+    doc.text(`• Expiration: ${passwordSettings.expiryDays} jours`, 25, 95);
+    doc.text(`• Verrouillage après ${passwordSettings.lockoutAttempts} tentatives`, 25, 102);
+    
+    // 2FA Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("2. AUTHENTIFICATION À DEUX FACTEURS (2FA)", 20, 115);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`• 2FA activé: ${twoFactorSettings.enabled ? 'Oui' : 'Non'}`, 25, 125);
+    doc.text(`• Obligatoire pour admins: ${twoFactorSettings.enforceForAdmins ? 'Oui' : 'Non'}`, 25, 132);
+    doc.text(`• Méthodes: SMS (${twoFactorSettings.methods.sms ? '✓' : '✗'}), Email (${twoFactorSettings.methods.email ? '✓' : '✗'}), Authenticator (${twoFactorSettings.methods.authenticator ? '✓' : '✗'})`, 25, 139);
+    
+    // Sessions Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("3. GESTION DES SESSIONS", 20, 155);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`• Timeout: ${sessionSettings.timeout} minutes`, 25, 165);
+    doc.text(`• Extension sur activité: ${sessionSettings.extendOnActivity ? 'Oui' : 'Non'}`, 25, 172);
+    doc.text(`• Session unique: ${sessionSettings.singleSession ? 'Oui' : 'Non'}`, 25, 179);
+    doc.text(`• Appareils max: ${sessionSettings.maxDevices}`, 25, 186);
+    
+    // Active Sessions Table
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("4. SESSIONS ACTIVES", 20, 200);
+    
+    const sessionData = activeSessions.map(s => [
+      s.user,
+      s.device.split(' - ')[0],
+      s.ip,
+      s.location,
+      s.lastActive
+    ]);
+    
+    autoTable(doc, {
+      head: [['Utilisateur', 'Appareil', 'IP', 'Localisation', 'Activité']],
+      body: sessionData,
+      startY: 205,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 51, 102] },
+    });
+    
+    // IP Rules
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("5. RÈGLES IP", 20, finalY);
+    
+    const ipData = ipRules.map(r => [
+      r.ip,
+      r.type === 'whitelist' ? 'Liste blanche' : 'Liste noire',
+      r.description,
+      r.addedBy,
+      r.addedAt
+    ]);
+    
+    autoTable(doc, {
+      head: [['Adresse IP', 'Type', 'Description', 'Ajouté par', 'Date']],
+      body: ipData,
+      startY: finalY + 5,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 51, 102] },
+    });
+    
+    // Alerts Summary
+    const alertFinalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("6. ALERTES DE SÉCURITÉ", 20, alertFinalY);
+    
+    const alertData = securityAlerts.map(a => [
+      a.timestamp,
+      a.type === 'critical' ? 'Critique' : a.type === 'warning' ? 'Avertissement' : 'Info',
+      a.title,
+      a.resolved ? 'Résolu' : 'En cours'
+    ]);
+    
+    autoTable(doc, {
+      head: [['Date', 'Niveau', 'Alerte', 'Statut']],
+      body: alertData,
+      startY: alertFinalY + 5,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 51, 102] },
+    });
+    
+    doc.save(`Rapport_Securite_${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    toast({
+      title: "Rapport de sécurité généré",
+      description: "Le rapport complet a été téléchargé",
+    });
+  };
+
+  const handleResolveAlert = (alertId: string) => {
+    toast({
+      title: "Alerte marquée comme résolue",
+      description: "L'alerte a été traitée et archivée",
     });
   };
 
@@ -216,10 +351,16 @@ export default function SecuritePage() {
             Configuration des politiques de sécurité et surveillance du système
           </p>
         </div>
-        <Badge variant={securityScore >= 80 ? "default" : securityScore >= 60 ? "secondary" : "destructive"} className="text-lg px-4 py-2">
-          <Shield className="mr-2 h-5 w-5" />
-          Score: {securityScore}/100
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExportSecurityReport}>
+            <Download className="mr-2 h-4 w-4" />
+            Exporter Rapport
+          </Button>
+          <Badge variant={securityScore >= 80 ? "default" : securityScore >= 60 ? "secondary" : "destructive"} className="text-lg px-4 py-2">
+            <Shield className="mr-2 h-5 w-5" />
+            Score: {securityScore}/100
+          </Badge>
+        </div>
       </div>
 
       {/* Security Score Overview */}
