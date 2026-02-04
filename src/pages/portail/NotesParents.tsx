@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { 
   BookOpen, 
   TrendingUp, 
@@ -17,7 +19,9 @@ import {
   FileText,
   Medal,
   Star,
-  Calendar
+  Calendar,
+  Eye,
+  Printer
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -100,8 +104,152 @@ export default function NotesParents() {
   const rangGeneral = 8;
   const totalEleves = 42;
 
-  const handleDownloadBulletin = (id: number) => {
-    toast.success("Téléchargement du bulletin en cours...");
+  const handleDownloadBulletin = (bulletinData: typeof bulletins[0]) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(10);
+    doc.text("RÉPUBLIQUE DE CÔTE D'IVOIRE", 105, 15, { align: "center" });
+    doc.text("Union - Discipline - Travail", 105, 20, { align: "center" });
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("BULLETIN SCOLAIRE", 105, 35, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Année scolaire: ${bulletinData.year}`, 105, 45, { align: "center" });
+    doc.text(`${bulletinData.trimester}`, 105, 52, { align: "center" });
+    
+    // Student Info
+    doc.setFontSize(11);
+    doc.text(`Élève: ${mockStudent.name}`, 20, 65);
+    doc.text(`Matricule: ${mockStudent.matricule}`, 20, 72);
+    doc.text(`Classe: ${mockStudent.class}`, 120, 65);
+    doc.text(`Effectif: ${bulletinData.total} élèves`, 120, 72);
+    
+    // Grades table
+    const tableData = notesParMatiere.map(n => [
+      n.subject,
+      n.coef.toString(),
+      n.interro1.toString(),
+      n.interro2.toString(),
+      n.devoir.toString(),
+      n.composition.toString(),
+      n.moyenne.toFixed(2),
+      n.moyenneClasse.toFixed(2),
+      `${n.rang}ème`,
+      n.appreciation
+    ]);
+    
+    autoTable(doc, {
+      head: [['Matière', 'Coef', 'Int.1', 'Int.2', 'Devoir', 'Compo', 'Moy.', 'Moy.Cl', 'Rang', 'Appré.']],
+      body: tableData,
+      startY: 80,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [0, 51, 102], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+    });
+    
+    // Summary
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFillColor(0, 51, 102);
+    doc.rect(20, finalY, 170, 20, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Moyenne Générale: ${bulletinData.moyenne.toFixed(2)}/20`, 30, finalY + 8);
+    doc.text(`Rang: ${bulletinData.rang}ème/${bulletinData.total}`, 100, finalY + 8);
+    doc.text(`Mention: ${bulletinData.mention}`, 150, finalY + 8);
+    
+    // Footer
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Fait à Abidjan, le ${new Date().toLocaleDateString('fr-FR')}`, 130, finalY + 35);
+    doc.text("Le Directeur", 155, finalY + 45);
+    doc.line(130, finalY + 55, 180, finalY + 55);
+    
+    doc.save(`Bulletin_${mockStudent.name.replace(/\s/g, '_')}_${bulletinData.trimester.replace(/\s/g, '_')}.pdf`);
+    toast.success(`Bulletin ${bulletinData.trimester} téléchargé`);
+  };
+
+  const handlePrintNotes = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("RELEVÉ DE NOTES DÉTAILLÉ", 105, 20, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Élève: ${mockStudent.name}`, 20, 35);
+    doc.text(`Classe: ${mockStudent.class}`, 120, 35);
+    doc.text(`Période: ${selectedTrimester} - ${selectedYear}`, 20, 42);
+    
+    const tableData = notesParMatiere.map(n => [
+      n.subject,
+      n.coef.toString(),
+      n.interro1.toString(),
+      n.interro2.toString(),
+      n.devoir.toString(),
+      n.composition.toString(),
+      n.moyenne.toFixed(2),
+      n.moyenneClasse.toFixed(2),
+      `${n.rang}ème`
+    ]);
+    
+    autoTable(doc, {
+      head: [['Matière', 'Coef', 'Int.1', 'Int.2', 'Devoir', 'Compo', 'Moyenne', 'Moy.Cl', 'Rang']],
+      body: tableData,
+      startY: 50,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [0, 51, 102] },
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Moyenne Générale: ${moyenneGenerale.toFixed(2)}/20`, 20, finalY);
+    doc.text(`Classement: ${rangGeneral}ème sur ${totalEleves}`, 120, finalY);
+    
+    doc.save(`Notes_${mockStudent.name.replace(/\s/g, '_')}_${selectedTrimester.replace(/\s/g, '_')}.pdf`);
+    toast.success("Relevé de notes exporté en PDF");
+  };
+
+  const handleExportEvolution = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("ÉVOLUTION DES RÉSULTATS SCOLAIRES", 105, 20, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Élève: ${mockStudent.name} - ${mockStudent.class}`, 20, 35);
+    
+    const evolutionData = evolutionTrimestrielle.map(e => [
+      e.trimester,
+      `${e.moyenne.toFixed(2)}/20`
+    ]);
+    
+    autoTable(doc, {
+      head: [['Période', 'Moyenne']],
+      body: evolutionData,
+      startY: 45,
+      styles: { fontSize: 11 },
+      headStyles: { fillColor: [0, 51, 102] },
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(11);
+    const progression = evolutionTrimestrielle[evolutionTrimestrielle.length - 1].moyenne - evolutionTrimestrielle[0].moyenne;
+    doc.text(`Progression totale: ${progression > 0 ? '+' : ''}${progression.toFixed(2)} points`, 20, finalY);
+    
+    doc.save(`Evolution_${mockStudent.name.replace(/\s/g, '_')}.pdf`);
+    toast.success("Rapport d'évolution exporté");
   };
 
   const getNoteColor = (note: number) => {
@@ -236,6 +384,13 @@ export default function NotesParents() {
             <span className="hidden sm:inline">Comparaison</span>
           </TabsTrigger>
         </TabsList>
+        
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={handlePrintNotes}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimer les notes
+          </Button>
+        </div>
 
         {/* Notes Tab */}
         <TabsContent value="notes" className="space-y-4">
@@ -388,13 +543,26 @@ export default function NotesParents() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleDownloadBulletin(bulletin.id)}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Télécharger
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleDownloadBulletin(bulletin)}
+                            title="Télécharger PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => {
+                              toast.info(`Prévisualisation du bulletin ${bulletin.trimester}`);
+                            }}
+                            title="Prévisualiser"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

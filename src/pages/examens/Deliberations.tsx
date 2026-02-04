@@ -14,6 +14,8 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { 
   Users, 
@@ -206,11 +208,145 @@ export default function Deliberations() {
   };
 
   const handleExportPV = () => {
-    toast.success("Procès-verbal de délibération généré en PDF");
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(10);
+    doc.text("RÉPUBLIQUE DE CÔTE D'IVOIRE", 105, 15, { align: "center" });
+    doc.text("Ministère de l'Éducation Nationale", 105, 20, { align: "center" });
+    
+    // Border
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(1);
+    doc.rect(10, 10, 190, 277);
+    
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROCÈS-VERBAL DE DÉLIBÉRATION", 105, 35, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Session 2024 - B.E.P.C.", 105, 43, { align: "center" });
+    doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 50, { align: "center" });
+    
+    // Statistics
+    doc.setFontSize(11);
+    doc.text(`Nombre de candidats: ${totalCandidats}`, 20, 65);
+    doc.text(`Admis: ${admis} (${tauxReussite}%)`, 20, 72);
+    doc.text(`Ajournés: ${ajournes}`, 100, 65);
+    doc.text(`Cas limites traités: ${casLimites}`, 100, 72);
+    
+    // Results table
+    const tableData = candidats.map(c => [
+      c.tableNum,
+      `${c.nom} ${c.prenom}`,
+      c.moyenne.toFixed(2),
+      c.mention || '-',
+      c.decision
+    ]);
+    
+    autoTable(doc, {
+      head: [['N° Table', 'Nom et Prénom', 'Moyenne', 'Mention', 'Décision']],
+      body: tableData,
+      startY: 80,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 51, 102] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          const decision = data.cell.raw as string;
+          if (decision === 'Admis') {
+            data.cell.styles.textColor = [0, 128, 0];
+            data.cell.styles.fontStyle = 'bold';
+          } else if (decision === 'Ajourné') {
+            data.cell.styles.textColor = [200, 0, 0];
+          }
+        }
+      }
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Jury signatures section
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("SIGNATURES DU JURY:", 20, finalY);
+    
+    doc.setFont("helvetica", "normal");
+    let signY = finalY + 10;
+    juryMembers.forEach(jury => {
+      const status = jury.signed ? `✓ Signé le ${jury.signedAt}` : '○ En attente';
+      doc.text(`${jury.nom} (${jury.fonction}): ${status}`, 25, signY);
+      signY += 7;
+    });
+    
+    // Footer
+    doc.setFontSize(10);
+    doc.text("Document officiel - Ne peut être modifié après validation", 105, 275, { align: "center" });
+    
+    doc.save(`PV_Deliberation_BEPC_2024.pdf`);
+    toast.success("Procès-verbal de délibération généré");
   };
 
   const handleArchiver = () => {
-    toast.success("Délibérations archivées conformément à la réglementation (10 ans)");
+    // Vérification que tout est prêt pour l'archivage
+    const nonTraites = candidats.filter(c => c.decision === "En délibération");
+    if (nonTraites.length > 0) {
+      toast.error("Impossible d'archiver: des candidats sont encore en délibération");
+      return;
+    }
+    
+    // Simuler l'archivage
+    const archiveData = {
+      date: new Date().toISOString(),
+      session: "BEPC 2024",
+      candidats: candidats.length,
+      admis: admis,
+      tauxReussite: tauxReussite,
+      jurySignatures: juryMembers.filter(j => j.signed).length,
+      historique: historique.length
+    };
+    
+    localStorage.setItem('archive_deliberations_2024', JSON.stringify(archiveData));
+    toast.success("Délibérations archivées conformément à la réglementation (10 ans)", {
+      description: `${candidats.length} dossiers archivés avec ${historique.length} décisions tracées`
+    });
+  };
+
+  const handleExportHistorique = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("HISTORIQUE DES DÉCISIONS", 105, 20, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Session: BEPC 2024`, 20, 35);
+    doc.text(`Date d'export: ${new Date().toLocaleDateString('fr-FR')}`, 120, 35);
+    
+    const tableData = historique.map(h => [
+      h.date,
+      h.candidat,
+      h.tableNum,
+      h.ancienneDecision,
+      h.nouvelleDecision,
+      h.jury
+    ]);
+    
+    autoTable(doc, {
+      head: [['Date', 'Candidat', 'N° Table', 'Ancienne', 'Nouvelle', 'Jury']],
+      body: tableData,
+      startY: 45,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 51, 102] },
+      columnStyles: {
+        5: { cellWidth: 30 }
+      }
+    });
+    
+    doc.save(`Historique_Decisions_BEPC_2024.pdf`);
+    toast.success("Historique des décisions exporté");
   };
 
   return (
