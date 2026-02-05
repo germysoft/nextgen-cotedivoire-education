@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Plus, Edit, Trash2, Search, FileText, ChevronDown, ChevronRight, CheckCircle, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BookOpen, Plus, Edit, Trash2, Search, FileText, ChevronDown, ChevronRight, CheckCircle, Clock, Download, Printer, Copy } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Matiere {
   id: number;
@@ -165,30 +167,123 @@ export default function Matieres() {
   const totalHeures = matieres.reduce((sum, m) => sum + m.heuresHebdo, 0);
   const avgProgression = Math.round(programmes.reduce((sum, p) => sum + p.progression, 0) / programmes.length);
 
+  // PDF Export - Liste des matières
+  const handleExportMatieresPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Liste des Matières", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Total: ${matieres.length} matières | ${totalHeures}h/semaine`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Matière", "Code", "Cycle", "Type", "Coefficient", "Heures/sem", "Statut"]],
+      body: matieres.map(m => [
+        m.nom,
+        m.code,
+        m.cycle,
+        m.type,
+        `${m.coefficient}`,
+        `${m.heuresHebdo}h`,
+        m.obligatoire ? "Obligatoire" : "Optionnelle"
+      ]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("liste-matieres.pdf");
+    toast({ title: "Export réussi", description: "Liste des matières exportée en PDF" });
+  };
+
+  // PDF Export - Programmes et progression
+  const handleExportProgrammesPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Progression des Programmes", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Progression moyenne: ${avgProgression}%`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Programme", "Chapitres", "Progression", "Heures Restantes"]],
+      body: programmes.map(p => [
+        p.matiere,
+        `${p.chapitres}`,
+        `${p.progression}%`,
+        `${p.heuresRestantes}h`
+      ]),
+      headStyles: { fillColor: [16, 185, 129] },
+    });
+
+    // Ajouter les chapitres par matière
+    matieres.forEach((matiere, index) => {
+      const matChapitres = chapitres.filter(c => c.matiereId === matiere.id);
+      if (matChapitres.length > 0) {
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 10,
+          head: [[`${matiere.nom} - Chapitres`]],
+          body: matChapitres.map(c => [
+            `${c.titre} - ${c.statut} (${c.progression}%)`
+          ]),
+          headStyles: { fillColor: [139, 92, 246] },
+        });
+      }
+    });
+
+    doc.save("programmes-progression.pdf");
+    toast({ title: "Export réussi", description: "Programmes exportés en PDF" });
+  };
+
+  // Dupliquer une matière
+  const handleDuplicateMatiere = (matiere: Matiere) => {
+    const newMatiere: Matiere = {
+      ...matiere,
+      id: Math.max(...matieres.map(m => m.id)) + 1,
+      nom: `${matiere.nom} (copie)`,
+      code: `${matiere.code}_CPY`
+    };
+    setMatieres([...matieres, newMatiere]);
+    toast({ title: "Matière dupliquée", description: `${matiere.nom} a été dupliquée` });
+  };
+
+  // Supprimer un chapitre
+  const handleDeleteChapitre = (chapitreId: number) => {
+    setChapitres(prev => prev.filter(c => c.id !== chapitreId));
+    toast({ title: "Chapitre supprimé", description: "Le chapitre a été supprimé" });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Matières & Programmes</h1>
           <p className="text-muted-foreground">Gestion des disciplines et contenus pédagogiques</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setEditingMatiere(null);
-            setMatiereForm({ nom: "", code: "", cycle: "", coefficient: "", heuresHebdo: "", type: "", obligatoire: true });
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Matière
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingMatiere ? "Modifier la Matière" : "Nouvelle Matière"}</DialogTitle>
-            </DialogHeader>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportMatieresPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Exporter Matières
+          </Button>
+          <Button variant="outline" onClick={handleExportProgrammesPDF}>
+            <FileText className="mr-2 h-4 w-4" />
+            Exporter Programmes
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setEditingMatiere(null);
+              setMatiereForm({ nom: "", code: "", cycle: "", coefficient: "", heuresHebdo: "", type: "", obligatoire: true });
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nouvelle Matière
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingMatiere ? "Modifier la Matière" : "Nouvelle Matière"}</DialogTitle>
+              </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -277,6 +372,7 @@ export default function Matieres() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
@@ -384,6 +480,9 @@ export default function Matieres() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => handleDuplicateMatiere(matiere)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => handleEdit(matiere)}>
                             <Edit className="h-4 w-4" />
                           </Button>

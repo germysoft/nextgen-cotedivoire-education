@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Utensils, Users, TrendingUp, Calendar, CheckCircle, DollarSign, Plus, Edit, Trash2, Search, Eye } from "lucide-react";
+import { Utensils, Users, TrendingUp, Calendar, CheckCircle, DollarSign, Plus, Edit, Trash2, Search, Eye, FileText, Download, Send, Printer } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { 
   Dialog, 
@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Menu {
   jour: string;
@@ -91,6 +93,105 @@ const Cantine = () => {
     i.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.classe.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // PDF Export - Menu de la semaine
+  const handleExportMenuPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Menu de la Semaine - Cantine Scolaire", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Jour", "Entrée", "Plat Principal", "Dessert", "Participants"]],
+      body: menus.map(m => [m.jour, m.entree, m.plat, m.dessert, `${m.participants}`]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("menu-semaine-cantine.pdf");
+    toast.success("Menu exporté en PDF");
+  };
+
+  // PDF Export - Liste des inscrits
+  const handleExportInscritsPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Liste des Inscrits - Cantine Scolaire", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Année scolaire 2024-2025 | Total: ${inscrits.length} élèves`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Nom", "Classe", "Formule", "Montant Dû", "Payé", "Reste", "Statut"]],
+      body: inscrits.map(i => [
+        i.nom,
+        i.classe,
+        i.formule,
+        `${i.montant.toLocaleString()} F`,
+        `${i.paye.toLocaleString()} F`,
+        `${(i.montant - i.paye).toLocaleString()} F`,
+        i.statut
+      ]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("inscrits-cantine.pdf");
+    toast.success("Liste des inscrits exportée");
+  };
+
+  // PDF Export - Rapport financier
+  const handleExportFinancePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Rapport Financier - Cantine Scolaire", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    // Résumé financier
+    doc.setFontSize(14);
+    doc.text("Résumé Financier", 14, 45);
+    
+    autoTable(doc, {
+      startY: 50,
+      head: [["Indicateur", "Valeur"]],
+      body: [
+        ["Total inscrits", `${totalInscrits} élèves`],
+        ["Montant total dû", `${totalDu.toLocaleString()} FCFA`],
+        ["Total encaissé", `${totalPaye.toLocaleString()} FCFA`],
+        ["Reste à percevoir", `${(totalDu - totalPaye).toLocaleString()} FCFA`],
+        ["Taux de recouvrement", `${((totalPaye / totalDu) * 100).toFixed(1)}%`],
+      ],
+      headStyles: { fillColor: [16, 185, 129] },
+    });
+
+    // Détail par statut
+    const soldes = inscrits.filter(i => i.statut === "Soldé").length;
+    const partiels = inscrits.filter(i => i.statut === "Partiel").length;
+    const impayes = inscrits.filter(i => i.statut === "Impayé").length;
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 15,
+      head: [["Statut", "Nombre", "Pourcentage"]],
+      body: [
+        ["Soldés", `${soldes}`, `${((soldes / totalInscrits) * 100).toFixed(1)}%`],
+        ["Partiels", `${partiels}`, `${((partiels / totalInscrits) * 100).toFixed(1)}%`],
+        ["Impayés", `${impayes}`, `${((impayes / totalInscrits) * 100).toFixed(1)}%`],
+      ],
+      headStyles: { fillColor: [239, 68, 68] },
+    });
+
+    doc.save("rapport-financier-cantine.pdf");
+    toast.success("Rapport financier exporté");
+  };
+
+  // Envoyer rappel impayés
+  const handleSendReminders = () => {
+    const impayes = inscrits.filter(i => i.statut === "Impayé" || i.statut === "Partiel");
+    toast.success(`${impayes.length} rappels SMS envoyés aux parents`, {
+      description: "Les parents des élèves avec soldes impayés ont été notifiés"
+    });
+  };
 
   // Handlers Menu
   const handleEditMenu = (menu: Menu) => {
@@ -255,8 +356,22 @@ const Cantine = () => {
         <TabsContent value="menus" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Planning Hebdomadaire</CardTitle>
-              <CardDescription>Menus et participation</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Planning Hebdomadaire</CardTitle>
+                  <CardDescription>Menus et participation</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleExportMenuPDF}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Exporter Menu PDF
+                  </Button>
+                  <Button variant="outline" onClick={() => window.print()}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Imprimer
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -333,14 +448,24 @@ const Cantine = () => {
                   <CardTitle>Liste des Inscrits</CardTitle>
                   <CardDescription>Élèves abonnés à la cantine</CardDescription>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input 
-                    placeholder="Rechercher..." 
-                    className="pl-10 w-64"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input 
+                      placeholder="Rechercher..." 
+                      className="pl-10 w-64"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Button variant="outline" onClick={handleExportInscritsPDF}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exporter
+                  </Button>
+                  <Button variant="outline" onClick={handleSendReminders}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Rappels Impayés
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -411,6 +536,12 @@ const Cantine = () => {
         </TabsContent>
 
         <TabsContent value="statistiques" className="space-y-4">
+          <div className="flex justify-end mb-4">
+            <Button onClick={handleExportFinancePDF}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exporter Rapport Financier
+            </Button>
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>

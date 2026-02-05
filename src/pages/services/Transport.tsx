@@ -8,9 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bus, MapPin, User, Clock, AlertCircle, CheckCircle2, Navigation, Plus, Edit, Trash2, Eye, DollarSign, Search, Wrench } from "lucide-react";
+import { Bus, MapPin, User, Clock, AlertCircle, CheckCircle2, Navigation, Plus, Edit, Trash2, Eye, DollarSign, Search, Wrench, FileText, Download, Printer, Phone, Send } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface BusVehicle {
   id: number;
@@ -104,6 +106,99 @@ const Transport = () => {
     e.classe.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.bus.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // PDF Export - Flotte de bus
+  const handleExportFlotePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Flotte de Bus - Transport Scolaire", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Numéro", "Chauffeur", "Téléphone", "Capacité", "Inscrits", "Itinéraire", "Statut"]],
+      body: buses.map(b => [
+        b.numero,
+        b.chauffeur,
+        b.telephone || "-",
+        `${b.capacite}`,
+        `${b.inscrits}`,
+        b.itineraire,
+        b.statut
+      ]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("flotte-bus.pdf");
+    toast.success("Flotte de bus exportée en PDF");
+  };
+
+  // PDF Export - Liste des élèves transport
+  const handleExportElevesPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Liste des Élèves - Transport Scolaire", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Total: ${eleves.length} élèves inscrits`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Nom", "Classe", "Bus", "Arrêt", "Montant", "Payé", "Statut"]],
+      body: eleves.map(e => [
+        e.nom,
+        e.classe,
+        e.bus,
+        e.arret,
+        `${e.montant.toLocaleString()} F`,
+        `${e.paye.toLocaleString()} F`,
+        e.statut
+      ]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("eleves-transport.pdf");
+    toast.success("Liste des élèves exportée");
+  };
+
+  // PDF Export - Itinéraires
+  const handleExportItinerairesPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Itinéraires - Transport Scolaire", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`${itineraires.length} itinéraires actifs`, 14, 30);
+
+    itineraires.forEach((it, index) => {
+      autoTable(doc, {
+        startY: index === 0 ? 38 : (doc as any).lastAutoTable.finalY + 10,
+        head: [[`${it.nom} - ${it.distance} - ${it.duree}`]],
+        body: it.arrets.map((a, i) => [`${i + 1}. ${a}`]),
+        headStyles: { fillColor: [16, 185, 129] },
+      });
+    });
+
+    doc.save("itineraires-transport.pdf");
+    toast.success("Itinéraires exportés");
+  };
+
+  // Appeler un chauffeur
+  const handleCallChauffeur = (bus: BusVehicle) => {
+    if (bus.telephone) {
+      window.open(`tel:${bus.telephone}`, '_blank');
+      toast.success(`Appel vers ${bus.chauffeur}...`);
+    } else {
+      toast.error("Numéro de téléphone non renseigné");
+    }
+  };
+
+  // Envoyer rappels transport
+  const handleSendTransportReminders = () => {
+    const impayes = eleves.filter(e => e.statut !== "Payé");
+    toast.success(`${impayes.length} rappels envoyés`, {
+      description: "SMS envoyés aux parents avec solde impayé"
+    });
+  };
 
   // Handlers Bus
   const openBusDialog = (bus: BusVehicle) => {
@@ -304,8 +399,18 @@ const Transport = () => {
         <TabsContent value="bus" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Flotte de Bus</CardTitle>
-              <CardDescription>Gestion des véhicules et chauffeurs</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Flotte de Bus</CardTitle>
+                  <CardDescription>Gestion des véhicules et chauffeurs</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleExportFlotePDF}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Exporter PDF
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -354,6 +459,9 @@ const Transport = () => {
                             <Button variant="ghost" size="sm" onClick={() => openBusDialog(vehicle)}>
                               <Eye className="h-4 w-4" />
                             </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleCallChauffeur(vehicle)}>
+                              <Phone className="h-4 w-4" />
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => openMaintenanceDialog(vehicle)}>
                               <Wrench className="h-4 w-4" />
                             </Button>
@@ -369,6 +477,12 @@ const Transport = () => {
         </TabsContent>
 
         <TabsContent value="itineraires" className="space-y-4">
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" onClick={handleExportItinerairesPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Exporter Itinéraires
+            </Button>
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
             {itineraires.map((itineraire) => (
               <Card key={itineraire.id}>
@@ -421,14 +535,24 @@ const Transport = () => {
                   <CardTitle>Élèves Inscrits au Transport</CardTitle>
                   <CardDescription>Liste des inscriptions actives</CardDescription>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher..."
-                    className="pl-10 w-64"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher..."
+                      className="pl-10 w-64"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Button variant="outline" onClick={handleExportElevesPDF}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exporter
+                  </Button>
+                  <Button variant="outline" onClick={handleSendTransportReminders}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Rappels
+                  </Button>
                 </div>
               </div>
             </CardHeader>

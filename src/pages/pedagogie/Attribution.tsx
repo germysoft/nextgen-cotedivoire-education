@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Users, BookOpen, Calendar, Edit, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Search, Plus, Users, BookOpen, Calendar, Edit, Trash2, AlertTriangle, CheckCircle, Download, FileText, Printer, Copy } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Attribution {
   id: number;
@@ -207,31 +209,117 @@ export default function Attribution() {
   const totalHeures = attributions.reduce((sum, a) => sum + a.heures, 0);
   const profsPrincipaux = attributions.filter(a => a.profPrincipal).length;
 
+  // PDF Export - Liste des attributions
+  const handleExportAttributionsPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Attributions des Enseignants", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Total: ${totalAttributions} attributions | ${totalHeures}h/semaine`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Enseignant", "Matière", "Classe", "Jour", "Horaire", "Heures", "Rôle"]],
+      body: attributions.map(a => [
+        a.enseignant,
+        a.matiere,
+        a.classe,
+        a.jour,
+        a.horaire,
+        `${a.heures}h`,
+        a.profPrincipal ? "Prof Principal" : "Enseignant"
+      ]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("attributions-enseignants.pdf");
+    toast({ title: "Export réussi", description: "Attributions exportées en PDF" });
+  };
+
+  // PDF Export - Charge horaire enseignants
+  const handleExportWorkloadPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Charge Horaire des Enseignants", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`${enseignants.length} enseignants actifs`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Enseignant", "Matières", "Heures Affectées", "Maximum", "Taux", "Classes"]],
+      body: enseignants.map(e => [
+        e.nom,
+        e.matieres.join(", "),
+        `${e.heuresAffectees}h`,
+        `${e.heuresMax}h`,
+        `${((e.heuresAffectees / e.heuresMax) * 100).toFixed(0)}%`,
+        `${e.classes}`
+      ]),
+      headStyles: { fillColor: [16, 185, 129] },
+    });
+
+    // Alertes de surcharge
+    const surcharges = enseignants.filter(e => e.heuresAffectees >= e.heuresMax);
+    if (surcharges.length > 0) {
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 10,
+        head: [["⚠️ Enseignants en surcharge"]],
+        body: surcharges.map(e => [`${e.nom}: ${e.heuresAffectees}/${e.heuresMax}h`]),
+        headStyles: { fillColor: [239, 68, 68] },
+      });
+    }
+
+    doc.save("charge-horaire-enseignants.pdf");
+    toast({ title: "Export réussi", description: "Charge horaire exportée en PDF" });
+  };
+
+  // Dupliquer une attribution
+  const handleDuplicateAttribution = (attr: Attribution) => {
+    const teacher = enseignants.find(e => e.id === attr.enseignantId);
+    const newAttr: Attribution = {
+      ...attr,
+      id: Math.max(...attributions.map(a => a.id)) + 1,
+      classe: `${attr.classe} (copie)`,
+      profPrincipal: false
+    };
+    setAttributions([...attributions, newAttr]);
+    toast({ title: "Attribution dupliquée", description: `Attribution pour ${attr.classe} copiée` });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Attribution des Enseignants</h1>
           <p className="text-muted-foreground">Affectation des professeurs aux matières et classes</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setEditingAttribution(null);
-            setFormData({ enseignantId: "", matiere: "", classe: "", heures: "", jour: "", horaire: "", profPrincipal: false });
-            setConflicts([]);
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Attribution
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingAttribution ? "Modifier l'Attribution" : "Nouvelle Attribution"}</DialogTitle>
-            </DialogHeader>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportAttributionsPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Exporter Attributions
+          </Button>
+          <Button variant="outline" onClick={handleExportWorkloadPDF}>
+            <FileText className="mr-2 h-4 w-4" />
+            Charge Horaire PDF
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setEditingAttribution(null);
+              setFormData({ enseignantId: "", matiere: "", classe: "", heures: "", jour: "", horaire: "", profPrincipal: false });
+              setConflicts([]);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nouvelle Attribution
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingAttribution ? "Modifier l'Attribution" : "Nouvelle Attribution"}</DialogTitle>
+              </DialogHeader>
             <div className="grid gap-4 py-4">
               {conflicts.length > 0 && (
                 <div className="p-3 bg-destructive/10 border border-destructive rounded-lg space-y-1">
@@ -357,6 +445,7 @@ export default function Attribution() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
@@ -477,6 +566,9 @@ export default function Attribution() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => handleDuplicateAttribution(attr)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => handleEdit(attr)}>
                             <Edit className="h-4 w-4" />
                           </Button>
