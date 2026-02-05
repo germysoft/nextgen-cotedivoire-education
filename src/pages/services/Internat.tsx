@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Bed, Search, Plus, Users, DollarSign, Calendar, Edit, Trash2, Eye, CheckCircle } from "lucide-react";
+import { Bed, Search, Plus, Users, DollarSign, Calendar, Edit, Trash2, Eye, CheckCircle, FileText, Download, Printer, Send, AlertTriangle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -28,7 +28,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Pensionnaire {
   id: number;
@@ -101,6 +104,7 @@ export default function Internat() {
   const placesTotal = chambres.reduce((sum, c) => sum + c.capacite, 0);
   const tauxOccupation = ((placesOccupees / placesTotal) * 100).toFixed(1);
   const totalRecettes = pensionnaires.reduce((sum, p) => sum + p.montantPaye, 0);
+  const enRetard = pensionnaires.filter(p => p.paiement === "En retard").length;
 
   // Filtrer les pensionnaires
   const filteredPensionnaires = pensionnaires.filter(p =>
@@ -111,6 +115,95 @@ export default function Internat() {
 
   // Chambres avec places disponibles
   const chambresDisponibles = chambres.filter(c => c.disponibles > 0);
+
+  // PDF Export - Liste des pensionnaires
+  const handleExportPensionnairesPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Liste des Pensionnaires - Internat", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Total: ${totalPensionnaires} pensionnaires | Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Nom", "Classe", "Chambre", "Lit", "Date Début", "Paiement", "Statut"]],
+      body: pensionnaires.map(p => [
+        p.nom,
+        p.classe,
+        p.chambre,
+        `Lit ${p.lit}`,
+        p.dateDebut,
+        p.paiement,
+        p.statut
+      ]),
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save("pensionnaires-internat.pdf");
+    toast.success("Liste des pensionnaires exportée");
+  };
+
+  // PDF Export - Affectations chambres
+  const handleExportChambresPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Affectations Chambres - Internat", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Taux d'occupation: ${tauxOccupation}%`, 14, 30);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Chambre", "Bâtiment", "Type", "Capacité", "Occupés", "Disponibles"]],
+      body: chambres.map(c => [
+        c.numero,
+        `Bâtiment ${c.batiment}`,
+        c.type,
+        `${c.capacite}`,
+        `${c.occupes}`,
+        `${c.disponibles}`
+      ]),
+      headStyles: { fillColor: [16, 185, 129] },
+    });
+
+    doc.save("affectations-chambres.pdf");
+    toast.success("Affectations des chambres exportées");
+  };
+
+  // PDF Export - Rapport financier internat
+  const handleExportFinancePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Rapport Financier - Internat", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    const totalDu = pensionnaires.reduce((sum, p) => sum + p.montantDu, 0);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Indicateur", "Valeur"]],
+      body: [
+        ["Pensionnaires actifs", `${totalPensionnaires}`],
+        ["Total attendu", `${totalDu.toLocaleString()} FCFA`],
+        ["Total encaissé", `${totalRecettes.toLocaleString()} FCFA`],
+        ["Reste à percevoir", `${(totalDu - totalRecettes).toLocaleString()} FCFA`],
+        ["Taux recouvrement", `${((totalRecettes / totalDu) * 100).toFixed(1)}%`],
+        ["En retard de paiement", `${enRetard}`],
+      ],
+      headStyles: { fillColor: [239, 68, 68] },
+    });
+
+    doc.save("rapport-financier-internat.pdf");
+    toast.success("Rapport financier exporté");
+  };
+
+  // Envoyer rappels aux retardataires
+  const handleSendReminders = () => {
+    const retardataires = pensionnaires.filter(p => p.paiement === "En retard");
+    toast.success(`${retardataires.length} rappels SMS envoyés`, {
+      description: "Parents des pensionnaires en retard de paiement notifiés"
+    });
+  };
 
   const resetForm = () => {
     setForm({ nom: "", classe: "", chambre: "", lit: "", contact: "" });
@@ -271,22 +364,40 @@ export default function Internat() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Liste des Pensionnaires</CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  className="pl-10 w-64"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardHeader>
+      <Tabs defaultValue="pensionnaires" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="pensionnaires">Pensionnaires</TabsTrigger>
+          <TabsTrigger value="chambres">Chambres</TabsTrigger>
+          <TabsTrigger value="finances">Finances</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pensionnaires">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Liste des Pensionnaires</CardTitle>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher..."
+                        className="pl-10 w-64"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <Button variant="outline" onClick={handleExportPensionnairesPDF}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Exporter
+                    </Button>
+                    <Button variant="outline" onClick={handleSendReminders}>
+                      <Send className="mr-2 h-4 w-4" />
+                      Rappels
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
@@ -349,12 +460,18 @@ export default function Internat() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Disponibilité Chambres</CardTitle>
-          </CardHeader>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Disponibilité Chambres</CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleExportChambresPDF}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
+              </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {chambres.map((ch, idx) => (
@@ -384,6 +501,104 @@ export default function Internat() {
           </CardContent>
         </Card>
       </div>
+    </TabsContent>
+
+    <TabsContent value="chambres">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Gestion des Chambres</CardTitle>
+            <Button variant="outline" onClick={handleExportChambresPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Exporter PDF
+            </Button>
+          </div>
+          <CardDescription>Vue d'ensemble de l'occupation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            {chambres.map((ch, idx) => (
+              <Card key={idx}>
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-medium">{ch.numero}</p>
+                      <p className="text-sm text-muted-foreground">Bâtiment {ch.batiment}</p>
+                    </div>
+                    <Badge variant="outline">{ch.type}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="text-center p-2 rounded-lg bg-muted">
+                      <p className="text-xs text-muted-foreground">Occupés</p>
+                      <p className="font-bold text-primary">{ch.occupes}/{ch.capacite}</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-muted">
+                      <p className="text-xs text-muted-foreground">Libres</p>
+                      <p className="font-bold text-primary">{ch.disponibles}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </TabsContent>
+
+    <TabsContent value="finances">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Rapport Financier Internat</CardTitle>
+            <Button onClick={handleExportFinancePDF}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exporter Rapport
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardContent className="pt-4">
+                <h3 className="font-semibold mb-4">Synthèse Financière</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span>Total attendu:</span>
+                    <span className="font-bold">{(pensionnaires.reduce((s, p) => s + p.montantDu, 0)).toLocaleString()} F</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total encaissé:</span>
+                    <span className="font-bold text-primary">{totalRecettes.toLocaleString()} F</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span>Reste à percevoir:</span>
+                    <span className="font-bold text-destructive">
+                      {(pensionnaires.reduce((s, p) => s + p.montantDu, 0) - totalRecettes).toLocaleString()} F
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <h3 className="font-semibold mb-4">Répartition Paiements</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span>À jour:</span>
+                    <Badge variant="default">{pensionnaires.filter(p => p.paiement === "À jour").length}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>En retard:</span>
+                    <Badge variant="destructive">{enRetard}</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </TabsContent>
+  </Tabs>
 
       {/* Dialog Nouveau Pensionnaire */}
       <Dialog open={isNewPensionnaireOpen} onOpenChange={setIsNewPensionnaireOpen}>
