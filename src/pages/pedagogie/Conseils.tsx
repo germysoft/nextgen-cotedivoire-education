@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Calendar, Users, FileText, Plus, Eye, Download, CheckCircle, Clock, Edit } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar, Users, FileText, Plus, Eye, Download, CheckCircle, Clock, Edit, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Conseil {
   id: number;
@@ -59,6 +60,8 @@ export default function Conseils() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDelibDialogOpen, setIsDelibDialogOpen] = useState(false);
   const [selectedConseil, setSelectedConseil] = useState<Conseil | null>(null);
+  const [isPVPreviewOpen, setIsPVPreviewOpen] = useState(false);
+  const [previewConseil, setPreviewConseil] = useState<Conseil | null>(null);
 
   const [conseilForm, setConseilForm] = useState({
     classe: "", date: "", heure: "", profPrincipal: ""
@@ -173,6 +176,49 @@ export default function Conseils() {
     ));
     
     toast({ title: "PV généré", description: `Le procès-verbal de ${conseil.classe} a été téléchargé` });
+  };
+
+  const handleExportDecisions = () => {
+    const conseilDelibs = deliberations.filter(d => d.conseilId === 1);
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text("TABLEAU DES DÉCISIONS - CONSEIL DE CLASSE", 105, 15, { align: "center" });
+    doc.setFontSize(11);
+    doc.text("Classe: Tle D - Trimestre 1 - Année scolaire 2024-2025", 105, 24, { align: "center" });
+    doc.setFontSize(9);
+    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 34);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [["Élève", "Moyenne", "Rang", "Abs.", "Avert.", "Décision", "Mention", "Observations"]],
+      body: conseilDelibs.map(d => [
+        d.eleve, `${d.moyenne}/20`, `${d.rang}°`, `${d.absences}h`, 
+        String(d.avertissements), d.decision, d.mention, d.observations
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+      columnStyles: { 7: { cellWidth: 40 } }
+    });
+
+    const admis = conseilDelibs.filter(d => d.decision === "Admis").length;
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.setFontSize(10);
+    doc.text(`Résumé: ${admis}/${conseilDelibs.length} admis (${((admis/conseilDelibs.length)*100).toFixed(1)}%)`, 14, finalY + 10);
+    doc.text(`Moyenne de classe: ${(conseilDelibs.reduce((a, d) => a + d.moyenne, 0) / conseilDelibs.length).toFixed(2)}/20`, 14, finalY + 18);
+
+    doc.save("Decisions_Conseil_TleD_T1.pdf");
+    toast({ title: "Export réussi", description: "Le tableau des décisions a été téléchargé en PDF" });
+  };
+
+  const handleConsulterPV = (conseil: Conseil) => {
+    setPreviewConseil(conseil);
+    setIsPVPreviewOpen(true);
+  };
+
+  const handleSendConvocations = () => {
+    const planned = conseils.filter(c => c.statut === "Planifié");
+    toast({ title: "Convocations envoyées", description: `${planned.length} convocations envoyées aux enseignants concernés` });
   };
 
   const totalConseils = conseils.length;
@@ -518,7 +564,7 @@ export default function Conseils() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button>
+                  <Button onClick={handleExportDecisions}>
                     <Download className="mr-2 h-4 w-4" />
                     Exporter Décisions
                   </Button>
@@ -599,7 +645,7 @@ export default function Conseils() {
                       <CardDescription>Conseil du {conseil.date} à {conseil.heure}</CardDescription>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={() => handleConsulterPV(conseil)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Consulter
                       </Button>
@@ -638,6 +684,53 @@ export default function Conseils() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog Consulter PV */}
+      <Dialog open={isPVPreviewOpen} onOpenChange={setIsPVPreviewOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Procès-Verbal - {previewConseil?.classe}</DialogTitle>
+          </DialogHeader>
+          {previewConseil && (
+            <div className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
+                <div className="flex justify-between"><span className="font-medium">Date:</span><span>{previewConseil.date} à {previewConseil.heure}</span></div>
+                <div className="flex justify-between"><span className="font-medium">Professeur Principal:</span><span>{previewConseil.profPrincipal}</span></div>
+                <div className="flex justify-between"><span className="font-medium">Participants:</span><span>{previewConseil.participants} enseignants</span></div>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Élève</TableHead>
+                    <TableHead>Moyenne</TableHead>
+                    <TableHead>Rang</TableHead>
+                    <TableHead>Décision</TableHead>
+                    <TableHead>Mention</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {deliberations.filter(d => d.conseilId === previewConseil.id).map(d => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.eleve}</TableCell>
+                      <TableCell>{d.moyenne}/20</TableCell>
+                      <TableCell>{d.rang}°</TableCell>
+                      <TableCell><Badge variant={d.decision === "Admis" ? "default" : "destructive"}>{d.decision}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary">{d.mention}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsPVPreviewOpen(false)}>Fermer</Button>
+                <Button onClick={() => { generatePV(previewConseil); setIsPVPreviewOpen(false); }}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Télécharger PDF
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -15,9 +15,12 @@ import {
 import { 
   BarChart3, TrendingUp, TrendingDown, AlertTriangle, Download, FileText,
   GraduationCap, Award, Users, Target, Calendar, Building, BookOpen,
-  ArrowUpRight, ArrowDownRight, RefreshCw, Printer, Mail
+  ArrowUpRight, ArrowDownRight, RefreshCw, Printer, Mail, CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Mock data - Sessions d'examens
@@ -64,18 +67,19 @@ const reussiteParMatiere = [
 ];
 
 // Anomalies
-const anomalies = [
-  { id: "1", type: "critique", centre: "Korhogo", description: "Taux de réussite 15% inférieur à la moyenne nationale", date: "2024-07-20" },
-  { id: "2", type: "attention", centre: "Man", description: "Moyenne en Mathématiques anormalement basse (8.2/20)", date: "2024-07-19" },
-  { id: "3", type: "info", centre: "San Pedro", description: "Écart significatif entre résultats BEPC et BAC", date: "2024-07-18" },
-  { id: "4", type: "critique", matiere: "Physique", description: "Taux d'échec 47% - révision des sujets recommandée", date: "2024-07-17" },
-  { id: "5", type: "attention", centre: "Daloa", description: "Nombre d'absences élevé le jour J (12%)", date: "2024-07-16" },
+const initialAnomalies = [
+  { id: "1", type: "critique", centre: "Korhogo", description: "Taux de réussite 15% inférieur à la moyenne nationale", date: "2024-07-20", traite: false },
+  { id: "2", type: "attention", centre: "Man", description: "Moyenne en Mathématiques anormalement basse (8.2/20)", date: "2024-07-19", traite: false },
+  { id: "3", type: "info", centre: "San Pedro", description: "Écart significatif entre résultats BEPC et BAC", date: "2024-07-18", traite: false },
+  { id: "4", type: "critique", matiere: "Physique", description: "Taux d'échec 47% - révision des sujets recommandée", date: "2024-07-17", traite: false },
+  { id: "5", type: "attention", centre: "Daloa", description: "Nombre d'absences élevé le jour J (12%)", date: "2024-07-16", traite: false },
 ];
 
 export default function TableauBordExamens() {
   const { t, language } = useLanguage();
   const [selectedYear, setSelectedYear] = useState("2024");
   const [selectedExam, setSelectedExam] = useState("tous");
+  const [anomalies, setAnomalies] = useState(initialAnomalies);
 
   // Données traduites pour les mentions
   const mentionsData = [
@@ -114,9 +118,68 @@ export default function TableauBordExamens() {
   };
 
   const handleExportRapport = (format: string) => {
-    toast.success(t('exams.dashboard.exportInProgress').replace('...', ` ${format.toUpperCase()}...`), {
-      description: t('exams.dashboard.reportWillBeDownloaded')
-    });
+    if (format === "pdf") {
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text("TABLEAU DE BORD EXAMENS - " + selectedYear, 105, 15, { align: "center" });
+      doc.setFontSize(10);
+      doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 25);
+      doc.text(`Candidats: ${totalCandidats.toLocaleString()} | Admis: ${totalAdmis.toLocaleString()} | Taux: ${tauxGlobal}%`, 14, 32);
+
+      autoTable(doc, {
+        startY: 40,
+        head: [["Session", "Année", "Candidats", "Admis", "Taux de réussite"]],
+        body: sessionsData.filter(s => s.annee === selectedYear).map(s => [s.type, s.annee, s.candidats.toLocaleString(), s.admis.toLocaleString(), s.tauxReussite + "%"]),
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      let y = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.text("Résultats par Centre", 14, y);
+      autoTable(doc, {
+        startY: y + 5,
+        head: [["Centre", "Candidats", "BEPC %", "BAC %"]],
+        body: reussiteParCentre.map(c => [c.centre, c.candidats.toLocaleString(), c.bepc + "%", c.bac + "%"]),
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 10;
+      doc.text("Résultats par Matière", 14, y);
+      autoTable(doc, {
+        startY: y + 5,
+        head: [["Matière", "Coef.", "Moyenne", "Taux réussite"]],
+        body: reussiteParMatiere.map(m => [m.matiere, String(m.coef), m.moyenne + "/20", m.tauxReussite + "%"]),
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      doc.save(`Tableau_Bord_Examens_${selectedYear}.pdf`);
+      toast.success("PDF exporté avec succès");
+    } else if (format === "excel") {
+      const wb = XLSX.utils.book_new();
+      const sessionsWs = XLSX.utils.json_to_sheet(sessionsData.map(s => ({ Type: s.type, Année: s.annee, Candidats: s.candidats, Admis: s.admis, "Taux (%)": s.tauxReussite })));
+      XLSX.utils.book_append_sheet(wb, sessionsWs, "Sessions");
+      const centresWs = XLSX.utils.json_to_sheet(reussiteParCentre.map(c => ({ Centre: c.centre, Candidats: c.candidats, "BEPC (%)": c.bepc, "BAC (%)": c.bac })));
+      XLSX.utils.book_append_sheet(wb, centresWs, "Par Centre");
+      const matieresWs = XLSX.utils.json_to_sheet(reussiteParMatiere.map(m => ({ Matière: m.matiere, Coef: m.coef, Moyenne: m.moyenne, "Taux (%)": m.tauxReussite })));
+      XLSX.utils.book_append_sheet(wb, matieresWs, "Par Matière");
+      XLSX.writeFile(wb, `Rapport_Examens_${selectedYear}.xlsx`);
+      toast.success("Excel exporté avec succès");
+    } else if (format === "print") {
+      window.print();
+    }
+  };
+
+  const handleAnalyzeAnomaly = (id: string) => {
+    toast.info("Analyse en cours", { description: "L'anomalie est en cours d'investigation détaillée" });
+  };
+
+  const handleProcessAnomaly = (id: string) => {
+    setAnomalies(prev => prev.map(a => a.id === id ? { ...a, traite: true } : a));
+    toast.success("Anomalie traitée", { description: "L'anomalie a été marquée comme traitée" });
+  };
+
+  const handleRefresh = () => {
+    toast.success("Données actualisées", { description: "Le tableau de bord a été mis à jour" });
   };
 
   const currentYear = sessionsData.filter(s => s.annee === selectedYear);
@@ -161,7 +224,7 @@ export default function TableauBordExamens() {
               <SelectItem value="bac">BAC</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button variant="outline" onClick={() => handleExportRapport("pdf")}>
@@ -652,12 +715,18 @@ export default function TableauBordExamens() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          {t('exams.dashboard.analyze')}
-                        </Button>
-                        <Button size="sm" variant={anomalie.type === "critique" ? "destructive" : "default"}>
-                          {t('exams.dashboard.process')}
-                        </Button>
+                        {anomalie.traite ? (
+                          <Badge className="bg-green-500 gap-1"><CheckCircle className="h-3 w-3" />Traitée</Badge>
+                        ) : (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => handleAnalyzeAnomaly(anomalie.id)}>
+                              {t('exams.dashboard.analyze')}
+                            </Button>
+                            <Button size="sm" variant={anomalie.type === "critique" ? "destructive" : "default"} onClick={() => handleProcessAnomaly(anomalie.id)}>
+                              {t('exams.dashboard.process')}
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
