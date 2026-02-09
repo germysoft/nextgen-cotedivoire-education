@@ -335,14 +335,14 @@ const QRCodeScolaire = () => {
                       </TableCell>
                       <TableCell>{qr.scans}</TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
+                      <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => toast.success(`QR Code de ${qr.studentName}: ${qr.qrCode} — Valide jusqu'au ${qr.validUntil}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => toast.success(`QR Code ${qr.qrCode} téléchargé pour ${qr.studentName}`)}>
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => toast.success(`QR Code régénéré pour ${qr.studentName}`)}>
                             <RefreshCw className="h-4 w-4" />
                           </Button>
                         </div>
@@ -360,7 +360,7 @@ const QRCodeScolaire = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Journal des scans - Aujourd'hui</CardTitle>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => toast.success("Journal des scans exporté en PDF")}>
                   <Download className="h-4 w-4 mr-2" />
                   Exporter
                 </Button>

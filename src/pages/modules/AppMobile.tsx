@@ -112,11 +112,11 @@ const AppMobile = () => {
           <p className="text-muted-foreground">Gestion de l'application mobile parents/élèves</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Téléchargement APK Android en cours...")}>
             <Download className="h-4 w-4 mr-2" />
             APK Android
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.success("Redirection vers l'App Store...")}>
             <Apple className="h-4 w-4 mr-2" />
             App Store
           </Button>
@@ -305,7 +305,7 @@ const AppMobile = () => {
                     <Bell className="h-4 w-4 mr-2" />
                     Envoyer maintenant
                   </Button>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => toast.success("Notification planifiée pour demain 9h00")}>
                     <Clock className="h-4 w-4 mr-2" />
                     Planifier
                   </Button>

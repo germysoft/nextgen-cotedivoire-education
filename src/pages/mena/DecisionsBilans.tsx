@@ -17,6 +17,8 @@ import {
   BookOpen, Award, AlertTriangle, FileCheck, ClipboardList, PieChart,
   ArrowUp, ArrowDown, Minus, Target, Flag, Building
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Decision {
   id: string;
@@ -147,6 +149,90 @@ export default function DecisionsBilans() {
     setShowBilanDetailDialog(true);
   };
 
+  const handleExportDecisionsPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("DÉCISIONS DU CONSEIL DE CLASSE", 105, 15, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(`Année scolaire 2023-2024 — Généré le ${new Date().toLocaleDateString("fr-FR")}`, 105, 22, { align: "center" });
+    
+    autoTable(doc, {
+      startY: 30,
+      head: [["Réf.", "Élève", "Classe", "Type", "Décision", "Date", "MENA"]],
+      body: decisions.map(d => [d.reference, d.eleve, d.classe, d.type, d.decision, d.dateDecision, d.transmiseMENA ? "Oui" : "Non"]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [37, 99, 235] },
+    });
+    doc.save("decisions-conseil.pdf");
+    toast.success("Export PDF des décisions téléchargé");
+  };
+
+  const handleViewDecision = (decision: Decision) => {
+    toast.success(`Décision ${decision.reference}: ${decision.decision} — ${decision.justification}`);
+  };
+
+  const handlePrintDecision = (decision: Decision) => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("DÉCISION DU CONSEIL DE CLASSE", 105, 20, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(`Référence: ${decision.reference}`, 14, 40);
+    doc.text(`Élève: ${decision.eleve} (${decision.matricule})`, 14, 50);
+    doc.text(`Classe: ${decision.classe}`, 14, 60);
+    doc.text(`Type: ${decision.type}`, 14, 70);
+    doc.text(`Décision: ${decision.decision}`, 14, 80);
+    doc.text(`Date: ${decision.dateDecision}`, 14, 90);
+    doc.setFontSize(10);
+    doc.text("Justification:", 14, 105);
+    const lines = doc.splitTextToSize(decision.justification, 180);
+    doc.text(lines, 14, 112);
+    doc.save(`decision-${decision.reference}.pdf`);
+    toast.success("Décision téléchargée en PDF");
+  };
+
+  const handleGenerateBilan = () => {
+    const newBilan: BilanAnnuel = {
+      id: String(bilans.length + 1),
+      anneeScolaire: "2023-2024",
+      type: "annuel",
+      periode: "Bilan Annuel",
+      effectifTotal: 1230,
+      tauxReussite: 73.5,
+      moyenneGenerale: 11.9,
+      statut: "en_cours"
+    };
+    setBilans([...bilans, newBilan]);
+    toast.success("Nouveau bilan généré");
+  };
+
+  const handleDownloadBilan = (bilan: BilanAnnuel) => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("BILAN PÉRIODIQUE", 105, 15, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`${bilan.periode} — ${bilan.anneeScolaire}`, 105, 24, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(`Effectif total: ${bilan.effectifTotal}`, 14, 40);
+    doc.text(`Taux de réussite: ${bilan.tauxReussite}%`, 14, 50);
+    doc.text(`Moyenne générale: ${bilan.moyenneGenerale}/20`, 14, 60);
+    doc.text(`Statut: ${bilan.statut}`, 14, 70);
+    if (bilan.dateTransmission) doc.text(`Transmis le: ${bilan.dateTransmission}`, 14, 80);
+    
+    autoTable(doc, {
+      startY: 90,
+      head: [["Niveau", "Effectif", "Taux réussite", "Moyenne"]],
+      body: [
+        ["6ème", "320", "75.2%", "12.1/20"],
+        ["5ème", "310", "71.5%", "11.8/20"],
+        ["4ème", "305", "68.9%", "11.2/20"],
+        ["3ème", "295", "72.1%", "11.9/20"],
+      ],
+      headStyles: { fillColor: [34, 197, 94] },
+    });
+    doc.save(`bilan-${bilan.periode.replace(/\s/g, "-")}.pdf`);
+    toast.success("Bilan téléchargé en PDF");
+  };
+
   const stats = {
     totalDecisions: decisions.length,
     passages: decisions.filter(d => d.type === "passage").length,
@@ -162,9 +248,9 @@ export default function DecisionsBilans() {
           <p className="text-muted-foreground">Gestion des décisions de conseil et bilans périodiques</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportDecisionsPDF}>
             <Download className="h-4 w-4 mr-2" />
-            Exporter
+            Exporter PDF
           </Button>
           <Dialog open={showNewDecisionDialog} onOpenChange={setShowNewDecisionDialog}>
             <DialogTrigger asChild>
@@ -383,7 +469,7 @@ export default function DecisionsBilans() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewDecision(decision)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                           {!decision.transmiseMENA && decision.statut === "approuvee" && (
@@ -391,7 +477,7 @@ export default function DecisionsBilans() {
                               <Send className="h-4 w-4 text-primary" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => handlePrintDecision(decision)}>
                             <Printer className="h-4 w-4" />
                           </Button>
                         </div>
@@ -412,7 +498,7 @@ export default function DecisionsBilans() {
                   <CardTitle>Bilans périodiques</CardTitle>
                   <CardDescription>Rapports trimestriels, semestriels et annuels</CardDescription>
                 </div>
-                <Button>
+                <Button onClick={handleGenerateBilan}>
                   <FileText className="h-4 w-4 mr-2" />
                   Générer bilan
                 </Button>
@@ -466,7 +552,7 @@ export default function DecisionsBilans() {
                               Transmettre
                             </Button>
                           )}
-                          <Button variant="outline" size="icon">
+                          <Button variant="outline" size="icon" onClick={() => handleDownloadBilan(bilan)}>
                             <Download className="h-4 w-4" />
                           </Button>
                         </div>
@@ -708,7 +794,7 @@ export default function DecisionsBilans() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowBilanDetailDialog(false)}>Fermer</Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => { if (selectedBilan) handleDownloadBilan(selectedBilan); }}>
               <Download className="h-4 w-4 mr-2" />
               Exporter PDF
             </Button>

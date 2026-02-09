@@ -18,6 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
   Select,
   SelectContent,
@@ -199,10 +203,54 @@ export default function TableauxCroisesPage() {
   };
 
   const handleExport = (format: string) => {
+    if (format === "xlsx") {
+      const ws = XLSX.utils.aoa_to_sheet([
+        pivotData.headers,
+        ...pivotData.rows.map(row => row.map(cell => typeof cell === "number" ? Number(cell.toFixed(2)) : cell))
+      ]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Tableau Croisé");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      saveAs(new Blob([buf]), "tableau-croise.xlsx");
+    } else if (format === "csv") {
+      const csv = [pivotData.headers.join(","), ...pivotData.rows.map(r => r.join(","))].join("\n");
+      saveAs(new Blob([csv], { type: "text/csv" }), "tableau-croise.csv");
+    } else {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Tableau Croisé Dynamique", 105, 15, { align: "center" });
+      autoTable(doc, {
+        startY: 25,
+        head: [pivotData.headers],
+        body: pivotData.rows.map(r => r.map(c => typeof c === "number" ? c.toFixed(2) : c)),
+        headStyles: { fillColor: [37, 99, 235] },
+      });
+      doc.save("tableau-croise.pdf");
+    }
     toast({
-      title: "Export en cours",
-      description: `Export ${format.toUpperCase()} du tableau croisé...`,
+      title: "Export terminé",
+      description: `Tableau croisé exporté en ${format.toUpperCase()}.`,
     });
+  };
+
+  const handleCopyTable = () => {
+    const text = [pivotData.headers.join("\t"), ...pivotData.rows.map(r => r.map(c => typeof c === "number" ? c.toFixed(2) : c).join("\t"))].join("\n");
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copié", description: "Tableau copié dans le presse-papiers" });
+  };
+
+  const handleFullscreen = () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    toast({ title: "Mode plein écran", description: "Appuyez sur Échap pour quitter" });
+  };
+
+  const handleLoadConfig = (config: PivotConfig) => {
+    setSelectedRows(config.rows);
+    setSelectedColumns(config.columns);
+    setSelectedValues(config.values);
+    setAggregationType(config.aggregation);
+    toast({ title: "Configuration chargée", description: config.name });
   };
 
   const handleRefresh = () => {
@@ -405,10 +453,10 @@ export default function TableauxCroisesPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={handleFullscreen}>
                     <Maximize2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={handleCopyTable}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
@@ -531,7 +579,7 @@ export default function TableauxCroisesPage() {
                           {config.aggregation.toUpperCase()}
                         </Badge>
                       </div>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleLoadConfig(config)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>

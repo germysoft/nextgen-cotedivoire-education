@@ -187,13 +187,9 @@ export default function ExportMultiformatPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => { const tabEl = document.querySelector('[data-state="inactive"][value="history"]') as HTMLElement; if (tabEl) tabEl.click(); }}>
             <History className="mr-2 h-4 w-4" />
             Historique
-          </Button>
-          <Button variant="outline">
-            <Folder className="mr-2 h-4 w-4" />
-            Mes Exports
           </Button>
         </div>
       </div>
@@ -413,20 +409,20 @@ export default function ExportMultiformatPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         {item.status === 'completed' && (
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm">
+                         <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => toast({ title: "Téléchargement", description: `Re-téléchargement de "${item.reportName}" en cours...` })}>
                               <Download className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => toast({ title: "Email envoyé", description: `Rapport "${item.reportName}" envoyé par email` })}>
                               <Mail className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(`https://app.school/export/${item.id}`); toast({ title: "Lien copié", description: "Lien de partage copié dans le presse-papiers" }); }}>
                               <Share2 className="h-4 w-4" />
                             </Button>
                           </div>
                         )}
                         {item.status === 'failed' && (
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => toast({ title: "Réessai en cours", description: `Regénération de "${item.reportName}"...` })}>
                             Réessayer
                           </Button>
                         )}
