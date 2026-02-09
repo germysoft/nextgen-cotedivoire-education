@@ -465,8 +465,8 @@ export default function Synchronisation() {
               </Card>
 
               <div className="flex gap-3">
-                <Button>Enregistrer les paramètres</Button>
-                <Button variant="outline">Réinitialiser</Button>
+                <Button onClick={() => toast.success("Paramètres de synchronisation enregistrés")}>Enregistrer les paramètres</Button>
+                <Button variant="outline" onClick={() => { setAutoSyncEnabled(true); setSyncInterval("60"); toast.success("Paramètres réinitialisés"); }}>Réinitialiser</Button>
               </div>
             </CardContent>
           </Card>

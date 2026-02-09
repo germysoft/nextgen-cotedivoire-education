@@ -17,6 +17,8 @@ import {
   Phone, Mail, School, BookOpen, FileCheck, Send, Printer, Trash2,
   ArrowRight, Building, User, Plus
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Preinscription {
   id: string;
@@ -124,6 +126,34 @@ export default function Preinscriptions() {
     toast.success("Préinscription convertie en inscription définitive");
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(18);
+    doc.text("LISTE DES PRÉINSCRIPTIONS", 148, 15, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, 148, 22, { align: "center" });
+    
+    autoTable(doc, {
+      startY: 30,
+      head: [["Référence", "Nom", "Prénoms", "Date Naissance", "Niveau", "Origine", "Moyenne", "Documents", "Statut"]],
+      body: filteredPreinscriptions.map(p => [
+        p.reference, p.nom, p.prenoms, p.dateNaissance, p.niveauDemande,
+        p.etablissementOrigine, `${p.moyenneAnnuelle}/20`,
+        p.documentsComplets ? "Complet" : "Incomplet",
+        p.statut === "en_attente" ? "En attente" : p.statut === "validee" ? "Validée" : p.statut === "rejetee" ? "Rejetée" : "Inscrite"
+      ]),
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [37, 99, 235] },
+    });
+    doc.save("preinscriptions-mena.pdf");
+    toast.success("Export PDF téléchargé");
+  };
+
+  const handlePrintList = () => {
+    handleExportPDF();
+    toast.success("Liste prête pour impression");
+  };
+
   const stats = {
     total: preinscriptions.length,
     enAttente: preinscriptions.filter(p => p.statut === "en_attente").length,
@@ -141,11 +171,11 @@ export default function Preinscriptions() {
           <p className="text-muted-foreground">Gestion des demandes de préinscription en ligne</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportPDF}>
             <Download className="h-4 w-4 mr-2" />
             Exporter
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handlePrintList}>
             <Printer className="h-4 w-4 mr-2" />
             Imprimer liste
           </Button>
