@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, Trash2, Users } from "lucide-react";
+import { Eye, Edit, Trash2, Users, Loader2 } from "lucide-react";
 import { AddStudentDialog } from "@/components/students/AddStudentDialog";
 import { DataTableFilters, FilterConfig } from "@/components/data-table/DataTableFilters";
 import { DataTableExport } from "@/components/data-table/DataTableExport";
@@ -15,156 +15,109 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Eleve, useDeactivateEleve, useElevesQuery, useUpdateEleve } from "@/hooks/api/useEleves";
 
-const initialStudents = [
-  { id: "66800001A", name: "KOUASSI Jean", class: "6ème A", age: 12, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=150&h=150&fit=crop&crop=faces" },
-  { id: "66800002A", name: "TRAORÉ Marie", class: "5ème B", age: 13, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1595956246544-e697b3b12ac0?w=150&h=150&fit=crop&crop=faces" },
-  { id: "66800003A", name: "YAO Pascal", class: "4ème C", age: 14, status: "active", fees: "partial", photo: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=150&h=150&fit=crop&crop=faces" },
-  { id: "66800004A", name: "KONÉ Fatou", class: "3ème A", age: 15, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces" },
-  { id: "66800005A", name: "DIALLO Ibrahim", class: "2nde C", age: 16, status: "active", fees: "pending", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces" },
-  { id: "66800006A", name: "N'GUESSAN Alice", class: "1ère D", age: 17, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces" },
-  { id: "66800007A", name: "BAMBA Serge", class: "Tle A", age: 18, status: "active", fees: "paid", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces" },
-];
+function calculerAge(dateNaissance: string): number {
+  const naissance = new Date(dateNaissance);
+  const diff = Date.now() - naissance.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+}
 
 export default function Students() {
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [students, setStudents] = useState(initialStudents);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<typeof initialStudents[0] | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", class: "", age: 0, fees: "" });
+  const [selectedStudent, setSelectedStudent] = useState<Eleve | null>(null);
+  const [editForm, setEditForm] = useState({ nom: "", prenom: "" });
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  // Données réelles issues du backend (branché le 05/09/2026 — voir MIGRATION.md).
+  const { data, isLoading, isError } = useElevesQuery({ q: filters.search, pageSize: 100 });
+  const updateEleve = useUpdateEleve();
+  const deactivateEleve = useDeactivateEleve();
+
+  const eleves = data?.items ?? [];
+
   const filterConfigs: FilterConfig[] = [
     {
-      key: "class",
-      label: t('students.class'),
+      key: "statut",
+      label: t('students.status'),
       type: "select",
       options: [
-        { value: "6ème A", label: "6ème A" },
-        { value: "5ème B", label: "5ème B" },
-        { value: "4ème C", label: "4ème C" },
-        { value: "3ème A", label: "3ème A" },
-        { value: "2nde C", label: "2nde C" },
-        { value: "1ère D", label: "1ère D" },
-        { value: "Tle A", label: "Tle A" },
+        { value: "actif", label: t('common.active') },
+        { value: "inactif", label: "Inactif" },
       ],
-    },
-    {
-      key: "fees",
-      label: t('students.fees'),
-      type: "select",
-      options: [
-        { value: "paid", label: t('students.paid') },
-        { value: "partial", label: t('students.partialPayment') },
-        { value: "pending", label: t('students.pending') },
-      ],
-    },
-    {
-      key: "ageMin",
-      label: t('students.age'),
-      type: "number",
     },
   ];
 
   const exportColumns = [
-    { key: "id", label: t('students.matricule') },
+    { key: "matricule", label: t('students.matricule') },
     { key: "name", label: t('students.fullName') },
     { key: "class", label: t('students.class') },
     { key: "age", label: t('students.age') },
-    { key: "status", label: t('students.status') },
-    { key: "fees", label: t('students.fees') },
   ];
 
-  const filteredStudents = students.filter((student) => {
-    if (filters.search && 
-        !student.name.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !student.id.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !student.class.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
-    }
-    if (filters.class && student.class !== filters.class) {
-      return false;
-    }
-    if (filters.fees && student.fees !== filters.fees) {
-      return false;
-    }
-    if (filters.ageMin && student.age < Number(filters.ageMin)) {
-      return false;
-    }
+  const filteredStudents = eleves.filter((eleve) => {
+    if (filters.statut === "actif" && !eleve.actif) return false;
+    if (filters.statut === "inactif" && eleve.actif) return false;
     return true;
   });
 
-  const getFeesLabel = (status: string) => {
-    switch (status) {
-      case "paid": return t('students.paid');
-      case "partial": return t('students.partialPayment');
-      case "pending": return t('students.pending');
-      default: return status;
-    }
-  };
+  const rows = filteredStudents.map((eleve) => {
+    const classe = eleve.inscriptions?.[0]?.classe?.nom ?? "—";
+    return {
+      eleve,
+      name: `${eleve.nom} ${eleve.prenom}`,
+      class: classe,
+      age: calculerAge(eleve.dateNaissance),
+    };
+  });
 
-  const getFeesColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "bg-success text-success-foreground";
-      case "partial":
-        return "bg-warning text-warning-foreground";
-      case "pending":
-        return "bg-destructive text-destructive-foreground";
-      default:
-        return "";
-    }
-  };
-
-  const handleEditClick = (student: typeof initialStudents[0]) => {
-    setSelectedStudent(student);
-    setEditForm({
-      name: student.name,
-      class: student.class,
-      age: student.age,
-      fees: student.fees
-    });
+  const handleEditClick = (eleve: Eleve) => {
+    setSelectedStudent(eleve);
+    setEditForm({ nom: eleve.nom, prenom: eleve.prenom });
     setEditDialogOpen(true);
   };
 
   const handleEditSave = () => {
     if (!selectedStudent) return;
-    
-    setStudents(students.map(s => 
-      s.id === selectedStudent.id 
-        ? { ...s, name: editForm.name, class: editForm.class, age: editForm.age, fees: editForm.fees }
-        : s
-    ));
-    setEditDialogOpen(false);
-    toast.success("Élève modifié avec succès");
+    updateEleve.mutate(
+      { id: selectedStudent.id, nom: editForm.nom, prenom: editForm.prenom },
+      {
+        onSuccess: () => {
+          setEditDialogOpen(false);
+          toast.success("Élève modifié avec succès");
+        },
+        onError: () => toast.error("Échec de la modification."),
+      }
+    );
   };
 
-  const handleDeleteClick = (student: typeof initialStudents[0]) => {
-    setSelectedStudent(student);
+  const handleDeleteClick = (eleve: Eleve) => {
+    setSelectedStudent(eleve);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
     if (!selectedStudent) return;
-    
-    setStudents(students.filter(s => s.id !== selectedStudent.id));
-    setDeleteDialogOpen(false);
-    toast.success("Élève supprimé avec succès");
+    deactivateEleve.mutate(selectedStudent.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        toast.success("Élève désactivé avec succès");
+      },
+      onError: () => toast.error("Échec de la désactivation."),
+    });
   };
 
-  const displayTitle = filters.class 
-    ? `${t('students.list')} (${filters.class})` 
-    : `${t('students.list')} (${filteredStudents.length})`;
+  const displayTitle = `${t('students.list')} (${filteredStudents.length})`;
 
   return (
     <div className="space-y-6 p-6">
@@ -195,7 +148,7 @@ export default function Students() {
                 searchPlaceholder={t('students.search')}
               />
               <DataTableExport
-                data={filteredStudents}
+                data={rows.map((r) => ({ matricule: r.eleve.matricule, name: r.name, class: r.class, age: r.age }))}
                 columns={exportColumns}
                 filename="liste-eleves"
               />
@@ -203,87 +156,96 @@ export default function Students() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[80px]">Photo</TableHead>
-                  <TableHead>{t('students.matricule')}</TableHead>
-                  <TableHead>{t('students.fullName')}</TableHead>
-                  <TableHead>{t('students.class')}</TableHead>
-                  <TableHead>{t('students.age')}</TableHead>
-                  <TableHead>{t('students.status')}</TableHead>
-                  <TableHead>{t('students.fees')}</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell>
-                      <Avatar className="h-10 w-10 ring-2 ring-primary/10">
-                        <AvatarImage src={student.photo} alt={student.name} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {student.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{student.id}</TableCell>
-                    <TableCell className="font-semibold">{student.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-medium">
-                        {student.class}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{student.age} ans</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
-                        {t('common.active')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getFeesColor(student.fees)}>{getFeesLabel(student.fees)}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="hover:bg-primary/10 hover:text-primary"
-                          onClick={() => navigate(`/students/${student.id}`)}
-                          title={t('common.view')}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="hover:bg-primary/10 hover:text-primary" 
-                          title={t('common.edit')}
-                          onClick={() => handleEditClick(student)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="hover:bg-destructive/10 hover:text-destructive" 
-                          title={t('common.delete')}
-                          onClick={() => handleDeleteClick(student)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          {isLoading && (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" /> Chargement des élèves…
+            </div>
+          )}
+          {isError && (
+            <div className="py-16 text-center text-destructive">
+              Impossible de contacter l'API. Vérifiez que le backend tourne bien sur VITE_API_URL.
+            </div>
+          )}
+          {!isLoading && !isError && (
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-[80px]">Photo</TableHead>
+                    <TableHead>{t('students.matricule')}</TableHead>
+                    <TableHead>{t('students.fullName')}</TableHead>
+                    <TableHead>{t('students.class')}</TableHead>
+                    <TableHead>{t('students.age')}</TableHead>
+                    <TableHead>{t('students.status')}</TableHead>
+                    <TableHead className="text-right">{t('common.actions')}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {rows.map(({ eleve, name, class: classe, age }) => (
+                    <TableRow key={eleve.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell>
+                        <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                            {name.split(' ').map((n) => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{eleve.matricule}</TableCell>
+                      <TableCell className="font-semibold">{name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-medium">{classe}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{age} ans</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={eleve.actif ? "bg-success/10 text-success border-success/20" : "bg-muted"}
+                        >
+                          {eleve.actif ? t('common.active') : "Inactif"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-primary/10 hover:text-primary"
+                            onClick={() => navigate(`/students/${eleve.id}`)}
+                            title={t('common.view')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-primary/10 hover:text-primary"
+                            title={t('common.edit')}
+                            onClick={() => handleEditClick(eleve)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                            title={t('common.delete')}
+                            onClick={() => handleDeleteClick(eleve)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* Dialogue d'édition — champs limités à nom/prénom pour cette première intégration ;
+          voir MIGRATION.md pour étendre à la réaffectation de classe et aux autres champs. */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -292,75 +254,40 @@ export default function Students() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Matricule</Label>
-              <Input value={selectedStudent?.id || ""} disabled />
+              <Input value={selectedStudent?.matricule || ""} disabled />
             </div>
             <div className="space-y-2">
-              <Label>Nom complet</Label>
-              <Input 
-                value={editForm.name} 
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-              />
+              <Label>Nom</Label>
+              <Input value={editForm.nom} onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Classe</Label>
-              <Select value={editForm.class} onValueChange={(v) => setEditForm({ ...editForm, class: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="6ème A">6ème A</SelectItem>
-                  <SelectItem value="5ème B">5ème B</SelectItem>
-                  <SelectItem value="4ème C">4ème C</SelectItem>
-                  <SelectItem value="3ème A">3ème A</SelectItem>
-                  <SelectItem value="2nde C">2nde C</SelectItem>
-                  <SelectItem value="1ère D">1ère D</SelectItem>
-                  <SelectItem value="Tle A">Tle A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Âge</Label>
-              <Input 
-                type="number" 
-                value={editForm.age} 
-                onChange={(e) => setEditForm({ ...editForm, age: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Statut scolarité</Label>
-              <Select value={editForm.fees} onValueChange={(v) => setEditForm({ ...editForm, fees: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="paid">Payé</SelectItem>
-                  <SelectItem value="partial">Partiel</SelectItem>
-                  <SelectItem value="pending">En attente</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Prénom</Label>
+              <Input value={editForm.prenom} onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditSave}>Enregistrer</Button>
+            <Button onClick={handleEditSave} disabled={updateEleve.isPending}>
+              {updateEleve.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Confirmation de désactivation (l'API ne supprime jamais physiquement un élève) */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogTitle>Confirmer la désactivation</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'élève <strong>{selectedStudent?.name}</strong> (Matricule: {selectedStudent?.id}) ?
-              Cette action est irréversible.
+              Êtes-vous sûr de vouloir désactiver l'élève <strong>{selectedStudent?.nom} {selectedStudent?.prenom}</strong> (Matricule : {selectedStudent?.matricule}) ?
+              Il restera consultable dans les archives mais n'apparaîtra plus dans les listes actives.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
+              Désactiver
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

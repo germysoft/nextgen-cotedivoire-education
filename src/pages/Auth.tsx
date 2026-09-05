@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,13 +17,27 @@ import {
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const { language, setLanguage, t, availableLanguages, currentLanguageInfo } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [chargement, setChargement] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setErreur(null);
+    setChargement(true);
+    try {
+      await login(email, password);
+      const destination = (location.state as { from?: Location })?.from?.pathname || "/dashboard";
+      navigate(destination, { replace: true });
+    } catch {
+      setErreur("Email ou mot de passe incorrect.");
+    } finally {
+      setChargement(false);
+    }
   };
 
   return (
@@ -95,8 +110,11 @@ export default function Auth() {
                 {t('auth.forgotPassword')}
               </Button>
             </div>
-            <Button type="submit" className="w-full">
-              {t('auth.signIn')}
+            {erreur && (
+              <p className="text-sm text-destructive" role="alert">{erreur}</p>
+            )}
+            <Button type="submit" className="w-full" disabled={chargement}>
+              {chargement ? <Loader2 className="h-4 w-4 animate-spin" /> : t('auth.signIn')}
             </Button>
           </form>
           <div className="mt-6 text-center text-xs text-muted-foreground">

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { RoleProvider } from "./contexts/RoleContext";
 import { AuditProvider } from "./contexts/AuditContext";
 import { MainLayout } from "./components/layout/MainLayout";
@@ -195,6 +196,7 @@ const App = () => (
       <LanguageProvider>
         <FavoritesProvider>
           <NotificationsProvider>
+            <AuthProvider>
             <RoleProvider>
               <AuditProvider>
                 <EtablissementProvider>
@@ -213,7 +215,6 @@ const App = () => (
           <Route path="/teachers" element={<MainLayout><Teachers /></MainLayout>} />
            <Route path="/classes" element={<MainLayout><Classes /></MainLayout>} />
            <Route path="/grades" element={<MainLayout><Grades /></MainLayout>} />
-           <Route path="/schedule" element={<MainLayout><Dashboard /></MainLayout>} />
            <Route path="/finance" element={<MainLayout><Finance /></MainLayout>} />
            <Route path="/hr" element={<MainLayout><HR /></MainLayout>} />
            <Route path="/messaging" element={<MainLayout><Messaging /></MainLayout>} />
@@ -252,7 +253,7 @@ const App = () => (
           <Route path="/hr/listes" element={<MainLayout><ImprimerListesRH /></MainLayout>} />
           
           {/* Enseignants Routes */}
-          <Route path="/teachers" element={<MainLayout><PlanningEnseignants /></MainLayout>} />
+          <Route path="/enseignants/planning" element={<MainLayout><PlanningEnseignants /></MainLayout>} />
           <Route path="/enseignants/suivi-cours" element={<MainLayout><SuiviCours /></MainLayout>} />
           <Route path="/enseignants/pointage" element={<MainLayout><PointageEnseignants /></MainLayout>} />
           <Route path="/enseignants/assiduite" element={<MainLayout><Assiduite /></MainLayout>} />
@@ -429,9 +430,6 @@ const App = () => (
           <Route path="/parametrage/etablissement" element={<MainLayout><ConfigurationEtablissement /></MainLayout>} />
           <Route path="/parametrage/archives" element={<MainLayout><Archives /></MainLayout>} />
           
-          <Route path="/statistics" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/messages" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/infrastructure" element={<MainLayout><Dashboard /></MainLayout>} />
           {/* Public Signing Route */}
           <Route path="/signature-publique" element={<SignaturePublique />} />
           
@@ -444,6 +442,7 @@ const App = () => (
                 </EtablissementProvider>
               </AuditProvider>
             </RoleProvider>
+            </AuthProvider>
           </NotificationsProvider>
         </FavoritesProvider>
       </LanguageProvider>

@@ -1,0 +1,1300 @@
+// ============================================================================
+// SCHÉMA DE BASE DE DONNÉES — NextGen Côte d'Ivoire Éducation
+// Couvre l'intégralité des modules identifiés dans le frontend :
+// RH, Pédagogie, Scolarité, Notes, Examens, Comptabilité, Bibliothèque,
+// Infirmerie, Messagerie, Portail Parents, Services, Parascolaire, Stocks,
+// Partenariats, MENA/DESPS, Infrastructures, Paramétrage.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// 1. IDENTITÉ, RÔLES & SÉCURITÉ
+// Le rôle applicatif reprend exactement les 8 rôles de src/types/roles.ts
+// pour que le RBAC backend corresponde 1:1 au menu du frontend.
+// ----------------------------------------------------------------------------
+
+enum UserRole {
+  admin
+  directeur
+  enseignant
+  comptable
+  secretaire
+  surveillant
+  infirmier
+  bibliothecaire
+  parent
+  eleve
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  role              UserRole
+  actif             Boolean   @default(true)
+  personnelId       String?   @unique
+  personnel         Personnel? @relation(fields: [personnelId], references: [id])
+  eleveId           String?   @unique
+  eleve             Eleve?     @relation(fields: [eleveId], references: [id])
+  parentId          String?   @unique
+  parentProfil      ParentProfil? @relation(fields: [parentId], references: [id])
+  dernierLogin      DateTime?
+  doitChangerMdp    Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  auditLogs         AuditLog[]
+  notificationsRecues Notification[]
+  messagesEnvoyes   Message[] @relation("MessageExpediteur")
+  refreshTokens     RefreshToken[]
+
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  module     String
+  entite     String?
+  entiteId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([module, createdAt])
+}
+
+model Archive {
+  id          String   @id @default(uuid())
+  module      String
+  entite      String
+  entiteId    String
+  donnees     Json
+  motif       String?
+  archivePar  String?
+  createdAt   DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 2. ÉTABLISSEMENT & CONFIGURATION
+// ----------------------------------------------------------------------------
+
+model Etablissement {
+  id                String   @id @default(uuid())
+  nom               String
+  sigle             String?
+  typeEtablissement String   // Public, Privé laïc, Privé confessionnel...
+  cycle             String   // Primaire, Collège, Lycée, Collège-Lycée...
+  codeMENA          String?  // Code d'identification MENA/DESPS
+  adresse           String
+  ville             String
+  region            String
+  telephone         String
+  email             String
+  logoUrl           String?
+  anneeScolaireActive String  // "2025-2026"
+  devise            String   @default("XOF")
+  fuseauHoraire     String   @default("Africa/Abidjan")
+  parametres        Json?    // paramètres divers (thème, langue par défaut...)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  anneesScolaires   AnneeScolaire[]
+}
+
+model AnneeScolaire {
+  id              String   @id @default(uuid())
+  etablissementId String
+  etablissement   Etablissement @relation(fields: [etablissementId], references: [id])
+  libelle         String   // "2025-2026"
+  dateDebut       DateTime
+  dateFin         DateTime
+  active          Boolean  @default(false)
+
+  classes         Classe[]
+  inscriptions    Inscription[]
+  periodes        PeriodeScolaire[]
+}
+
+model PeriodeScolaire {
+  id              String   @id @default(uuid())
+  anneeScolaireId String
+  anneeScolaire   AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+  type            String   // Trimestre1, Trimestre2, Trimestre3, Semestre1...
+  numero          Int
+  dateDebut       DateTime
+  dateFin         DateTime
+}
+
+model EvenementCalendrier {
+  id          String   @id @default(uuid())
+  titre       String
+  type        String   // vacances, examen, réunion, jour_férié, rentrée...
+  dateDebut   DateTime
+  dateFin     DateTime
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 3. RESSOURCES HUMAINES (Personnel — enseignants + administratifs)
+// ----------------------------------------------------------------------------
+
+model Personnel {
+  id                   String   @id @default(uuid())
+  matricule            String   @unique
+  photo                String?
+  civilite             String
+  nom                  String
+  prenom               String
+  dateNaissance        DateTime
+  lieuNaissance        String?
+  nationalite          String?
+  sexe                 String
+  situationMatrimoniale String?
+  numeroCNI            String?
+  adresse              String?
+  ville                String?
+  telephone            String
+  telephoneSecondaire  String?
+  email                String   @unique
+  contactUrgenceNom    String?
+  contactUrgenceTelephone String?
+  poste                String
+  departement          String?
+  categoriePersonnel   String   // Enseignant, Administratif, Technique, Direction, Médical, Surveillance
+  statut               String   // Permanent, Vacataire, Contractuel, Stagiaire, Intérimaire
+  typeContrat          String?
+  dateEmbauche         DateTime
+  dateFinContrat       DateTime?
+  heuresHebdo          Int?
+  salaireBase          Float?
+  modePaiement         String?
+  banque               String?
+  ribIban              String?
+  numeroCNPS           String?
+  soldeCongesAnnuels   Int      @default(30)
+  observations         String?
+  actif                Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User?
+  diplomes             Diplome[]
+  formations           Formation[]
+  contrats             Contrat[]
+  conges               Conge[]
+  evaluations          Evaluation[]      @relation("EvaluationPersonnel")
+  evaluationsFaites    Evaluation[]      @relation("EvaluationEvaluateur")
+  pointages            Pointage[]
+  affectations         Affectation[]
+  coursEnseignes       Cours[]
+  notesAttribuees      Note[]
+  candidatures         Candidature[]
+  entretiens           Entretien[]
+  cpeIncidents         Discipline[]      @relation("DisciplineTraitantPar")
+  consultationsFaites  Consultation[]
+}
+
+model Diplome {
+  id             String    @id @default(uuid())
+  personnelId    String
+  personnel      Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  intitule       String
+  etablissement  String
+  anneeObtention String
+  mention        String?
+  niveau         String
+}
+
+model Formation {
+  id            String    @id @default(uuid())
+  personnelId   String
+  personnel     Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  intitule      String
+  organisme     String
+  dateDebut     DateTime
+  dateFin       DateTime
+  dureeHeures   Int
+  certifiante   Boolean   @default(false)
+  commentaire   String?
+}
+
+model Contrat {
+  id           String    @id @default(uuid())
+  personnelId  String
+  personnel    Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  typeContrat  String
+  dateDebut    DateTime
+  dateFin      DateTime?
+  salaire      Float
+  documentUrl  String?
+  statut       String    @default("Actif") // Actif, Terminé, Résilié
+  createdAt    DateTime  @default(now())
+}
+
+model Conge {
+  id           String    @id @default(uuid())
+  personnelId  String
+  personnel    Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  type         String    // Congé annuel, Maladie, Maternité, Sans solde...
+  dateDebut    DateTime
+  dateFin      DateTime
+  nombreJours  Int
+  motif        String?
+  statut       String    @default("En attente") // En attente, Validé, Refusé
+  valideParId  String?
+  createdAt    DateTime  @default(now())
+}
+
+model Evaluation {
+  id                   String    @id @default(uuid())
+  personnelId          String
+  personnel            Personnel @relation("EvaluationPersonnel", fields: [personnelId], references: [id], onDelete: Cascade)
+  evaluateurId         String
+  evaluateur           Personnel @relation("EvaluationEvaluateur", fields: [evaluateurId], references: [id])
+  periode              String
+  dateEvaluation       DateTime
+  typeEvaluation       String
+  statut               String    @default("Brouillon")
+  criteres             Json      // CritereEvaluation[]
+  objectifsPrecedents  Json?
+  objectifsFuturs      Json?
+  noteGlobale          Float?
+  appreciationGenerale String?
+  createdAt            DateTime  @default(now())
+}
+
+model Pointage {
+  id          String    @id @default(uuid())
+  personnelId String
+  personnel   Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  date        DateTime
+  heureArrivee DateTime?
+  heureDepart  DateTime?
+  statut      String    @default("Présent") // Présent, Absent, Retard, Congé
+  commentaire String?
+
+  @@index([personnelId, date])
+}
+
+model Recrutement {
+  id            String        @id @default(uuid())
+  poste         String
+  departement   String?
+  description   String?
+  statut        String        @default("Ouvert") // Ouvert, Fermé, Pourvu
+  dateOuverture DateTime      @default(now())
+  dateCloture   DateTime?
+  candidatures  Candidature[]
+}
+
+model Candidature {
+  id             String       @id @default(uuid())
+  recrutementId  String
+  recrutement    Recrutement  @relation(fields: [recrutementId], references: [id], onDelete: Cascade)
+  personnelId    String?
+  personnel      Personnel?   @relation(fields: [personnelId], references: [id])
+  nomCandidat    String
+  emailCandidat  String
+  telephoneCandidat String?
+  cvUrl          String?
+  statut         String       @default("Reçue") // Reçue, Présélectionnée, Entretien, Acceptée, Refusée
+  entretiens     Entretien[]
+  createdAt      DateTime     @default(now())
+}
+
+model Entretien {
+  id             String       @id @default(uuid())
+  candidatureId  String
+  candidature    Candidature  @relation(fields: [candidatureId], references: [id], onDelete: Cascade)
+  intervieweurId String?
+  intervieweur   Personnel?   @relation(fields: [intervieweurId], references: [id])
+  dateEntretien  DateTime
+  notes          String?
+  decision       String?      // Favorable, Défavorable, À revoir
+}
+
+// ----------------------------------------------------------------------------
+// 4. SCOLARITÉ — ÉLÈVES, CLASSES, INSCRIPTIONS
+// ----------------------------------------------------------------------------
+
+model Eleve {
+  id                  String   @id @default(uuid())
+  matricule           String   @unique
+  photo               String?
+  nom                 String
+  prenom              String
+  dateNaissance       DateTime
+  lieuNaissance       String?
+  sexe                String
+  nationalite         String?
+  adresse             String?
+  groupeSanguin       String?
+  allergies           String?
+  contactUrgenceNom   String?
+  contactUrgenceTelephone String?
+  actif               Boolean  @default(true)
+  dateEntree          DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User?
+  parents             ElevePar[]
+  inscriptions        Inscription[]
+  notes               Note[]
+  absences            Absence[]
+  disciplines         Discipline[]
+  documents           DocumentEleve[]
+  certificats         Certificat[]
+  paiements           PaiementScolaire[]
+  echeances           EcheancePaiement[]
+  emprunts            Emprunt[]
+  cartesLecteur       CarteLecteur[]
+  fichesSante         FicheSante?
+  consultations       Consultation[]
+  participations      ParticipationParascolaire[]
+  affectationsService AffectationService[]
+  resultatsExamens    ResultatExamen[]
+  candidaturesExamens CandidatExamen[]
+}
+
+model ParentProfil {
+  id            String     @id @default(uuid())
+  nom           String
+  prenom        String
+  telephone     String
+  email         String     @unique
+  profession    String?
+  adresse       String?
+  createdAt     DateTime   @default(now())
+
+  user          User?
+  enfants       ElevePar[]
+  messagesChat  ChatMessage[]
+}
+
+model ElevePar {
+  id        String       @id @default(uuid())
+  eleveId   String
+  eleve     Eleve        @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  parentId  String
+  parent    ParentProfil @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  lien      String       // Père, Mère, Tuteur...
+  responsableLegal Boolean @default(true)
+
+  @@unique([eleveId, parentId])
+}
+
+model Classe {
+  id              String        @id @default(uuid())
+  nom             String        // "6ème A"
+  niveau          String        // "6ème"
+  cycle           String        // Collège, Lycée...
+  serie           String?       // A, C, D... (lycée)
+  effectifMax     Int           @default(50)
+  anneeScolaireId String
+  anneeScolaire   AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+  professeurPrincipalId String?
+  salleAttitreeId String?
+  salleAttitree   Salle?        @relation(fields: [salleAttitreeId], references: [id])
+
+  inscriptions    Inscription[]
+  cours           Cours[]
+  affectations    Affectation[]
+  conseils        ConseilClasse[]
+  bulletins       Bulletin[]
+
+  @@unique([nom, anneeScolaireId])
+}
+
+model Inscription {
+  id              String        @id @default(uuid())
+  eleveId         String
+  eleve           Eleve         @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  classeId        String
+  classe          Classe        @relation(fields: [classeId], references: [id])
+  anneeScolaireId String
+  anneeScolaire   AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+  dateInscription DateTime      @default(now())
+  statut          String        @default("Inscrit") // Inscrit, Redoublant, Transféré, Exclu, Abandonné
+  numeroRedoublement Int        @default(0)
+
+  @@unique([eleveId, anneeScolaireId])
+}
+
+model DocumentEleve {
+  id        String   @id @default(uuid())
+  eleveId   String
+  eleve     Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  type      String   // Extrait de naissance, Bulletin, Certificat médical...
+  nom       String
+  url       String?
+  dateAjout DateTime @default(now())
+}
+
+model Certificat {
+  id           String   @id @default(uuid())
+  eleveId      String
+  eleve        Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  type         String   // Scolarité, Fréquentation, Radiation...
+  dateDelivrance DateTime @default(now())
+  numeroReference String @unique
+  contenuHtml  String?
+  signePar     String?
+}
+
+model Absence {
+  id           String   @id @default(uuid())
+  eleveId      String
+  eleve        Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date         DateTime
+  coursId      String?
+  cours        Cours?   @relation(fields: [coursId], references: [id])
+  justifiee    Boolean  @default(false)
+  motif        String?
+  dureeHeures  Float    @default(1)
+  saisiParId   String?
+  createdAt    DateTime @default(now())
+
+  @@index([eleveId, date])
+}
+
+model Discipline {
+  id              String     @id @default(uuid())
+  eleveId         String
+  eleve           Eleve      @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date            DateTime
+  type            String     // Avertissement, Blâme, Exclusion temporaire, Exclusion définitive...
+  motif           String
+  pointsRetires   Int        @default(0)
+  traitantParId   String?
+  traitantPar     Personnel? @relation("DisciplineTraitantPar", fields: [traitantParId], references: [id])
+  suiteDonnee     String?
+  createdAt       DateTime   @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 5. GESTION PÉDAGOGIQUE — MATIÈRES, EMPLOI DU TEMPS, AFFECTATIONS
+// ----------------------------------------------------------------------------
+
+model Matiere {
+  id           String   @id @default(uuid())
+  nom          String   @unique
+  code         String?  @unique
+  coefficientDefaut Float @default(1)
+
+  cours        Cours[]
+  affectations Affectation[]
+  notes        Note[]
+}
+
+model Affectation {
+  id          String    @id @default(uuid())
+  personnelId String
+  personnel   Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  classeId    String
+  classe      Classe    @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  matiereId   String
+  matiere     Matiere   @relation(fields: [matiereId], references: [id])
+  coefficient Float?
+  chargeHoraireHebdo Float @default(1)
+
+  @@unique([personnelId, classeId, matiereId])
+}
+
+model Salle {
+  id          String   @id @default(uuid())
+  nom         String   @unique
+  batiment    String?
+  capacite    Int      @default(30)
+  type        String   @default("Salle de classe") // Salle de classe, Labo, Amphithéâtre, Salle d'examen
+  equipements String?
+
+  classesAttitrees Classe[]
+  cours       Cours[]
+  sallesExamens SalleExamen[]
+  maintenances Maintenance[]
+}
+
+model Cours {
+  id          String    @id @default(uuid())
+  classeId    String
+  classe      Classe    @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  matiereId   String
+  matiere     Matiere   @relation(fields: [matiereId], references: [id])
+  personnelId String
+  personnel   Personnel @relation(fields: [personnelId], references: [id])
+  salleId     String?
+  salle       Salle?    @relation(fields: [salleId], references: [id])
+  jourSemaine Int       // 1=lundi ... 7=dimanche
+  heureDebut  String    // "08:00"
+  heureFin    String    // "09:00"
+
+  absences    Absence[]
+  suivis      SuiviCours[]
+}
+
+model SuiviCours {
+  id          String   @id @default(uuid())
+  coursId     String
+  cours       Cours    @relation(fields: [coursId], references: [id], onDelete: Cascade)
+  date        DateTime
+  effectue    Boolean  @default(true)
+  contenu     String?
+  createdAt   DateTime @default(now())
+}
+
+model ConseilClasse {
+  id           String   @id @default(uuid())
+  classeId     String
+  classe       Classe   @relation(fields: [classeId], references: [id], onDelete: Cascade)
+  periodeId    String?
+  date         DateTime
+  compteRendu  String?
+  decisions    Json?
+  createdAt    DateTime @default(now())
+}
+
+model RessourceElearning {
+  id          String   @id @default(uuid())
+  titre       String
+  matiereId   String?
+  type        String   // Document, Vidéo, Exercice, QCM
+  url         String?
+  niveau      String?
+  publieParId String?
+  createdAt   DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 6. NOTES & ÉVALUATIONS / BULLETINS
+// ----------------------------------------------------------------------------
+
+model Bareme {
+  id          String  @id @default(uuid())
+  nom         String
+  noteMax     Float   @default(20)
+  seuilReussite Float @default(10)
+  description String?
+}
+
+model Note {
+  id           String     @id @default(uuid())
+  eleveId      String
+  eleve        Eleve      @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  matiereId    String
+  matiere      Matiere    @relation(fields: [matiereId], references: [id])
+  enseignantId String
+  enseignant   Personnel  @relation(fields: [enseignantId], references: [id])
+  periodeId    String
+  type         String     // Devoir, Composition, Interrogation...
+  valeur       Float
+  noteMax      Float      @default(20)
+  coefficient  Float      @default(1)
+  dateEvaluation DateTime
+  valide       Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  @@index([eleveId, periodeId])
+}
+
+model Bulletin {
+  id                 String   @id @default(uuid())
+  eleveId            String
+  classeId           String
+  classe             Classe   @relation(fields: [classeId], references: [id])
+  periodeId          String
+  anneeScolaire      String
+  moyenneGenerale    Float
+  moyenneClasse      Float?
+  rang               Int?
+  effectifClasse     Int?
+  appreciationGenerale String?
+  commentaireDirecteur String?
+  templateUtilise    String   @default("classic")
+  genereLe           DateTime @default(now())
+  envoyeAuxParents   Boolean  @default(false)
+  detailMatieres     Json     // snapshot des notes/moyennes par matière au moment de la génération
+
+  @@unique([eleveId, periodeId])
+}
+
+model QCM {
+  id          String   @id @default(uuid())
+  titre       String
+  matiereId   String?
+  questions   Json     // [{question, options[], reponseCorrecte}]
+  dureeMinutes Int     @default(30)
+  creeParId   String?
+  createdAt   DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 7. EXAMENS (Organisation d'examens officiels type BEPC/BAC)
+// ----------------------------------------------------------------------------
+
+model Examen {
+  id             String    @id @default(uuid())
+  nom            String    // "BEPC 2026", "BAC Session 2026"
+  type           String    // BEPC, BAC, Concours...
+  anneeScolaire  String
+  dateDebut      DateTime
+  dateFin        DateTime
+  statut         String    @default("Préparation") // Préparation, En cours, Délibérations, Clôturé
+  parametres     Json?     // barèmes, seuils d'admission, coefficients par épreuve...
+
+  candidats      CandidatExamen[]
+  jurys          Jury[]
+  salles         SalleExamen[]
+  convocations   ConvocationExamen[]
+  notes          NoteExamen[]
+  deliberations  Deliberation[]
+  resultats      ResultatExamen[]
+  procesVerbaux  ProcesVerbal[]
+}
+
+model CandidatExamen {
+  id           String   @id @default(uuid())
+  examenId     String
+  examen       Examen   @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  eleveId      String?
+  eleve        Eleve?   @relation(fields: [eleveId], references: [id])
+  numeroTable  String?
+  centreId     String?
+  statut       String   @default("Inscrit") // Inscrit, Convoqué, Composé, Absent, Admis, Ajourné
+  createdAt    DateTime @default(now())
+
+  @@unique([examenId, eleveId])
+  notes        NoteExamen[]
+  convocations ConvocationExamen[]
+  resultat     ResultatExamen?
+}
+
+model Jury {
+  id           String    @id @default(uuid())
+  examenId     String
+  examen       Examen    @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  nom          String
+  presidentId  String?
+  membres      Json?     // liste d'ids personnel
+}
+
+model SalleExamen {
+  id           String   @id @default(uuid())
+  examenId     String
+  examen       Examen   @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  salleId      String
+  salle        Salle    @relation(fields: [salleId], references: [id])
+  capaciteExamen Int
+  surveillants Json?
+}
+
+model ConvocationExamen {
+  id           String         @id @default(uuid())
+  examenId     String
+  examen       Examen         @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  candidatId   String
+  candidat     CandidatExamen @relation(fields: [candidatId], references: [id], onDelete: Cascade)
+  dateEpreuve  DateTime
+  lieu         String?
+  codeVerification String    @unique @default(uuid())
+  genereLe     DateTime       @default(now())
+}
+
+model NoteExamen {
+  id           String         @id @default(uuid())
+  examenId     String
+  examen       Examen         @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  candidatId   String
+  candidat     CandidatExamen @relation(fields: [candidatId], references: [id], onDelete: Cascade)
+  epreuve      String
+  valeur       Float
+  coefficient  Float          @default(1)
+  saisieParId  String?
+  createdAt    DateTime       @default(now())
+}
+
+model Deliberation {
+  id           String   @id @default(uuid())
+  examenId     String
+  examen       Examen   @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  date         DateTime
+  compteRendu  String?
+  decisions    Json?
+}
+
+model ResultatExamen {
+  id           String         @id @default(uuid())
+  examenId     String
+  examen       Examen         @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  candidatId   String         @unique
+  candidat     CandidatExamen @relation(fields: [candidatId], references: [id], onDelete: Cascade)
+  eleveId      String?
+  eleve        Eleve?         @relation(fields: [eleveId], references: [id])
+  moyenneGenerale Float
+  mention      String?
+  decision     String         // Admis, Ajourné, Repêchage...
+  publieLe     DateTime?
+}
+
+model ProcesVerbal {
+  id           String   @id @default(uuid())
+  examenId     String
+  examen       Examen   @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  type         String   // Surveillance, Délibération, Incident
+  contenu      String
+  createdAt    DateTime @default(now())
+}
+
+model RapprochementDECO {
+  id             String   @id @default(uuid())
+  examenId       String
+  fichierSource  String   // référence du fichier DECO importé
+  nombreLignes   Int
+  nombreEcarts   Int
+  details        Json?
+  traiteLe       DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 8. COMPTABILITÉ & FINANCE
+// ----------------------------------------------------------------------------
+
+model AnneeTarifaire {
+  id              String   @id @default(uuid())
+  anneeScolaire   String   @unique
+  grillesTarifs   GrilleTarif[]
+}
+
+model GrilleTarif {
+  id               String         @id @default(uuid())
+  anneeTarifaireId String
+  anneeTarifaire   AnneeTarifaire @relation(fields: [anneeTarifaireId], references: [id], onDelete: Cascade)
+  niveau           String
+  fraisInscription Float
+  fraisScolarite   Float
+  fraisAnnexes     Float          @default(0)
+}
+
+model EcheancePaiement {
+  id           String   @id @default(uuid())
+  eleveId      String
+  eleve        Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  libelle      String   // "1ère tranche", "2ème tranche"...
+  montantDu    Float
+  dateEcheance DateTime
+  statut       String   @default("En attente") // En attente, Payée, En retard, Partielle
+
+  paiements    PaiementScolaire[]
+}
+
+model PaiementScolaire {
+  id            String            @id @default(uuid())
+  eleveId       String
+  eleve         Eleve             @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  echeanceId    String?
+  echeance      EcheancePaiement? @relation(fields: [echeanceId], references: [id])
+  montant       Float
+  modePaiement  String            // Espèces, Chèque, Virement, Mobile Money
+  reference     String?
+  datePaiement  DateTime          @default(now())
+  quittanceId   String?           @unique
+  quittance     Quittance?        @relation(fields: [quittanceId], references: [id])
+  encaisseParId String?
+}
+
+model Quittance {
+  id            String   @id @default(uuid())
+  numero        String   @unique
+  dateEmission   DateTime @default(now())
+  contenuHtml   String?
+  paiement      PaiementScolaire?
+}
+
+model CompteComptable {
+  id          String   @id @default(uuid())
+  numero      String   @unique // plan comptable SYSCOHADA
+  libelle     String
+  classe      Int      // classe de compte 1 à 8
+  ecrituresDebit  EcritureComptable[] @relation("EcritureDebit")
+  ecrituresCredit EcritureComptable[] @relation("EcritureCredit")
+}
+
+model JournalComptable {
+  id        String   @id @default(uuid())
+  code      String   @unique // AC (achats), VE (ventes), CA (caisse), BQ (banque)...
+  libelle   String
+  ecritures EcritureComptable[]
+}
+
+model EcritureComptable {
+  id            String            @id @default(uuid())
+  journalId     String
+  journal       JournalComptable  @relation(fields: [journalId], references: [id])
+  date          DateTime
+  libelle       String
+  compteDebitId String
+  compteDebit   CompteComptable   @relation("EcritureDebit", fields: [compteDebitId], references: [id])
+  compteCreditId String
+  compteCredit  CompteComptable   @relation("EcritureCredit", fields: [compteCreditId], references: [id])
+  montant       Float
+  pieceJustificative String?
+  saisieParId   String?
+  valide        Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+}
+
+model MouvementCaisse {
+  id           String   @id @default(uuid())
+  type         String   // Entrée, Sortie
+  montant      Float
+  motif        String
+  categorie    String?
+  date         DateTime @default(now())
+  saisieParId  String?
+  soldeApres   Float?
+}
+
+// ----------------------------------------------------------------------------
+// 9. BIBLIOTHÈQUE
+// ----------------------------------------------------------------------------
+
+model Livre {
+  id            String   @id @default(uuid())
+  isbn          String?  @unique
+  titre         String
+  auteur        String
+  editeur       String?
+  categorie     String?
+  anneeEdition  Int?
+  nombreExemplaires Int  @default(1)
+  exemplairesDisponibles Int @default(1)
+  emplacement   String?
+  couvertureUrl String?
+
+  exemplaires   ExemplaireLivre[]
+  emprunts      Emprunt[]
+  reservations  Reservation[]
+  suggestions   SuggestionAchat[]
+}
+
+model ExemplaireLivre {
+  id         String  @id @default(uuid())
+  livreId    String
+  livre      Livre   @relation(fields: [livreId], references: [id], onDelete: Cascade)
+  codeBarre  String  @unique
+  etat       String  @default("Bon") // Neuf, Bon, Usagé, Détérioré, Perdu
+  disponible Boolean @default(true)
+}
+
+model CarteLecteur {
+  id           String   @id @default(uuid())
+  numeroCarte  String   @unique
+  eleveId      String?
+  eleve        Eleve?   @relation(fields: [eleveId], references: [id])
+  personnelId  String?
+  dateEmission DateTime @default(now())
+  dateExpiration DateTime?
+  active       Boolean  @default(true)
+
+  emprunts     Emprunt[]
+}
+
+model Emprunt {
+  id            String    @id @default(uuid())
+  livreId       String
+  livre         Livre     @relation(fields: [livreId], references: [id])
+  eleveId       String?
+  eleve         Eleve?    @relation(fields: [eleveId], references: [id])
+  carteLecteurId String?
+  carteLecteur  CarteLecteur? @relation(fields: [carteLecteurId], references: [id])
+  dateEmprunt   DateTime  @default(now())
+  dateRetourPrevue DateTime
+  dateRetourEffective DateTime?
+  statut        String    @default("En cours") // En cours, Retourné, En retard, Perdu
+  penalite      Float?    @default(0)
+}
+
+model Reservation {
+  id          String   @id @default(uuid())
+  livreId     String
+  livre       Livre    @relation(fields: [livreId], references: [id])
+  eleveId     String?
+  dateReservation DateTime @default(now())
+  statut      String   @default("En attente") // En attente, Disponible, Honorée, Annulée
+}
+
+model SuggestionAchat {
+  id          String   @id @default(uuid())
+  livreId     String?
+  livre       Livre?   @relation(fields: [livreId], references: [id])
+  titreSuggere String?
+  suggerePar  String?
+  statut      String   @default("Proposée") // Proposée, Validée, Achetée, Rejetée
+  createdAt   DateTime @default(now())
+}
+
+model AcquisitionLivre {
+  id           String   @id @default(uuid())
+  fournisseur  String?
+  dateCommande DateTime @default(now())
+  dateReception DateTime?
+  montantTotal Float
+  statut       String   @default("Commandée") // Commandée, Reçue, Annulée
+  lignes       Json     // [{titre, quantite, prixUnitaire}]
+}
+
+// ----------------------------------------------------------------------------
+// 10. INFIRMERIE
+// ----------------------------------------------------------------------------
+
+model FicheSante {
+  id               String   @id @default(uuid())
+  eleveId          String   @unique
+  eleve            Eleve    @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  groupeSanguin    String?
+  allergies        String?
+  maladiesChroniques String?
+  traitementEnCours String?
+  vaccinationsAJour Boolean @default(false)
+  contactMedecin   String?
+  observations     String?
+  updatedAt        DateTime @updatedAt
+}
+
+model Consultation {
+  id             String     @id @default(uuid())
+  eleveId        String
+  eleve          Eleve      @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  date           DateTime   @default(now())
+  motif          String
+  diagnostic     String?
+  traitement     String?
+  infirmierId    String?
+  infirmier      Personnel? @relation(fields: [infirmierId], references: [id])
+  necessiteSuivi Boolean    @default(false)
+
+  ordonnances    Ordonnance[]
+}
+
+model Ordonnance {
+  id             String       @id @default(uuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  medicaments    Json         // [{nom, posologie, duree}]
+  dateEmission   DateTime     @default(now())
+}
+
+model StockMedicament {
+  id              String   @id @default(uuid())
+  nom             String
+  quantiteStock   Int
+  seuilAlerte     Int      @default(5)
+  datePeremption  DateTime?
+  fournisseur     String?
+}
+
+model AlerteMedicale {
+  id          String   @id @default(uuid())
+  eleveId     String?
+  type        String   // Allergie sévère, Épidémie, Stock critique...
+  description String
+  niveau      String   @default("Info") // Info, Attention, Urgent
+  resolue     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 11. MESSAGERIE & NOTIFICATIONS
+// ----------------------------------------------------------------------------
+
+model Message {
+  id             String   @id @default(uuid())
+  expediteurId   String
+  expediteur     User     @relation("MessageExpediteur", fields: [expediteurId], references: [id])
+  destinataires  Json     // liste d'ids utilisateurs, ou "classe:xxx", "role:xxx"
+  sujet          String?
+  contenu        String
+  canal          String   @default("interne") // interne, email, sms
+  lu             Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model CampagneSMS {
+  id           String   @id @default(uuid())
+  contenu      String
+  destinataires Json
+  statut       String   @default("Brouillon") // Brouillon, Envoyée, Échouée
+  nombreEnvoyes Int     @default(0)
+  coutTotal    Float?
+  createdAt    DateTime @default(now())
+  envoyeeLe    DateTime?
+}
+
+model CampagneEmail {
+  id            String   @id @default(uuid())
+  objet         String
+  contenuHtml   String
+  destinataires Json
+  statut        String   @default("Brouillon")
+  createdAt     DateTime @default(now())
+  envoyeeLe     DateTime?
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  titre       String
+  contenu     String
+  type        String   @default("info")
+  lue         Boolean  @default(false)
+  lienAction  String?
+  createdAt   DateTime @default(now())
+}
+
+model ForumPost {
+  id          String   @id @default(uuid())
+  auteurId    String?
+  titre       String
+  contenu     String
+  categorie   String?
+  epingle     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  reponses    ForumReponse[]
+}
+
+model ForumReponse {
+  id          String    @id @default(uuid())
+  postId      String
+  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  auteurId    String?
+  contenu     String
+  createdAt   DateTime  @default(now())
+}
+
+model ChatMessage {
+  id           String        @id @default(uuid())
+  parentId     String
+  parent       ParentProfil  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  destinataireId String?     // personnel id
+  contenu      String
+  envoyePar    String        @default("parent") // parent, etablissement
+  lu           Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// 12. SERVICES (Transport, Cantine, Internat)
+// ----------------------------------------------------------------------------
+
+model ServiceOffert {
+  id          String   @id @default(uuid())
+  type        String   // Transport, Cantine, Internat
+  nom         String
+  tarifMensuel Float
+  capacite    Int?
+  description String?
+
+  affectations AffectationService[]
+}
+
+model AffectationService {
+  id          String        @id @default(uuid())
+  serviceId   String
+  service     ServiceOffert @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  eleveId     String
+  eleve       Eleve         @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  dateDebut   DateTime      @default(now())
+  dateFin     DateTime?
+  statut      String        @default("Actif")
+
+  @@unique([serviceId, eleveId])
+}
+
+// ----------------------------------------------------------------------------
+// 13. ACTIVITÉS PARASCOLAIRES
+// ----------------------------------------------------------------------------
+
+model ActiviteParascolaire {
+  id          String   @id @default(uuid())
+  nom         String
+  categorie   String?  // Sport, Culture, Club scientifique...
+  responsableId String?
+  capacite    Int?
+
+  participations ParticipationParascolaire[]
+  evenements  EvenementParascolaire[]
+}
+
+model ParticipationParascolaire {
+  id          String               @id @default(uuid())
+  activiteId  String
+  activite    ActiviteParascolaire @relation(fields: [activiteId], references: [id], onDelete: Cascade)
+  eleveId     String
+  eleve       Eleve                @relation(fields: [eleveId], references: [id], onDelete: Cascade)
+  dateInscription DateTime         @default(now())
+  statut      String               @default("Actif")
+}
+
+model EvenementParascolaire {
+  id          String                @id @default(uuid())
+  activiteId  String?
+  activite    ActiviteParascolaire? @relation(fields: [activiteId], references: [id])
+  titre       String
+  date        DateTime
+  lieu        String?
+  description String?
+}
+
+// ----------------------------------------------------------------------------
+// 14. STOCKS & PATRIMOINE
+// ----------------------------------------------------------------------------
+
+model ArticleStock {
+  id            String   @id @default(uuid())
+  nom           String
+  categorie     String?  // Fourniture, Matériel, Mobilier...
+  quantiteStock Int      @default(0)
+  seuilAlerte   Int      @default(5)
+  unite         String   @default("unité")
+  prixUnitaire  Float?
+  emplacement   String?
+
+  mouvements    MouvementStock[]
+}
+
+model MouvementStock {
+  id           String       @id @default(uuid())
+  articleId    String
+  article      ArticleStock @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  type         String       // Entrée, Sortie
+  quantite     Int
+  motif        String?
+  date         DateTime     @default(now())
+  saisieParId  String?
+}
+
+// ----------------------------------------------------------------------------
+// 15. INFRASTRUCTURES
+// ----------------------------------------------------------------------------
+
+model Maintenance {
+  id          String   @id @default(uuid())
+  salleId     String?
+  salle       Salle?   @relation(fields: [salleId], references: [id])
+  typeIntervention String
+  description String?
+  statut      String   @default("Planifiée") // Planifiée, En cours, Terminée
+  dateDemande DateTime @default(now())
+  datePrevue  DateTime?
+  dateRealisee DateTime?
+  cout        Float?
+}
+
+// ----------------------------------------------------------------------------
+// 16. PARTENARIATS
+// ----------------------------------------------------------------------------
+
+model Partenaire {
+  id          String   @id @default(uuid())
+  nom         String
+  type        String   // Sponsor, ONG, Institution, Entreprise
+  contact     String?
+  email       String?
+  telephone   String?
+  statut      String   @default("Actif")
+
+  sponsors    Sponsor[]
+  reunions    ReunionPartenariat[]
+}
+
+model Sponsor {
+  id            String     @id @default(uuid())
+  partenaireId  String
+  partenaire    Partenaire @relation(fields: [partenaireId], references: [id], onDelete: Cascade)
+  montant       Float
+  nature        String     @default("Financier") // Financier, Matériel, Service
+  dateAccord    DateTime   @default(now())
+  statut        String     @default("En cours")
+}
+
+model ReunionPartenariat {
+  id            String      @id @default(uuid())
+  partenaireId  String?
+  partenaire    Partenaire? @relation(fields: [partenaireId], references: [id])
+  titre         String
+  date          DateTime
+  compteRendu   String?
+  participants  Json?
+  signatures    Json?       // liste de signatures électroniques (nom, date, statut)
+  codeVerification String   @unique @default(uuid())
+}
+
+// ----------------------------------------------------------------------------
+// 17. MENA / DESPS (Ministère de l'Éducation Nationale — Côte d'Ivoire)
+// ----------------------------------------------------------------------------
+
+model PreinscriptionMENA {
+  id            String   @id @default(uuid())
+  nomCandidat   String
+  prenomCandidat String
+  dateNaissance DateTime
+  niveauVise    String
+  statut        String   @default("En attente") // En attente, Validée, Rejetée
+  createdAt     DateTime @default(now())
+}
+
+model SynchronisationMENA {
+  id            String   @id @default(uuid())
+  type          String   // Export effectifs, Import décisions, Fichier national...
+  statut        String   @default("En cours") // En cours, Réussie, Échouée
+  nombreEnregistrements Int @default(0)
+  logDetails    Json?
+  lanceLe       DateTime @default(now())
+  termineLe     DateTime?
+}
+
+model DecisionBilanMENA {
+  id          String   @id @default(uuid())
+  type        String   // Décision d'ouverture, Bilan pédagogique, Bilan financier...
+  contenu     Json
+  soumisLe    DateTime @default(now())
+  statut      String   @default("Soumis") // Soumis, Validé, Rejeté
+}
+
+// ----------------------------------------------------------------------------
+// 18. INTÉGRATIONS EXTERNES
+// ----------------------------------------------------------------------------
+
+model ApiKeyExterne {
+  id          String   @id @default(uuid())
+  nom         String
+  cleHash     String
+  scopes      Json     // liste des permissions accordées à cette clé
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  derniereUtilisation DateTime?
+}

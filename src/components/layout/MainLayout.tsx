@@ -17,10 +17,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocation, Navigate } from "react-router-dom";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getRequiredModule } from "@/lib/routePermissions";
+import { ShieldAlert } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
+  const location = useLocation();
+  const { hasPermission } = usePermissions();
+  const { user, loading } = useAuth();
+
+  // Non authentifié : on renvoie vers la page de connexion (corrige
+  // l'absence totale de protection de route relevée dans ANALYSE.md).
+  if (!loading && !user) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Corrige l'incohérence n°5 de ANALYSE.md : bloque le rendu si le rôle
+  // connecté n'a pas la permission requise pour cette route, indépendamment
+  // de ce qu'affiche le menu (qui ne fait que masquer les liens).
+  const requiredModule = getRequiredModule(location.pathname);
+  const autorise = !requiredModule || hasPermission(requiredModule);
   
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -79,7 +99,18 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </header>
           <ArchiveBanner />
           <main className="flex-1 p-6 bg-background">
-            {children}
+            {autorise ? (
+              children
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
+                <ShieldAlert className="h-12 w-12 text-destructive" />
+                <h2 className="text-xl font-semibold">Accès refusé</h2>
+                <p className="max-w-md text-muted-foreground">
+                  Votre rôle actuel n'a pas accès à cette section de l'application.
+                  Contactez un administrateur si vous pensez qu'il s'agit d'une erreur.
+                </p>
+              </div>
+            )}
           </main>
           <Footer />
         </div>
