@@ -28,7 +28,10 @@ router.get(
     res.json(
       await prisma.echeancePaiement.findMany({
         where: { ...(eleveId && { eleveId }), ...(statut && { statut }) },
-        include: { eleve: true, paiements: true },
+        include: {
+          eleve: { include: { inscriptions: { include: { classe: true }, take: 1, orderBy: { dateInscription: 'desc' } } } },
+          paiements: true,
+        },
         orderBy: { dateEcheance: 'asc' },
       })
     );

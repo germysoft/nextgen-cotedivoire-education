@@ -67,12 +67,25 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
   de conduite (`ConduiteEditor`) ne sont **pas** branchés dans cette passe
   (voir juste en dessous) — en attendant, on peut saisir des notes via
   `POST /api/notes` directement.
+- **`src/pages/Finance.tsx`** + **`src/hooks/api/useFinance.ts`** : onglet
+  "Transactions" branché sur `/api/finance/caisse` (mouvements de caisse
+  Entrée/Sortie réels), onglet "Impayés" branché sur `/api/finance/echeances`
+  (reste à payer calculé réellement à partir des paiements déjà enregistrés),
+  enregistrement d'un paiement branché sur `/api/finance/paiements` (génère
+  une vraie quittance côté backend). Les rapports PDF (mensuel, grand livre,
+  situation financière) sont générés à partir de ces données réelles.
+  Simplifications assumées : un mouvement de caisse n'a pas de "mode de
+  paiement" dans le schéma actuel (seuls les paiements élèves en ont un) ;
+  la "situation financière" est simplifiée (trésorerie + créances), pas un
+  bilan SYSCOHADA normalisé — celui-ci existe déjà côté API
+  (`GET /api/finance/bilan`) mais suppose un plan de comptes pré-chargé,
+  absent du script de seed actuel.
 - `GradeEntryWizard` (saisie de notes) et `ConduiteEditor` (notes de
   conduite) restent des composants non branchés. Le second suppose un
   modèle de "note de conduite" qui n'existe pas encore dans le schéma
   backend (seul `Discipline`, qui trace des incidents ponctuels, existe
   aujourd'hui) — à concevoir avant de le brancher.
-- Les **~84 autres écrans** utilisent encore leurs fichiers `mock*.ts` /
+- Les **~83 autres écrans** utilisent encore leurs fichiers `mock*.ts` /
   tableaux en dur. Le backend expose déjà un endpoint réel pour chacun
   (voir `backend/README.md`) ; il reste à répéter le schéma ci-dessous.
 - Le statut de paiement par élève (colonne "fees" de l'ancienne version de
@@ -103,7 +116,8 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
 
 ## Pages prioritaires suggérées pour la suite
 
-Dans l'ordre où je les traiterais : `Finance.tsx`/`comptabilite/PaiementsScolaires.tsx`
-(→ `/api/finance`), puis `ParentPortal.tsx` (→ `/api/portail-parents`, en
-remplaçant aussi `ParentLogin.tsx` par un vrai appel à `POST /api/auth/login`
-avec le rôle `parent`).
+Dans l'ordre où je les traiterais : `ParentPortal.tsx` (→
+`/api/portail-parents`, en remplaçant aussi `ParentLogin.tsx` par un vrai
+appel à `POST /api/auth/login` avec le rôle `parent`), puis
+`bibliotheque/Emprunts.tsx` (→ `/api/bibliotheque`, déjà riche en logique
+métier réelle côté backend : pénalités de retard automatiques).
