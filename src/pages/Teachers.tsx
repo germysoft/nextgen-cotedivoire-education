@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Download, Eye, Edit, Phone, Mail, Trash2 } from "lucide-react";
+import { Search, Filter, Eye, Edit, Phone, Mail, Trash2, Loader2 } from "lucide-react";
 import { AddTeacherDialog } from "@/components/teachers/AddTeacherDialog";
 import {
   Table,
@@ -22,18 +22,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { DataTableExport } from "@/components/data-table/DataTableExport";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Personnel, usePersonnelQuery, useUpdatePersonnel, useDeactivatePersonnel } from "@/hooks/api/usePersonnel";
 
-const initialTeachers = [
-  { id: "T001", name: "KOUADIO Marc", subject: "Mathématiques", classes: "3ème, 2nde", phone: "+225 07 00 00 01", email: "marc.k@school.ci", status: "permanent" },
-  { id: "T002", name: "DIABATÉ Sarah", subject: "Français", classes: "6ème, 5ème", phone: "+225 07 00 00 02", email: "sarah.d@school.ci", status: "permanent" },
-  { id: "T003", name: "BROU Emmanuel", subject: "Anglais", classes: "4ème, 3ème", phone: "+225 07 00 00 03", email: "emmanuel.b@school.ci", status: "contractor" },
-  { id: "T004", name: "TOURÉ Aminata", subject: "SVT", classes: "2nde, 1ère", phone: "+225 07 00 00 04", email: "aminata.t@school.ci", status: "permanent" },
-  { id: "T005", name: "KOFFI Daniel", subject: "Histoire-Géo", classes: "Tle A, Tle D", phone: "+225 07 00 00 05", email: "daniel.k@school.ci", status: "permanent" },
-];
+const statutLabels: Record<Personnel['statut'], string> = {
+  Permanent: 'Permanent',
+  Vacataire: 'Vacataire',
+  Contractuel: 'Contractuel',
+  Stagiaire: 'Stagiaire',
+  'Intérimaire': 'Intérimaire',
+};
 
 export default function Teachers() {
   const { t } = useLanguage();
-  const [teachers, setTeachers] = useState(initialTeachers);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -41,30 +41,34 @@ export default function Teachers() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<typeof initialTeachers[0] | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", subject: "", classes: "", phone: "", email: "", status: "" });
+  const [selectedTeacher, setSelectedTeacher] = useState<Personnel | null>(null);
+  const [editForm, setEditForm] = useState({ nom: "", prenom: "", telephone: "", email: "", statut: "Permanent" as Personnel['statut'] });
 
-  const getInitials = (name: string) => {
-    return name.split(" ").map(n => n[0]).join("");
-  };
+  // Seul le personnel enseignant nous intéresse sur cette page (les autres
+  // catégories — administratif, technique... — sont gérées dans le module RH).
+  const { data, isLoading, isError } = usePersonnelQuery({ q: searchTerm, categoriePersonnel: 'Enseignant', pageSize: 200 });
+  const updatePersonnel = useUpdatePersonnel();
+  const deactivatePersonnel = useDeactivatePersonnel();
 
-  const getStatusLabel = (status: string) => {
-    return status === "permanent" ? t('teachers.permanent') : t('teachers.contractor');
-  };
+  const teachers = data?.items ?? [];
 
-  const subjects = [...new Set(teachers.map(t => t.subject))];
+  const getInitials = (nom: string, prenom: string) => `${prenom[0] ?? ''}${nom[0] ?? ''}`;
+
+  const subjectsOf = (teacher: Personnel) =>
+    [...new Set(teacher.affectations?.map((a) => a.matiere.nom) ?? [])].join(', ') || '—';
+  const classesOf = (teacher: Personnel) =>
+    [...new Set(teacher.affectations?.map((a) => a.classe.nom) ?? [])].join(', ') || '—';
+
+  const allSubjects = [...new Set(teachers.flatMap((t) => t.affectations?.map((a) => a.matiere.nom) ?? []))];
 
   const filteredTeachers = teachers.filter((teacher) => {
-    const matchSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       teacher.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       teacher.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === "all" || teacher.status === filterStatus;
-    const matchSubject = filterSubject === "all" || teacher.subject === filterSubject;
-    return matchSearch && matchStatus && matchSubject;
+    const matchStatus = filterStatus === "all" || teacher.statut === filterStatus;
+    const matchSubject = filterSubject === "all" || subjectsOf(teacher).includes(filterSubject);
+    return matchStatus && matchSubject;
   });
 
   const exportColumns = [
-    { key: "id", label: "ID" },
+    { key: "matricule", label: "ID" },
     { key: "name", label: t('dashboard.teachers') },
     { key: "subject", label: t('teachers.subject') },
     { key: "classes", label: t('teachers.classes') },
@@ -73,51 +77,49 @@ export default function Teachers() {
     { key: "status", label: t('teachers.status') },
   ];
 
-  const handleViewClick = (teacher: typeof initialTeachers[0]) => {
+  const handleViewClick = (teacher: Personnel) => {
     setSelectedTeacher(teacher);
     setViewDialogOpen(true);
   };
 
-  const handleEditClick = (teacher: typeof initialTeachers[0]) => {
+  const handleEditClick = (teacher: Personnel) => {
     setSelectedTeacher(teacher);
-    setEditForm({
-      name: teacher.name,
-      subject: teacher.subject,
-      classes: teacher.classes,
-      phone: teacher.phone,
-      email: teacher.email,
-      status: teacher.status
-    });
+    setEditForm({ nom: teacher.nom, prenom: teacher.prenom, telephone: teacher.telephone, email: teacher.email, statut: teacher.statut });
     setEditDialogOpen(true);
   };
 
   const handleEditSave = () => {
     if (!selectedTeacher) return;
-    
-    setTeachers(teachers.map(t => 
-      t.id === selectedTeacher.id 
-        ? { ...t, ...editForm }
-        : t
-    ));
-    setEditDialogOpen(false);
-    toast.success("Enseignant modifié avec succès");
+    updatePersonnel.mutate(
+      { id: selectedTeacher.id, ...editForm },
+      {
+        onSuccess: () => {
+          setEditDialogOpen(false);
+          toast.success("Enseignant modifié avec succès");
+        },
+        onError: () => toast.error("Échec de la modification."),
+      }
+    );
   };
 
-  const handleDeleteClick = (teacher: typeof initialTeachers[0]) => {
+  const handleDeleteClick = (teacher: Personnel) => {
     setSelectedTeacher(teacher);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
     if (!selectedTeacher) return;
-    
-    setTeachers(teachers.filter(t => t.id !== selectedTeacher.id));
-    setDeleteDialogOpen(false);
-    toast.success("Enseignant supprimé avec succès");
+    deactivatePersonnel.mutate(selectedTeacher.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        toast.success("Enseignant désactivé avec succès");
+      },
+      onError: () => toast.error("Échec de la désactivation."),
+    });
   };
 
-  const permanentCount = teachers.filter(t => t.status === "permanent").length;
-  const contractorCount = teachers.filter(t => t.status === "contractor").length;
+  const permanentCount = teachers.filter((t) => t.statut === "Permanent").length;
+  const contractorCount = teachers.length - permanentCount;
 
   return (
     <div className="space-y-6">
@@ -136,7 +138,9 @@ export default function Teachers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{permanentCount}</div>
-            <p className="text-xs text-muted-foreground">{Math.round(permanentCount / teachers.length * 100)}% {t('common.total').toLowerCase()}</p>
+            <p className="text-xs text-muted-foreground">
+              {teachers.length > 0 ? Math.round((permanentCount / teachers.length) * 100) : 0}% {t('common.total').toLowerCase()}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -145,7 +149,9 @@ export default function Teachers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{contractorCount}</div>
-            <p className="text-xs text-muted-foreground">{Math.round(contractorCount / teachers.length * 100)}% {t('common.total').toLowerCase()}</p>
+            <p className="text-xs text-muted-foreground">
+              {teachers.length > 0 ? Math.round((contractorCount / teachers.length) * 100) : 0}% {t('common.total').toLowerCase()}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -153,8 +159,9 @@ export default function Teachers() {
             <CardTitle className="text-sm font-medium">{t('teachers.attendanceRate')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98.2%</div>
-            <p className="text-xs text-success">+1.5% {t('dashboard.thisMonth')}</p>
+            {/* Pas encore d'endpoint d'agrégation du pointage (voir MIGRATION.md) : valeur indicative. */}
+            <div className="text-2xl font-bold">—</div>
+            <p className="text-xs text-muted-foreground">Bientôt disponible (module Pointage)</p>
           </CardContent>
         </Card>
       </div>
@@ -177,7 +184,15 @@ export default function Teachers() {
                 <Filter className="h-4 w-4" />
               </Button>
               <DataTableExport
-                data={filteredTeachers}
+                data={filteredTeachers.map((t) => ({
+                  matricule: t.matricule,
+                  name: `${t.nom} ${t.prenom}`,
+                  subject: subjectsOf(t),
+                  classes: classesOf(t),
+                  phone: t.telephone,
+                  email: t.email,
+                  status: statutLabels[t.statut],
+                }))}
                 columns={exportColumns}
                 filename="liste-enseignants"
               />
@@ -185,75 +200,87 @@ export default function Teachers() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('dashboard.teachers')}</TableHead>
-                  <TableHead>{t('teachers.subject')}</TableHead>
-                  <TableHead>{t('teachers.classes')}</TableHead>
-                  <TableHead>{t('teachers.contact')}</TableHead>
-                  <TableHead>{t('teachers.status')}</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTeachers.map((teacher) => (
-                  <TableRow key={teacher.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {getInitials(teacher.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{teacher.name}</div>
-                          <div className="text-sm text-muted-foreground">{teacher.id}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{teacher.subject}</TableCell>
-                    <TableCell>{teacher.classes}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          <span>{teacher.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">{teacher.email}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={teacher.status === "permanent" ? "default" : "secondary"}>
-                        {getStatusLabel(teacher.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" title={t('common.view')} onClick={() => handleViewClick(teacher)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title={t('common.edit')} onClick={() => handleEditClick(teacher)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" title={t('common.delete')} onClick={() => handleDeleteClick(teacher)} className="hover:bg-destructive/10 hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          {isLoading && (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" /> Chargement des enseignants…
+            </div>
+          )}
+          {isError && (
+            <div className="py-16 text-center text-destructive">
+              Impossible de contacter l'API. Vérifiez que le backend tourne bien sur VITE_API_URL.
+            </div>
+          )}
+          {!isLoading && !isError && (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('dashboard.teachers')}</TableHead>
+                    <TableHead>{t('teachers.subject')}</TableHead>
+                    <TableHead>{t('teachers.classes')}</TableHead>
+                    <TableHead>{t('teachers.contact')}</TableHead>
+                    <TableHead>{t('teachers.status')}</TableHead>
+                    <TableHead className="text-right">{t('common.actions')}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredTeachers.map((teacher) => (
+                    <TableRow key={teacher.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              {getInitials(teacher.nom, teacher.prenom)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{teacher.nom} {teacher.prenom}</div>
+                            <div className="text-sm text-muted-foreground">{teacher.matricule}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{subjectsOf(teacher)}</TableCell>
+                      <TableCell>{classesOf(teacher)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            <span>{teacher.telephone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">{teacher.email}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={teacher.statut === "Permanent" ? "default" : "secondary"}>
+                          {statutLabels[teacher.statut]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" title={t('common.view')} onClick={() => handleViewClick(teacher)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title={t('common.edit')} onClick={() => handleEditClick(teacher)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" title={t('common.delete')} onClick={() => handleDeleteClick(teacher)} className="hover:bg-destructive/10 hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Filter Sheet */}
+      {/* Filtres avancés */}
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
         <SheetContent>
           <SheetHeader>
@@ -269,8 +296,9 @@ export default function Teachers() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="permanent">Permanent</SelectItem>
-                  <SelectItem value="contractor">Vacataire</SelectItem>
+                  {Object.entries(statutLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -282,7 +310,7 @@ export default function Teachers() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes</SelectItem>
-                  {subjects.map(s => (
+                  {allSubjects.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
@@ -295,7 +323,7 @@ export default function Teachers() {
         </SheetContent>
       </Sheet>
 
-      {/* View Dialog */}
+      {/* Détails */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -306,26 +334,26 @@ export default function Teachers() {
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                    {getInitials(selectedTeacher.name)}
+                    {getInitials(selectedTeacher.nom, selectedTeacher.prenom)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedTeacher.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedTeacher.id}</p>
+                  <h3 className="text-lg font-semibold">{selectedTeacher.nom} {selectedTeacher.prenom}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedTeacher.matricule}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Matière</Label>
-                  <p className="font-medium">{selectedTeacher.subject}</p>
+                  <Label className="text-muted-foreground">Matière(s)</Label>
+                  <p className="font-medium">{subjectsOf(selectedTeacher)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Classes</Label>
-                  <p className="font-medium">{selectedTeacher.classes}</p>
+                  <p className="font-medium">{classesOf(selectedTeacher)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Téléphone</Label>
-                  <p className="font-medium">{selectedTeacher.phone}</p>
+                  <p className="font-medium">{selectedTeacher.telephone}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Email</Label>
@@ -334,8 +362,8 @@ export default function Teachers() {
                 <div className="col-span-2">
                   <Label className="text-muted-foreground">Statut</Label>
                   <div className="mt-1">
-                    <Badge variant={selectedTeacher.status === "permanent" ? "default" : "secondary"}>
-                      {getStatusLabel(selectedTeacher.status)}
+                    <Badge variant={selectedTeacher.statut === "Permanent" ? "default" : "secondary"}>
+                      {statutLabels[selectedTeacher.statut]}
                     </Badge>
                   </div>
                 </div>
@@ -348,7 +376,8 @@ export default function Teachers() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
+      {/* Édition — la réaffectation matière/classe se fait depuis le module
+          Pédagogie (Affectations), pas ici : voir MIGRATION.md. */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -356,75 +385,57 @@ export default function Teachers() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Nom complet</Label>
-              <Input 
-                value={editForm.name} 
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-              />
+              <Label>Nom</Label>
+              <Input value={editForm.nom} onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Matière</Label>
-              <Input 
-                value={editForm.subject} 
-                onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Classes</Label>
-              <Input 
-                value={editForm.classes} 
-                onChange={(e) => setEditForm({ ...editForm, classes: e.target.value })}
-              />
+              <Label>Prénom</Label>
+              <Input value={editForm.prenom} onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Téléphone</Label>
-              <Input 
-                value={editForm.phone} 
-                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-              />
+              <Input value={editForm.telephone} onChange={(e) => setEditForm({ ...editForm, telephone: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input 
-                type="email"
-                value={editForm.email} 
-                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-              />
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Statut</Label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+              <Select value={editForm.statut} onValueChange={(v) => setEditForm({ ...editForm, statut: v as Personnel['statut'] })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="permanent">Permanent</SelectItem>
-                  <SelectItem value="contractor">Vacataire</SelectItem>
+                  {Object.entries(statutLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditSave}>Enregistrer</Button>
+            <Button onClick={handleEditSave} disabled={updatePersonnel.isPending}>
+              {updatePersonnel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Désactivation (l'API ne supprime jamais physiquement un membre du personnel) */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogTitle>Confirmer la désactivation</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'enseignant <strong>{selectedTeacher?.name}</strong> ?
-              Cette action est irréversible.
+              Êtes-vous sûr de vouloir désactiver l'enseignant <strong>{selectedTeacher?.nom} {selectedTeacher?.prenom}</strong> ?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
+              Désactiver
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

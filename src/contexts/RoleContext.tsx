@@ -1,9 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { UserRole, rolePermissions, RolePermissions } from '@/types/roles';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RoleContextType {
   currentRole: UserRole;
   currentUserId: string;
+  /**
+   * @deprecated Ne change plus les permissions réelles : le backend fait
+   * autorité sur le rôle (JWT). Conservé uniquement pour ne pas casser
+   * RoleSelector.tsx pendant la période de transition — voir MIGRATION.md.
+   * Utile en développement local sans backend (ex: prévisualiser un menu),
+   * mais toute tentative d'action sera de toute façon refusée côté API.
+   */
   setRole: (role: UserRole) => void;
   permissions: RolePermissions;
   hasPermission: (permission: keyof RolePermissions) => boolean;
@@ -11,39 +19,31 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'demo_user_role';
+const DEV_PREVIEW_KEY = 'dev_preview_role';
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
-    // Charger le rôle depuis localStorage ou utiliser 'admin' par défaut
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored as UserRole) || 'admin';
+  const { user } = useAuth();
+
+  // Prévisualisation de menu en développement local (aucun impact sur les
+  // permissions réelles, qui sont vérifiées côté API à chaque requête).
+  const [devPreviewRole, setDevPreviewRole] = useState<UserRole | null>(() => {
+    return (localStorage.getItem(DEV_PREVIEW_KEY) as UserRole) || null;
   });
 
-  // Simuler l'ID de l'utilisateur connecté (en production, cela viendrait de l'authentification)
-  const [currentUserId] = useState<string>(() => {
-    const storedId = localStorage.getItem('demo_user_id');
-    if (storedId) return storedId;
-    
-    // Générer un ID basé sur le rôle pour la démo
-    const userId = currentRole === 'enseignant' ? 'teacher_1' : 'admin_1';
-    localStorage.setItem('demo_user_id', userId);
-    return userId;
-  });
+  const currentRole: UserRole =
+    (user?.role as UserRole) ?? devPreviewRole ?? 'admin';
+  const currentUserId = user?.id ?? 'anonyme';
 
-  useEffect(() => {
-    // Sauvegarder le rôle dans localStorage quand il change
-    localStorage.setItem(STORAGE_KEY, currentRole);
-  }, [currentRole]);
-
-  const permissions = rolePermissions[currentRole];
+  const permissions = rolePermissions[currentRole] ?? rolePermissions.admin;
 
   const hasPermission = (permission: keyof RolePermissions): boolean => {
     return permissions[permission];
   };
 
   const setRole = (role: UserRole) => {
-    setCurrentRole(role);
+    if (user) return; // utilisateur réellement connecté : le rôle vient du backend, pas de bascule locale
+    localStorage.setItem(DEV_PREVIEW_KEY, role);
+    setDevPreviewRole(role);
   };
 
   return (
