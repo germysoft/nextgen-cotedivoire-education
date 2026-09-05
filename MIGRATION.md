@@ -59,11 +59,20 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
   pure (toast de confirmation sans appel réseau). Je n'ai pas voulu les
   réécrire à l'aveugle sans validation — les connecter à `POST /api/eleves`
   / `POST /api/personnel` est la suite logique.
-- **`Classes.tsx`** est fait (voir ci-dessus). Reste : brancher
-  l'agrégation réelle des moyennes/rang par classe (onglet "performance" et
-  colonnes moyenne/rang de l'onglet "élèves"), ce qui suppose de choisir
-  une période active et de croiser avec `/api/notes/moyennes`.
-- Les **~85 autres écrans** utilisent encore leurs fichiers `mock*.ts` /
+- **`src/pages/Grades.tsx`** + **`src/hooks/api/useNotes.ts`** : le tableau
+  de notes par classe/période est branché sur `/api/notes/moyennes/:classeId/:periodeId`
+  (moyennes, rang, classement réels). Le professeur affiché par matière est
+  déduit de l'emploi du temps réel (`Classe.cours`), pas d'un champ séparé.
+  L'assistant de saisie de notes (`GradeEntryWizard`) et l'éditeur de notes
+  de conduite (`ConduiteEditor`) ne sont **pas** branchés dans cette passe
+  (voir juste en dessous) — en attendant, on peut saisir des notes via
+  `POST /api/notes` directement.
+- `GradeEntryWizard` (saisie de notes) et `ConduiteEditor` (notes de
+  conduite) restent des composants non branchés. Le second suppose un
+  modèle de "note de conduite" qui n'existe pas encore dans le schéma
+  backend (seul `Discipline`, qui trace des incidents ponctuels, existe
+  aujourd'hui) — à concevoir avant de le brancher.
+- Les **~84 autres écrans** utilisent encore leurs fichiers `mock*.ts` /
   tableaux en dur. Le backend expose déjà un endpoint réel pour chacun
   (voir `backend/README.md`) ; il reste à répéter le schéma ci-dessous.
 - Le statut de paiement par élève (colonne "fees" de l'ancienne version de
@@ -94,8 +103,7 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
 
 ## Pages prioritaires suggérées pour la suite
 
-Dans l'ordre où je les traiterais : `Grades.tsx`/`notes/Moyennes.tsx` (→
-`/api/notes`), `Finance.tsx`/`comptabilite/PaiementsScolaires.tsx` (→
-`/api/finance`), puis `ParentPortal.tsx` (→ `/api/portail-parents`, en
+Dans l'ordre où je les traiterais : `Finance.tsx`/`comptabilite/PaiementsScolaires.tsx`
+(→ `/api/finance`), puis `ParentPortal.tsx` (→ `/api/portail-parents`, en
 remplaçant aussi `ParentLogin.tsx` par un vrai appel à `POST /api/auth/login`
 avec le rôle `parent`).
