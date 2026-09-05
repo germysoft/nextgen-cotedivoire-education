@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { requireModule, requireRole } from '../middleware/rbac';
 import { buildGenericRouters } from './generic.routes';
+import { prisma } from '../lib/prisma';
+import { asyncHandler, ApiError } from '../utils/asyncHandler';
 
 import authRoutes from './auth.routes';
 import publicRoutes from './public.routes';
@@ -24,6 +26,18 @@ apiRouter.use('/public', publicRoutes);
 
 // --- Tout le reste exige un utilisateur authentifié ---
 apiRouter.use(authenticate);
+
+// Utilitaire transverse : de nombreux formulaires (créer une classe, une
+// échéance...) ont besoin de l'année scolaire active, indépendamment du
+// module auquel appartient l'utilisateur — pas de garde de module ici.
+apiRouter.get(
+  '/meta/annee-scolaire-active',
+  asyncHandler(async (_req, res) => {
+    const annee = await prisma.anneeScolaire.findFirst({ where: { active: true }, include: { periodes: true } });
+    if (!annee) throw new ApiError(404, "Aucune année scolaire active n'est configurée.");
+    res.json(annee);
+  })
+);
 
 apiRouter.use('/eleves', elevesRoutes);
 apiRouter.use('/personnel', personnelRoutes);

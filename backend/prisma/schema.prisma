@@ -209,6 +209,7 @@ model Personnel {
   pointages            Pointage[]
   affectations         Affectation[]
   coursEnseignes       Cours[]
+  classesPrincipal     Classe[]          @relation("ProfesseurPrincipal")
   notesAttribuees      Note[]
   candidatures         Candidature[]
   entretiens           Entretien[]
@@ -416,6 +417,7 @@ model Classe {
   anneeScolaireId String
   anneeScolaire   AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
   professeurPrincipalId String?
+  professeurPrincipal Personnel?    @relation("ProfesseurPrincipal", fields: [professeurPrincipalId], references: [id])
   salleAttitreeId String?
   salleAttitree   Salle?        @relation(fields: [salleAttitreeId], references: [id])
 

@@ -25,7 +25,7 @@ router.get(
     const anneeScolaireId = req.query.anneeScolaireId as string | undefined;
     const classes = await prisma.classe.findMany({
       where: anneeScolaireId ? { anneeScolaireId } : undefined,
-      include: { _count: { select: { inscriptions: true } } },
+      include: { _count: { select: { inscriptions: true } }, professeurPrincipal: true },
       orderBy: { nom: 'asc' },
     });
     res.json(classes);
@@ -41,6 +41,7 @@ router.get(
         inscriptions: { include: { eleve: true } },
         cours: { include: { matiere: true, personnel: true, salle: true } },
         salleAttitree: true,
+        professeurPrincipal: true,
       },
     });
     if (!classe) throw new ApiError(404, 'Classe introuvable.');

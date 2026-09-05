@@ -30,6 +30,20 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
   `categoriePersonnel=Enseignant`). A nécessité un petit ajout backend :
   `GET /api/personnel` inclut désormais les affectations (matière + classe)
   pour afficher ces colonnes sans requête supplémentaire par ligne.
+- **`src/pages/Classes.tsx`** + **`src/hooks/api/useClasses.ts`** : liste
+  réelle (élèves inscrits/capacité, professeur principal, niveau/cycle),
+  création/édition/suppression, et vue détail avec onglets **élèves**
+  (réels, via les inscriptions) et **emploi du temps** (réel, via
+  `/api/pedagogie/emploi-du-temps`) branchés sur l'API. L'onglet
+  **performance** (graphiques) reste sur des données d'exemple, clairement
+  annoncées comme telles dans l'UI — l'agrégation des moyennes par matière
+  et par classe n'est pas encore implémentée côté backend.
+  A nécessité deux ajouts backend : `professeurPrincipalId` est devenu une
+  vraie relation Prisma vers `Personnel` (au lieu d'un simple champ texte),
+  et un nouvel endpoint `GET /api/meta/annee-scolaire-active` (accessible à
+  tout utilisateur authentifié, sans garde de module) pour que les
+  formulaires de création puissent toujours retrouver l'année scolaire en
+  cours quel que soit le rôle.
 - **Corrections de routage** (§2 de `ANALYSE.md`) : route `/teachers`
   dupliquée corrigée (la page `Planning enseignants` déplacée vers
   `/enseignants/planning`, sa vraie place), routes fantômes `/schedule`,
@@ -45,12 +59,11 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
   pure (toast de confirmation sans appel réseau). Je n'ai pas voulu les
   réécrire à l'aveugle sans validation — les connecter à `POST /api/eleves`
   / `POST /api/personnel` est la suite logique.
-- **`Classes.tsx`** (749 lignes) est le prochain candidat naturel, mais sa
-  vue détail (onglets élèves/emploi du temps/performance avec graphiques)
-  est nettement plus riche que Students/Teachers : je préfère lire le
-  fichier en entier avant d'y toucher plutôt que de faire une réécriture
-  partielle risquée. Non commencé.
-- Les **~86 autres écrans** utilisent encore leurs fichiers `mock*.ts` /
+- **`Classes.tsx`** est fait (voir ci-dessus). Reste : brancher
+  l'agrégation réelle des moyennes/rang par classe (onglet "performance" et
+  colonnes moyenne/rang de l'onglet "élèves"), ce qui suppose de choisir
+  une période active et de croiser avec `/api/notes/moyennes`.
+- Les **~85 autres écrans** utilisent encore leurs fichiers `mock*.ts` /
   tableaux en dur. Le backend expose déjà un endpoint réel pour chacun
   (voir `backend/README.md`) ; il reste à répéter le schéma ci-dessous.
 - Le statut de paiement par élève (colonne "fees" de l'ancienne version de
@@ -81,10 +94,8 @@ comment reproduire le même schéma sur le reste des ~90 écrans.
 
 ## Pages prioritaires suggérées pour la suite
 
-Dans l'ordre où je les traiterais : `Classes.tsx` (→
-`/api/pedagogie/classes` — voir remarque ci-dessus sur sa complexité),
-`Grades.tsx`/`notes/Moyennes.tsx` (→ `/api/notes`),
-`Finance.tsx`/`comptabilite/PaiementsScolaires.tsx` (→ `/api/finance`), puis
-`ParentPortal.tsx` (→ `/api/portail-parents`, en remplaçant aussi
-`ParentLogin.tsx` par un vrai appel à `POST /api/auth/login` avec le rôle
-`parent`).
+Dans l'ordre où je les traiterais : `Grades.tsx`/`notes/Moyennes.tsx` (→
+`/api/notes`), `Finance.tsx`/`comptabilite/PaiementsScolaires.tsx` (→
+`/api/finance`), puis `ParentPortal.tsx` (→ `/api/portail-parents`, en
+remplaçant aussi `ParentLogin.tsx` par un vrai appel à `POST /api/auth/login`
+avec le rôle `parent`).
