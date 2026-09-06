@@ -9,7 +9,7 @@ export interface AuthUser {
   doitChangerMdp: boolean;
   personnel?: unknown;
   eleve?: unknown;
-  parentProfil?: unknown;
+  parentProfil?: { id: string; nom: string; prenom: string; telephone: string; email: string } | null;
 }
 
 interface AuthContextType {

@@ -65,7 +65,14 @@ router.get(
   '/bulletins/:eleveId',
   requireOwnChildOrStaff(),
   asyncHandler(async (req, res) => {
-    res.json(await prisma.bulletin.findMany({ where: { eleveId: req.params.eleveId }, orderBy: { genereLe: 'desc' } }));
+    // Un parent ne doit voir que les bulletins officiellement publiés, pas
+    // ceux encore en préparation côté secrétariat/direction.
+    res.json(
+      await prisma.bulletin.findMany({
+        where: { eleveId: req.params.eleveId, envoyeAuxParents: true },
+        orderBy: { genereLe: 'desc' },
+      })
+    );
   })
 );
 
