@@ -637,6 +637,7 @@ model Bulletin {
   templateUtilise    String   @default("classic")
   genereLe           DateTime @default(now())
   envoyeAuxParents   Boolean  @default(false)
+  documentUrl        String?  // URL du PDF archivé dans Azure Blob Storage (voir src/lib/blobStorage.ts)
   detailMatieres     Json     // snapshot des notes/moyennes par matière au moment de la génération
 
   @@unique([eleveId, periodeId])
