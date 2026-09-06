@@ -1,6 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+// Valeur par défaut : l'API de test déployée sur Render, pour que l'aperçu
+// Lovable fonctionne sans configuration manuelle de VITE_API_URL. En
+// développement local ou sur un autre déploiement (Azure...), définissez
+// VITE_API_URL dans votre .env pour la surcharger.
+const API_URL = import.meta.env.VITE_API_URL || 'https://nextgen-education-api.onrender.com/api';
 
 const ACCESS_TOKEN_KEY = 'auth_access_token';
 const REFRESH_TOKEN_KEY = 'auth_refresh_token';
