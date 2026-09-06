@@ -157,6 +157,7 @@ const pointageSchema = z.object({
   heureArrivee: z.coerce.date().optional(),
   heureDepart: z.coerce.date().optional(),
   statut: z.enum(['Présent', 'Absent', 'Retard', 'Congé']).optional(),
+  commentaire: z.string().optional(),
 });
 router.post(
   '/pointage',
@@ -231,6 +232,20 @@ router.post(
       data: { ...data, criteres: data.criteres as any, noteGlobale, statut: 'Validée' },
     });
     res.status(201).json(evaluation);
+  })
+);
+
+// Liste des évaluations (même convention de chemin que /conges/all).
+router.get(
+  '/evaluations/all',
+  asyncHandler(async (req, res) => {
+    const personnelId = req.query.personnelId as string | undefined;
+    const evaluations = await prisma.evaluation.findMany({
+      where: personnelId ? { personnelId } : undefined,
+      include: { personnel: true, evaluateur: true },
+      orderBy: { dateEvaluation: 'desc' },
+    });
+    res.json(evaluations);
   })
 );
 

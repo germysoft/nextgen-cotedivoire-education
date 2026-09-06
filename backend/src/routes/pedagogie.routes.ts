@@ -119,6 +119,21 @@ router.get(
   })
 );
 
+router.put(
+  '/affectations/:id',
+  asyncHandler(async (req, res) => {
+    const data = affectationSchema.partial().parse(req.body);
+    res.json(await prisma.affectation.update({ where: { id: req.params.id }, data }));
+  })
+);
+router.delete(
+  '/affectations/:id',
+  asyncHandler(async (req, res) => {
+    await prisma.affectation.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  })
+);
+
 // --- Emploi du temps (Cours) ---
 const coursSchema = z.object({
   classeId: z.string().uuid(),
