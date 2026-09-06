@@ -19,6 +19,7 @@ export interface Personnel {
   categoriePersonnel: 'Enseignant' | 'Administratif' | 'Technique' | 'Direction' | 'Médical' | 'Surveillance';
   statut: 'Permanent' | 'Vacataire' | 'Contractuel' | 'Stagiaire' | 'Intérimaire';
   actif: boolean;
+  soldeCongesAnnuels: number;
   affectations?: AffectationResume[];
 }
 
