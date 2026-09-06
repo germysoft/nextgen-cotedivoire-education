@@ -4,29 +4,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Mail, Lock } from "lucide-react";
+import { GraduationCap, Mail, Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ParentLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate login (mock)
-    setTimeout(() => {
-      if (email && code) {
-        toast.success("Connexion réussie!");
-        navigate("/parent-portal");
-      } else {
-        toast.error("Veuillez remplir tous les champs");
+    try {
+      const user = await login(email, password);
+      if (user.role !== "parent" && user.role !== "eleve") {
+        toast.error("Ce compte n'est pas un compte parent/élève.");
+        return;
       }
+      toast.success("Connexion réussie !");
+      navigate("/parent-portal");
+    } catch {
+      toast.error("Email ou code d'accès incorrect.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -54,13 +58,13 @@ export default function ParentLogin() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email / Matricule</Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
-                  type="text"
-                  placeholder="exemple@email.ci ou 66800001A"
+                  type="email"
+                  placeholder="parent@demo.ci"
                   className="pl-10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -77,8 +81,8 @@ export default function ParentLogin() {
                   type="password"
                   placeholder="Code reçu par SMS"
                   className="pl-10"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
@@ -86,7 +90,7 @@ export default function ParentLogin() {
 
             <div className="pt-2">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Connexion..." : "Se connecter"}
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Se connecter"}
               </Button>
             </div>
 
@@ -99,7 +103,7 @@ export default function ParentLogin() {
               </p>
             </div>
 
-            {/* Demo credentials */}
+            {/* Identifiants de démonstration (créés par le seed du backend) */}
             <div className="bg-muted/30 border border-dashed border-border rounded-lg p-4">
               <p className="text-xs font-medium mb-2 text-foreground">Accès de démonstration:</p>
               <div className="space-y-1">
@@ -107,7 +111,7 @@ export default function ParentLogin() {
                   <span className="font-medium">Email:</span> parent@demo.ci
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Code:</span> 123456
+                  <span className="font-medium">Code:</span> ChangeMoi123!
                 </p>
               </div>
             </div>

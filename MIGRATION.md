@@ -146,3 +146,23 @@ Les photos et documents (bulletins PDF) ne sont jamais stockés en base :
 `src/lib/blobStorage.ts` + `src/routes/uploads.routes.ts` gèrent l'upload
 vers Azure Blob Storage, seule l'URL est persistée (`Eleve.photo`,
 `Personnel.photo`, `Bulletin.documentUrl`).
+
+## ParentLogin.tsx / ParentPortal.tsx — branchés
+
+- **`ParentLogin.tsx`** : connexion réelle via `POST /api/auth/login`
+  (même endpoint que le staff, rôle `parent`/`eleve`).
+- **`ParentPortal.tsx`** + **`src/hooks/api/useParentPortal.ts`** : sélecteur
+  d'enfant réel (un parent peut avoir plusieurs enfants rattachés), notes,
+  absences, échéances de paiement et bulletins tous branchés sur
+  `/api/portail-parents/*`, avec l'accès strictement limité aux propres
+  enfants du compte connecté (déjà garanti côté backend par
+  `middleware/ownership.ts`).
+- Correctif backend au passage : `GET /api/portail-parents/bulletins/:eleveId`
+  ne renvoyait pas que les bulletins marqués `envoyeAuxParents: true` — un
+  parent aurait pu voir un bulletin encore en préparation. Corrigé.
+- Simplifications assumées : pas de colonne "Retard" distincte de
+  "Absence" (le schéma `Absence` ne modélise que présent/absent avec
+  justification, pas un troisième statut retard) ; le bouton "Payer
+  maintenant" reste un message d'attente — l'intégration d'un vrai moyen
+  de paiement en ligne (Mobile Money) est un projet à part entière, non
+  couvert ici.
