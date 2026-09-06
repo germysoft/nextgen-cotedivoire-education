@@ -18,15 +18,17 @@ if (!ACCESS_SECRET || !REFRESH_SECRET) {
 }
 
 export function signAccessToken(payload: AccessTokenPayload): string {
-  return jwt.sign(payload, ACCESS_SECRET, {
-    expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
-  });
+  const options: jwt.SignOptions = {
+    expiresIn: (process.env.JWT_ACCESS_EXPIRES_IN || '15m') as jwt.SignOptions['expiresIn'],
+  };
+  return jwt.sign(payload, ACCESS_SECRET, options);
 }
 
 export function signRefreshToken(userId: string): string {
-  return jwt.sign({ sub: userId }, REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-  });
+  const options: jwt.SignOptions = {
+    expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'],
+  };
+  return jwt.sign({ sub: userId }, REFRESH_SECRET, options);
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
