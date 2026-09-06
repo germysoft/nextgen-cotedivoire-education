@@ -213,3 +213,30 @@ vers Azure Blob Storage, seule l'URL est persistée (`Eleve.photo`,
   justificatif). Le point de départ existe déjà côté API
   (`POST /api/personnel/pointage`) mais manque une route de liste et les
   champs de justification — à concevoir si ce suivi est nécessaire.
+
+## Déploiement de test sur Render (validation du circuit complet)
+
+Avant de brancher Lovable sur l'API, un déploiement de test a été fait sur
+Render (PostgreSQL + service web backend) pour valider que tout le circuit
+fonctionne réellement, indépendamment d'Azure.
+
+Deux corrections nécessaires découvertes à cette occasion (donc utiles
+aussi pour le déploiement Azure) :
+- **`backend/tsconfig.json`** : `moduleResolution: "node"` a été retiré
+  (option dépréciée puis supprimée par une version récente de TypeScript,
+  faisait échouer le build) ; `prisma/seed.ts` retiré de `include` (il
+  violait `rootDir` — le seed s'exécute de toute façon via `ts-node
+  --transpile-only`, pas via `tsc`, donc n'a pas besoin d'être inclus ici).
+- **Aucun historique de migration Prisma n'existe dans le dépôt**
+  (`prisma migrate dev` n'a jamais pu être exécuté dans l'environnement de
+  développement utilisé jusqu'ici, qui n'a pas accès aux binaires moteur
+  de Prisma). En conséquence, `prisma migrate deploy` ne crée aucune
+  table ("No migration found"). Solution retenue pour ce déploiement de
+  test : `prisma db push` à la place, qui synchronise directement le
+  schéma sans historique de migrations. **Recommandation avant une mise
+  en production réelle** : générer un historique de migrations propre
+  avec `npx prisma migrate dev --name init` depuis un poste ayant accès
+  à internet, committer le dossier `prisma/migrations/` généré, puis
+  repasser sur `prisma migrate deploy` (plus sûr en production que
+  `db push`, qui peut perdre des données sur certains changements de
+  schéma).
