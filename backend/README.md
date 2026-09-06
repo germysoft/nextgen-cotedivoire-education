@@ -112,12 +112,16 @@ pour le connecter à cette API (à faire côté repo frontend) :
 
 ## 5. Déploiement
 
-- `npm run build && npm start` (Node), ou conteneuriser avec un `Dockerfile`
-  standard `node:20-alpine` + `npm ci && npm run build`.
-- `npm run prisma:deploy` en production (n'invite pas à nommer une
-  migration, applique les migrations existantes).
-- Pensez à générer de vrais secrets JWT (`openssl rand -hex 64`) et à ne
-  jamais committer `.env`.
+Voir **`AZURE_DEPLOYMENT.md`** pour le guide complet de déploiement sur
+Azure (base de données, stockage des fichiers, hébergement, partitionnement
+par année scolaire et archivage annuel).
+
+Pour un déploiement générique ailleurs : `npm run build && npm start`
+(Node), ou conteneuriser avec un `Dockerfile` standard `node:20-alpine` +
+`npm ci && npm run build`. `npm run prisma:deploy` en production (n'invite
+pas à nommer une migration, applique les migrations existantes). Pensez à
+générer de vrais secrets JWT (`openssl rand -hex 64`) et à ne jamais
+committer `.env`.
 
 ## 6. Limites connues de cette première version
 
@@ -132,3 +136,13 @@ pour le connecter à cette API (à faire côté repo frontend) :
   les comptes normalisés eux-mêmes ne sont pas préchargés, à ajouter via un
   script de seed comptable dédié.
 - Pas de tests automatisés inclus dans cette première version.
+
+## 7. Stockage des fichiers et déploiement Azure
+
+Les photos (élèves, personnel) et documents (bulletins PDF) ne sont jamais
+stockés en base — voir `src/lib/blobStorage.ts` et les routes
+`src/routes/uploads.routes.ts`. Le partitionnement par année scolaire des
+tables à forte volumétrie (`Note`, `Absence`, `Pointage`,
+`EcritureComptable`, `AuditLog`) et l'archivage annuel vers Azure Blob
+Storage sont scriptés dans `scripts/` — voir **`AZURE_DEPLOYMENT.md`** pour
+la procédure complète de déploiement et la maintenance annuelle.

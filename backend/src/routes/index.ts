@@ -17,6 +17,7 @@ import infirmerieRoutes from './infirmerie.routes';
 import messagerieRoutes from './messagerie.routes';
 import portailParentsRoutes from './portail-parents.routes';
 import examensRoutes from './examens.routes';
+import uploadsRoutes from './uploads.routes';
 
 export const apiRouter = Router();
 
@@ -49,6 +50,7 @@ apiRouter.use('/infirmerie', infirmerieRoutes);
 apiRouter.use('/messagerie', messagerieRoutes);
 apiRouter.use('/portail-parents', portailParentsRoutes);
 apiRouter.use('/examens', examensRoutes);
+apiRouter.use('/uploads', uploadsRoutes);
 
 // --- Ressources génériques : chacune montée derrière le contrôle du module concerné ---
 for (const resource of buildGenericRouters()) {

@@ -121,3 +121,28 @@ Dans l'ordre où je les traiterais : `ParentPortal.tsx` (→
 appel à `POST /api/auth/login` avec le rôle `parent`), puis
 `bibliotheque/Emprunts.tsx` (→ `/api/bibliotheque`, déjà riche en logique
 métier réelle côté backend : pénalités de retard automatiques).
+
+## Déploiement Azure et stratégie de base de données
+
+Le backend est prévu pour un déploiement sur **Azure** : Azure Database for
+PostgreSQL Flexible Server (pas de changement de moteur nécessaire, le
+schéma reste du Postgres standard) + Azure Blob Storage pour les fichiers
+(photos, bulletins PDF). Voir `backend/AZURE_DEPLOYMENT.md` pour le guide
+complet.
+
+Sur la question de l'historisation par année scolaire : plutôt qu'une
+nouvelle base de données chaque année (ce qui casserait les relations
+multi-années élève/personnel et multiplierait les coûts d'infrastructure),
+les tables à forte volumétrie (`Note`, `Absence`, `Pointage`,
+`EcritureComptable`, `AuditLog`) sont **partitionnées nativement par
+PostgreSQL**, une partition par année scolaire — voir
+`backend/scripts/setup-partitioning.sql` (mise en place) et
+`backend/scripts/create-yearly-partition.ts` /
+`backend/scripts/archive-partition.ts` (maintenance annuelle : création de
+la partition de l'année suivante, puis archivage réel des vieilles années
+vers Azure Blob Storage une fois qu'elles ne sont plus consultées).
+
+Les photos et documents (bulletins PDF) ne sont jamais stockés en base :
+`src/lib/blobStorage.ts` + `src/routes/uploads.routes.ts` gèrent l'upload
+vers Azure Blob Storage, seule l'URL est persistée (`Eleve.photo`,
+`Personnel.photo`, `Bulletin.documentUrl`).
