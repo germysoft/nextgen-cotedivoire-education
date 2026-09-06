@@ -204,6 +204,7 @@ model Personnel {
   formations           Formation[]
   contrats             Contrat[]
   conges               Conge[]
+  congesRemplacements  Conge[]           @relation("CongeRemplacant")
   evaluations          Evaluation[]      @relation("EvaluationPersonnel")
   evaluationsFaites    Evaluation[]      @relation("EvaluationEvaluateur")
   pointages            Pointage[]
@@ -265,6 +266,9 @@ model Conge {
   motif        String?
   statut       String    @default("En attente") // En attente, Validé, Refusé
   valideParId  String?
+  remplacantId String?
+  remplacant   Personnel? @relation("CongeRemplacant", fields: [remplacantId], references: [id])
+  contact      String?   // contact joignable pendant le congé
   createdAt    DateTime  @default(now())
 }
 

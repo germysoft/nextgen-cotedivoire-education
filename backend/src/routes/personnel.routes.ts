@@ -109,6 +109,8 @@ const congeSchema = z.object({
   dateDebut: z.coerce.date(),
   dateFin: z.coerce.date(),
   motif: z.string().optional(),
+  remplacantId: z.string().uuid().optional(),
+  contact: z.string().optional(),
 });
 router.post(
   '/conges',
@@ -143,7 +145,7 @@ router.put(
 router.get(
   '/conges/all',
   asyncHandler(async (req, res) => {
-    const conges = await prisma.conge.findMany({ include: { personnel: true }, orderBy: { createdAt: 'desc' } });
+    const conges = await prisma.conge.findMany({ include: { personnel: true, remplacant: true }, orderBy: { createdAt: 'desc' } });
     res.json(conges);
   })
 );

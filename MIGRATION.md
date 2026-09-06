@@ -189,3 +189,27 @@ vers Azure Blob Storage, seule l'URL est persistée (`Eleve.photo`,
   reconcevoir si besoin, en s'appuyant sur `/api/messagerie/sms` et
   `/api/messagerie/emails` (déjà en place mais eux-mêmes en mode
   "brouillon", voir plus haut).
+
+## hr/Conges.tsx — branché (partiellement)
+
+- **`src/hooks/api/useConges.ts`** + **`Conges.tsx`** : onglet "Congés"
+  entièrement branché sur `/api/personnel/conges` (création, validation,
+  refus — avec décrément réel du solde de l'employé à la validation, déjà
+  géré côté backend). Onglet "Soldes de Congés" branché sur le vrai champ
+  `Personnel.soldeCongesAnnuels`.
+- Ajout backend : le modèle `Conge` gagne deux champs (`remplacantId` →
+  relation vers `Personnel`, `contact`) pour couvrir ce que l'interface
+  demandait déjà.
+- Libellés de statut alignés sur le schéma réel : "Approuvé"/"Rejeté"
+  (mock) → "Validé"/"Refusé" (valeurs réelles de `Conge.statut`).
+- **Non repris** : l'onglet "Soldes" ne montre plus le détail
+  acquis/pris/report N-1 (fabriqué dans le mock) — seul le solde courant
+  existe réellement dans le schéma (`soldeCongesAnnuels`, un compteur qui
+  se décrémente, pas un historique décomposé). L'onglet "Absences
+  quotidiennes" (retards/absences du personnel, distinct des congés) n'est
+  **pas branché** : son schéma attendu (justificatif, motif détaillé, type
+  Retard/Maladie...) ne correspond pas au modèle `Pointage` actuel
+  (présent/absent/retard/congé + heure d'arrivée uniquement, pas de
+  justificatif). Le point de départ existe déjà côté API
+  (`POST /api/personnel/pointage`) mais manque une route de liste et les
+  champs de justification — à concevoir si ce suivi est nécessaire.
