@@ -157,6 +157,7 @@ const pointageSchema = z.object({
   heureArrivee: z.coerce.date().optional(),
   heureDepart: z.coerce.date().optional(),
   statut: z.enum(['Présent', 'Absent', 'Retard', 'Congé']).optional(),
+  commentaire: z.string().optional(),
 });
 router.post(
   '/pointage',
@@ -166,6 +167,49 @@ router.post(
     res.status(201).json(pointage);
   })
 );
+/**
+ * Liste des pointages (le chemin est préfixé `/all` comme pour les congés,
+ * afin de ne pas être capté par la route `GET /:id` du personnel).
+ * Filtres : ?date=YYYY-MM-DD (journée complète) et ?personnelId=.
+ */
+router.get(
+  '/pointage/all',
+  asyncHandler(async (req, res) => {
+    const dateStr = req.query.date as string | undefined;
+    const personnelId = req.query.personnelId as string | undefined;
+
+    let dateFilter: { gte: Date; lt: Date } | undefined;
+    if (dateStr) {
+      const debut = new Date(`${dateStr}T00:00:00.000Z`);
+      const fin = new Date(debut);
+      fin.setUTCDate(fin.getUTCDate() + 1);
+      dateFilter = { gte: debut, lt: fin };
+    }
+
+    const pointages = await prisma.pointage.findMany({
+      where: { ...(personnelId && { personnelId }), ...(dateFilter && { date: dateFilter }) },
+      include: { personnel: true },
+      orderBy: [{ date: 'desc' }, { heureArrivee: 'asc' }],
+      take: 500,
+    });
+    res.json(pointages);
+  })
+);
+router.put(
+  '/pointage/:id',
+  asyncHandler(async (req, res) => {
+    const data = pointageSchema.partial().parse(req.body);
+    res.json(await prisma.pointage.update({ where: { id: req.params.id }, data }));
+  })
+);
+router.delete(
+  '/pointage/:id',
+  asyncHandler(async (req, res) => {
+    await prisma.pointage.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  })
+);
+
 
 // --- Évaluations ---
 const evaluationSchema = z.object({
@@ -188,6 +232,20 @@ router.post(
       data: { ...data, criteres: data.criteres as any, noteGlobale, statut: 'Validée' },
     });
     res.status(201).json(evaluation);
+  })
+);
+
+// Liste des évaluations (même convention de chemin que /conges/all).
+router.get(
+  '/evaluations/all',
+  asyncHandler(async (req, res) => {
+    const personnelId = req.query.personnelId as string | undefined;
+    const evaluations = await prisma.evaluation.findMany({
+      where: personnelId ? { personnelId } : undefined,
+      include: { personnel: true, evaluateur: true },
+      orderBy: { dateEvaluation: 'desc' },
+    });
+    res.json(evaluations);
   })
 );
 
