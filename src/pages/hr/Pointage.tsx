@@ -335,7 +335,6 @@ export default function Pointage() {
               Enregistrer
             </Button>
           </DialogFooter>
-        </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
