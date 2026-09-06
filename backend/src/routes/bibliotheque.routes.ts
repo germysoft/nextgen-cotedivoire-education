@@ -50,6 +50,7 @@ const empruntSchema = z.object({
   livreId: z.string().uuid(),
   eleveId: z.string().uuid().optional(),
   carteLecteurId: z.string().uuid().optional(),
+  dureeJours: z.number().int().min(1).max(60).optional(),
 });
 router.post(
   '/emprunts',
@@ -64,9 +65,10 @@ router.post(
       await tx.livre.update({ where: { id: data.livreId }, data: { exemplairesDisponibles: { decrement: 1 } } });
 
       const dateRetourPrevue = new Date();
-      dateRetourPrevue.setDate(dateRetourPrevue.getDate() + DUREE_EMPRUNT_JOURS);
+      dateRetourPrevue.setDate(dateRetourPrevue.getDate() + (data.dureeJours ?? DUREE_EMPRUNT_JOURS));
 
-      return tx.emprunt.create({ data: { ...data, dateRetourPrevue } });
+      const { dureeJours, ...empruntData } = data;
+      return tx.emprunt.create({ data: { ...empruntData, dateRetourPrevue } });
     });
 
     res.status(201).json(emprunt);
@@ -107,7 +109,7 @@ router.get(
     res.json(
       await prisma.emprunt.findMany({
         where: { ...(statut && { statut }), ...(eleveId && { eleveId }) },
-        include: { livre: true, eleve: true },
+        include: { livre: true, eleve: { include: { inscriptions: { include: { classe: true }, take: 1, orderBy: { dateInscription: 'desc' } } } } },
         orderBy: { dateEmprunt: 'desc' },
       })
     );
@@ -121,7 +123,7 @@ router.get(
     res.json(
       await prisma.emprunt.findMany({
         where: { statut: 'En cours', dateRetourPrevue: { lt: new Date() } },
-        include: { livre: true, eleve: true },
+        include: { livre: true, eleve: { include: { inscriptions: { include: { classe: true }, take: 1, orderBy: { dateInscription: 'desc' } } } } },
       })
     );
   })
