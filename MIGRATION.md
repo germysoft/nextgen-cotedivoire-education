@@ -166,3 +166,26 @@ vers Azure Blob Storage, seule l'URL est persistée (`Eleve.photo`,
   maintenant" reste un message d'attente — l'intégration d'un vrai moyen
   de paiement en ligne (Mobile Money) est un projet à part entière, non
   couvert ici.
+
+## bibliotheque/Emprunts.tsx — branché
+
+- **`src/hooks/api/useBibliotheque.ts`** + **`Emprunts.tsx`** : catalogue et
+  emprunts réels, branchés sur `/api/bibliotheque/*`. La création d'un
+  emprunt vérifie la disponibilité réelle d'exemplaires (transaction
+  atomique côté backend), et l'enregistrement d'un retour calcule
+  réellement les jours de retard et la pénalité associée.
+- Petit ajout backend : `POST /api/bibliotheque/emprunts` accepte
+  désormais un `dureeJours` optionnel (7/14/21/30 jours au choix dans
+  l'interface), au lieu d'une durée fixe de 14 jours.
+- Les stats "Retours aujourd'hui" et "Taux de retour" (qui étaient des
+  chiffres fixes non branchés) sont remplacées par des équivalents réels :
+  retours des 7 derniers jours, et taux de retour *à temps* (sans
+  pénalité) sur les emprunts déjà retournés.
+- **Non repris** : la fonctionnalité "Relance SMS/Email" (bouton présent
+  dans l'ancienne version mock) n'a pas d'équivalent propre dans le schéma
+  actuel — les coordonnées de contact pertinentes sont celles du parent
+  (`ParentProfil`, via la relation `ElevePar`), pas de l'élève directement,
+  et le mock ne faisait de toute façon qu'un `toast` sans envoi réel. À
+  reconcevoir si besoin, en s'appuyant sur `/api/messagerie/sms` et
+  `/api/messagerie/emails` (déjà en place mais eux-mêmes en mode
+  "brouillon", voir plus haut).
