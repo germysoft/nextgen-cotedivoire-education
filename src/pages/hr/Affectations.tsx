@@ -1,415 +1,234 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UserPlus, TrendingUp, Award, Calendar, Search, Edit, Eye, FileText, Plus, Trash2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Award, Edit, Loader2, Plus, Search, Trash2, UserPlus, AlertTriangle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Affectation, EvaluationRH, CritereEvaluation,
+  useAffectationsQuery, useCreateAffectation, useUpdateAffectation, useDeleteAffectation,
+  useMatieresQuery, useEvaluationsRHQuery, useCreateEvaluationRH,
+} from "@/hooks/api/useRH";
+import { usePersonnelQuery } from "@/hooks/api/usePersonnel";
+import { useClassesQuery } from "@/hooks/api/useClasses";
 
-interface Affectation {
-  id: number;
-  nom: string;
-  poste: string;
-  classe: string;
-  statut: string;
-  date_debut: string;
-  anciennete: string;
-  matiere?: string;
-}
+/**
+ * Page branchée sur l'API réelle :
+ * - onglet Affectations → /api/pedagogie/affectations
+ * - onglet Évaluations  → /api/personnel/evaluations
+ *
+ * Simplifications assumées :
+ * - L'onglet « Promotions » du mock a été RETIRÉ : il n'existe aucun modèle
+ *   `Promotion` dans backend/prisma/schema.prisma (l'évolution de carrière
+ *   n'est aujourd'hui tracée que par la succession des contrats). Le
+ *   réintroduire supposerait d'abord de concevoir ce modèle côté backend.
+ * - Une affectation réelle relie un membre du personnel à un couple
+ *   classe + matière avec une charge horaire hebdomadaire ; les champs du mock
+ *   `dateDebut` / `dateFin` / `statut` / `anciennete` n'existent pas dans le
+ *   modèle `Affectation` et ont donc été retirés.
+ * - Les critères d'évaluation sont stockés en JSON (`Evaluation.criteres`) :
+ *   quatre critères pondérés à parts égales sont proposés, la note globale
+ *   étant calculée côté backend.
+ */
 
-interface Promotion {
-  id: number;
-  nom: string;
-  ancien_poste: string;
-  nouveau_poste: string;
-  date: string;
-  raison: string;
-  decision_reference?: string;
-  observations?: string;
-}
-
-interface Evaluation {
-  id: number;
-  nom: string;
-  poste: string;
-  note: number;
-  date: string;
-  commentaire: string;
-  competences_pedagogiques?: number;
-  competences_relationnelles?: number;
-  ponctualite?: number;
-  engagement?: number;
-  recommandations?: string;
-}
-
-const initialAffectations: Affectation[] = [
-  { id: 1, nom: "KOUASSI Jean", poste: "Professeur Mathématiques", classe: "3ème A, B", statut: "active", date_debut: "2024-09-01", anciennete: "5 ans", matiere: "Mathématiques" },
-  { id: 2, nom: "DIALLO Fatou", poste: "Professeur Français", classe: "4ème A, 5ème B", statut: "active", date_debut: "2023-09-01", anciennete: "2 ans", matiere: "Français" },
-  { id: 3, nom: "TRAORE Mamadou", poste: "Professeur Physique", classe: "Terminale S", statut: "active", date_debut: "2022-09-01", anciennete: "3 ans", matiere: "Physique-Chimie" },
-  { id: 4, nom: "KONE Marie", poste: "Professeur Anglais", classe: "6ème A, B, C", statut: "active", date_debut: "2024-01-15", anciennete: "1 an", matiere: "Anglais" },
+const CRITERES_DEFAUT: CritereEvaluation[] = [
+  { categorie: "Pédagogie", critere: "Compétences pédagogiques", note: 15, poids: 25 },
+  { categorie: "Relationnel", critere: "Compétences relationnelles", note: 15, poids: 25 },
+  { categorie: "Assiduité", critere: "Ponctualité et assiduité", note: 15, poids: 25 },
+  { categorie: "Implication", critere: "Engagement dans la vie de l'établissement", note: 15, poids: 25 },
 ];
 
-const initialPromotions: Promotion[] = [
-  { id: 1, nom: "SORO Ibrahim", ancien_poste: "Surveillant", nouveau_poste: "Censeur Adjoint", date: "2024-09-01", raison: "Mérite", decision_reference: "DEC-2024-001", observations: "Excellente performance sur les 3 dernières années" },
-  { id: 2, nom: "BAMBA Aya", ancien_poste: "Prof. Français", nouveau_poste: "Prof. Principal 3ème", date: "2024-09-01", raison: "Ancienneté", decision_reference: "DEC-2024-002", observations: "10 ans d'expérience dans l'établissement" },
-];
+const apiError = (err: any, fallback: string) =>
+  toast.error(err?.response?.data?.error ?? fallback);
 
-const initialEvaluations: Evaluation[] = [
-  { id: 1, nom: "KOUASSI Jean", poste: "Prof. Maths", note: 18, date: "2024-06-15", commentaire: "Excellent pédagogue", competences_pedagogiques: 19, competences_relationnelles: 17, ponctualite: 18, engagement: 18, recommandations: "Encourager à mentorer les nouveaux enseignants" },
-  { id: 2, nom: "DIALLO Fatou", poste: "Prof. Français", note: 16, date: "2024-06-15", commentaire: "Très bon engagement", competences_pedagogiques: 16, competences_relationnelles: 17, ponctualite: 15, engagement: 16, recommandations: "Formation continue en méthodologie" },
-  { id: 3, nom: "TRAORE Mamadou", poste: "Prof. Physique", note: 17, date: "2024-06-15", commentaire: "Très investi", competences_pedagogiques: 17, competences_relationnelles: 18, ponctualite: 16, engagement: 17, recommandations: "Proposer pour la coordination pédagogique" },
-];
-
-const Affectations = () => {
+export default function AffectationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  // State for data
-  const [affectations, setAffectations] = useState<Affectation[]>(initialAffectations);
-  const [promotions, setPromotions] = useState<Promotion[]>(initialPromotions);
-  const [evaluations, setEvaluations] = useState<Evaluation[]>(initialEvaluations);
-  
-  // Edit dialogs state
-  const [editAffectationOpen, setEditAffectationOpen] = useState(false);
-  const [editPromotionOpen, setEditPromotionOpen] = useState(false);
-  const [editEvaluationOpen, setEditEvaluationOpen] = useState(false);
-  const [newPromotionOpen, setNewPromotionOpen] = useState(false);
-  const [newEvaluationOpen, setNewEvaluationOpen] = useState(false);
-  
-  // Selected items for editing
-  const [selectedAffectation, setSelectedAffectation] = useState<Affectation | null>(null);
-  const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
-  
-  // Form states
-  const [editForm, setEditForm] = useState({
-    poste: "",
-    classe: "",
-    matiere: "",
-    date_debut: "",
-    statut: "active"
-  });
-  
-  const [promotionForm, setPromotionForm] = useState({
-    nom: "",
-    ancien_poste: "",
-    nouveau_poste: "",
-    date: "",
-    raison: "",
-    decision_reference: "",
-    observations: ""
-  });
-  
-  const [evaluationForm, setEvaluationForm] = useState({
-    nom: "",
-    poste: "",
-    note: 0,
-    date: "",
-    commentaire: "",
-    competences_pedagogiques: 0,
-    competences_relationnelles: 0,
-    ponctualite: 0,
-    engagement: 0,
-    recommandations: ""
+  const [affectationDialogOpen, setAffectationDialogOpen] = useState(false);
+  const [editingAffectationId, setEditingAffectationId] = useState<string | null>(null);
+  const [affForm, setAffForm] = useState({
+    personnelId: "", classeId: "", matiereId: "", chargeHoraireHebdo: "4", coefficient: "",
   });
 
-  const handleNewAffectation = () => {
-    toast.success("Nouvelle affectation créée avec succès");
-    setIsDialogOpen(false);
-  };
-  
-  // Open edit affectation dialog
-  const handleEditAffectation = (affectation: Affectation) => {
-    setSelectedAffectation(affectation);
-    setEditForm({
-      poste: affectation.poste,
-      classe: affectation.classe,
-      matiere: affectation.matiere || "",
-      date_debut: affectation.date_debut,
-      statut: affectation.statut
-    });
-    setEditAffectationOpen(true);
-  };
-  
-  // Save affectation edit
-  const handleSaveAffectation = () => {
-    if (!selectedAffectation) return;
-    
-    setAffectations(prev => prev.map(a => 
-      a.id === selectedAffectation.id 
-        ? { ...a, ...editForm }
-        : a
-    ));
-    
-    toast.success(`Affectation de ${selectedAffectation.nom} mise à jour avec succès`);
-    setEditAffectationOpen(false);
-    setSelectedAffectation(null);
-  };
-  
-  // View promotion details
-  const handleViewPromotion = (promotion: Promotion) => {
-    setSelectedPromotion(promotion);
-    setPromotionForm({
-      nom: promotion.nom,
-      ancien_poste: promotion.ancien_poste,
-      nouveau_poste: promotion.nouveau_poste,
-      date: promotion.date,
-      raison: promotion.raison,
-      decision_reference: promotion.decision_reference || "",
-      observations: promotion.observations || ""
-    });
-    setEditPromotionOpen(true);
-  };
-  
-  // Save promotion edit
-  const handleSavePromotion = () => {
-    if (!selectedPromotion) return;
-    
-    setPromotions(prev => prev.map(p => 
-      p.id === selectedPromotion.id 
-        ? { ...p, ...promotionForm }
-        : p
-    ));
-    
-    toast.success(`Promotion de ${selectedPromotion.nom} mise à jour avec succès`);
-    setEditPromotionOpen(false);
-    setSelectedPromotion(null);
-  };
-  
-  // Create new promotion
-  const handleCreatePromotion = () => {
-    const newPromotion: Promotion = {
-      id: Math.max(...promotions.map(p => p.id)) + 1,
-      ...promotionForm
-    };
-    
-    setPromotions(prev => [...prev, newPromotion]);
-    toast.success(`Nouvelle promotion créée pour ${promotionForm.nom}`);
-    setNewPromotionOpen(false);
-    setPromotionForm({
-      nom: "",
-      ancien_poste: "",
-      nouveau_poste: "",
-      date: "",
-      raison: "",
-      decision_reference: "",
-      observations: ""
-    });
-  };
-  
-  // View evaluation details
-  const handleViewEvaluation = (evaluation: Evaluation) => {
-    setSelectedEvaluation(evaluation);
-    setEvaluationForm({
-      nom: evaluation.nom,
-      poste: evaluation.poste,
-      note: evaluation.note,
-      date: evaluation.date,
-      commentaire: evaluation.commentaire,
-      competences_pedagogiques: evaluation.competences_pedagogiques || 0,
-      competences_relationnelles: evaluation.competences_relationnelles || 0,
-      ponctualite: evaluation.ponctualite || 0,
-      engagement: evaluation.engagement || 0,
-      recommandations: evaluation.recommandations || ""
-    });
-    setEditEvaluationOpen(true);
-  };
-  
-  // Save evaluation edit
-  const handleSaveEvaluation = () => {
-    if (!selectedEvaluation) return;
-    
-    const avgNote = Math.round(
-      (evaluationForm.competences_pedagogiques + 
-       evaluationForm.competences_relationnelles + 
-       evaluationForm.ponctualite + 
-       evaluationForm.engagement) / 4
+  const [evalDialogOpen, setEvalDialogOpen] = useState(false);
+  const [evalDetail, setEvalDetail] = useState<EvaluationRH | null>(null);
+  const [evalForm, setEvalForm] = useState({
+    personnelId: "", evaluateurId: "", periode: "", typeEvaluation: "Annuelle",
+    dateEvaluation: new Date().toISOString().split("T")[0],
+    appreciationGenerale: "",
+    criteres: CRITERES_DEFAUT,
+  });
+
+  const affectationsQuery = useAffectationsQuery();
+  const evaluationsQuery = useEvaluationsRHQuery();
+  const { data: personnelData } = usePersonnelQuery({ pageSize: 500 });
+  const { data: classes = [] } = useClassesQuery();
+  const { data: matieres = [] } = useMatieresQuery();
+
+  const personnel = personnelData?.items ?? [];
+  const affectations = affectationsQuery.data ?? [];
+  const evaluations = evaluationsQuery.data ?? [];
+
+  const createAffectation = useCreateAffectation();
+  const updateAffectation = useUpdateAffectation();
+  const deleteAffectation = useDeleteAffectation();
+  const createEvaluation = useCreateEvaluationRH();
+
+  const filteredAffectations = useMemo(() => {
+    const q = searchTerm.toLowerCase();
+    return affectations.filter((a) =>
+      `${a.personnel?.nom ?? ""} ${a.personnel?.prenom ?? ""} ${a.matiere?.nom ?? ""} ${a.classe?.nom ?? ""}`
+        .toLowerCase().includes(q)
     );
-    
-    setEvaluations(prev => prev.map(e => 
-      e.id === selectedEvaluation.id 
-        ? { ...e, ...evaluationForm, note: avgNote }
-        : e
-    ));
-    
-    toast.success(`Évaluation de ${selectedEvaluation.nom} mise à jour avec succès`);
-    setEditEvaluationOpen(false);
-    setSelectedEvaluation(null);
+  }, [affectations, searchTerm]);
+
+  const avgNote = useMemo(() => {
+    const notes = evaluations.map((e) => e.noteGlobale).filter((n): n is number => typeof n === "number");
+    if (!notes.length) return "-";
+    return (notes.reduce((s, n) => s + n, 0) / notes.length).toFixed(1);
+  }, [evaluations]);
+
+  const chargeTotale = affectations.reduce((s, a) => s + (a.chargeHoraireHebdo ?? 0), 0);
+
+  const openCreateAffectation = () => {
+    setEditingAffectationId(null);
+    setAffForm({ personnelId: "", classeId: "", matiereId: "", chargeHoraireHebdo: "4", coefficient: "" });
+    setAffectationDialogOpen(true);
   };
-  
-  // Create new evaluation
-  const handleCreateEvaluation = () => {
-    const avgNote = Math.round(
-      (evaluationForm.competences_pedagogiques + 
-       evaluationForm.competences_relationnelles + 
-       evaluationForm.ponctualite + 
-       evaluationForm.engagement) / 4
-    );
-    
-    const newEvaluation: Evaluation = {
-      id: Math.max(...evaluations.map(e => e.id)) + 1,
-      ...evaluationForm,
-      note: avgNote
+
+  const openEditAffectation = (a: Affectation) => {
+    setEditingAffectationId(a.id);
+    setAffForm({
+      personnelId: a.personnelId,
+      classeId: a.classeId,
+      matiereId: a.matiereId,
+      chargeHoraireHebdo: String(a.chargeHoraireHebdo ?? 4),
+      coefficient: a.coefficient != null ? String(a.coefficient) : "",
+    });
+    setAffectationDialogOpen(true);
+  };
+
+  const submitAffectation = () => {
+    if (!affForm.personnelId || !affForm.classeId || !affForm.matiereId) {
+      toast.error("Enseignant, classe et matière sont obligatoires");
+      return;
+    }
+    const payload = {
+      personnelId: affForm.personnelId,
+      classeId: affForm.classeId,
+      matiereId: affForm.matiereId,
+      chargeHoraireHebdo: Number(affForm.chargeHoraireHebdo) || 0,
+      ...(affForm.coefficient ? { coefficient: Number(affForm.coefficient) } : {}),
     };
-    
-    setEvaluations(prev => [...prev, newEvaluation]);
-    toast.success(`Nouvelle évaluation créée pour ${evaluationForm.nom}`);
-    setNewEvaluationOpen(false);
-    setEvaluationForm({
-      nom: "",
-      poste: "",
-      note: 0,
-      date: "",
-      commentaire: "",
-      competences_pedagogiques: 0,
-      competences_relationnelles: 0,
-      ponctualite: 0,
-      engagement: 0,
-      recommandations: ""
+    if (editingAffectationId) {
+      updateAffectation.mutate({ id: editingAffectationId, ...payload }, {
+        onSuccess: () => { toast.success("Affectation mise à jour"); setAffectationDialogOpen(false); },
+        onError: (err) => apiError(err, "Impossible de mettre à jour l'affectation"),
+      });
+    } else {
+      createAffectation.mutate(payload, {
+        onSuccess: () => { toast.success("Affectation créée"); setAffectationDialogOpen(false); },
+        onError: (err) => apiError(err, "Impossible de créer l'affectation"),
+      });
+    }
+  };
+
+  const removeAffectation = (a: Affectation) => {
+    deleteAffectation.mutate(a.id, {
+      onSuccess: () => toast.success("Affectation supprimée"),
+      onError: (err) => apiError(err, "Impossible de supprimer l'affectation"),
     });
   };
-  
-  // Delete handlers
-  const handleDeleteAffectation = (id: number) => {
-    setAffectations(prev => prev.filter(a => a.id !== id));
-    toast.success("Affectation supprimée");
-    setEditAffectationOpen(false);
+
+  const submitEvaluation = () => {
+    if (!evalForm.personnelId || !evalForm.evaluateurId || !evalForm.periode) {
+      toast.error("Employé, évaluateur et période sont obligatoires");
+      return;
+    }
+    createEvaluation.mutate({
+      personnelId: evalForm.personnelId,
+      evaluateurId: evalForm.evaluateurId,
+      periode: evalForm.periode,
+      dateEvaluation: evalForm.dateEvaluation,
+      typeEvaluation: evalForm.typeEvaluation as EvaluationRH["typeEvaluation"],
+      criteres: evalForm.criteres,
+      appreciationGenerale: evalForm.appreciationGenerale || undefined,
+    }, {
+      onSuccess: () => { toast.success("Évaluation enregistrée"); setEvalDialogOpen(false); },
+      onError: (err) => apiError(err, "Impossible d'enregistrer l'évaluation"),
+    });
   };
-  
-  const handleDeletePromotion = (id: number) => {
-    setPromotions(prev => prev.filter(p => p.id !== id));
-    toast.success("Promotion supprimée");
-    setEditPromotionOpen(false);
+
+  const setCritereNote = (index: number, note: number) => {
+    setEvalForm((f) => ({
+      ...f,
+      criteres: f.criteres.map((c, i) => (i === index ? { ...c, note } : c)),
+    }));
   };
-  
-  const handleDeleteEvaluation = (id: number) => {
-    setEvaluations(prev => prev.filter(e => e.id !== id));
-    toast.success("Évaluation supprimée");
-    setEditEvaluationOpen(false);
-  };
-  
-  // Filter affectations by search
-  const filteredAffectations = affectations.filter(a => 
-    a.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.poste.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.classe.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Calculate average note
-  const avgNote = evaluations.length > 0 
-    ? Math.round(evaluations.reduce((sum, e) => sum + e.note, 0) / evaluations.length * 10) / 10
-    : 0;
+
+  if (affectationsQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-muted-foreground">
+        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+        Chargement des affectations...
+      </div>
+    );
+  }
+
+  if (affectationsQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
+        <p className="font-medium">Impossible de charger les affectations</p>
+        <p className="text-sm text-muted-foreground">Vérifiez votre connexion, puis rechargez la page.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground">Affectations & Promotions</h1>
-          <p className="text-muted-foreground mt-2">Gestion des affectations, promotions et évaluations du personnel</p>
+          <h1 className="text-3xl font-bold tracking-tight">Affectations &amp; Évaluations</h1>
+          <p className="text-muted-foreground mt-2">
+            Répartition enseignant / classe / matière et évaluations du personnel
+          </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Nouvelle Affectation
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Créer une Nouvelle Affectation</DialogTitle>
-              <DialogDescription>Affecter un membre du personnel à un poste</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Personnel</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">KOUASSI Jean</SelectItem>
-                      <SelectItem value="2">DIALLO Fatou</SelectItem>
-                      <SelectItem value="3">TRAORE Mamadou</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Poste</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="prof">Professeur</SelectItem>
-                      <SelectItem value="censeur">Censeur</SelectItem>
-                      <SelectItem value="surveillant">Surveillant</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Matière</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="maths">Mathématiques</SelectItem>
-                      <SelectItem value="francais">Français</SelectItem>
-                      <SelectItem value="anglais">Anglais</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Classes</Label>
-                  <Input placeholder="Ex: 3ème A, B" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Date de début</Label>
-                <Input type="date" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-              <Button onClick={handleNewAffectation}>Créer l'Affectation</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreateAffectation}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle Affectation
+        </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Affectations Actives</CardTitle>
+            <CardTitle className="text-sm font-medium">Affectations</CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{affectations.length}</div>
-            <p className="text-xs text-muted-foreground">Personnel en poste</p>
+            <p className="text-xs text-muted-foreground">Couples classe / matière</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Promotions Annuelles</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Charge Hebdo Totale</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{promotions.length}</div>
-            <p className="text-xs text-muted-foreground">Cette année</p>
+            <div className="text-2xl font-bold">{chargeTotale} h</div>
+            <p className="text-xs text-muted-foreground">Toutes affectations</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Évaluations</CardTitle>
@@ -417,26 +236,25 @@ const Affectations = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{evaluations.length}</div>
-            <p className="text-xs text-muted-foreground">Complétées</p>
+            <p className="text-xs text-muted-foreground">Enregistrées</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Note Moyenne</CardTitle>
             <Award className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{avgNote}/20</div>
+            <div className="text-2xl font-bold">{avgNote}{avgNote !== "-" && "/20"}</div>
             <p className="text-xs text-muted-foreground">Évaluation personnel</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* L'onglet "Promotions" a été retiré : aucun modèle Promotion côté backend. */}
       <Tabs defaultValue="affectations" className="space-y-4">
         <TabsList>
           <TabsTrigger value="affectations">Affectations</TabsTrigger>
-          <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="evaluations">Évaluations</TabsTrigger>
         </TabsList>
 
@@ -446,18 +264,16 @@ const Affectations = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Liste des Affectations</CardTitle>
-                  <CardDescription>Personnel actuellement en poste</CardDescription>
+                  <CardDescription>Enseignant, matière, classe et charge horaire</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher..."
-                      className="pl-8 w-64"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher..."
+                    className="pl-8 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </div>
             </CardHeader>
@@ -465,105 +281,44 @@ const Affectations = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Poste</TableHead>
-                    <TableHead>Classes</TableHead>
-                    <TableHead>Date Début</TableHead>
-                    <TableHead>Ancienneté</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Enseignant</TableHead>
+                    <TableHead>Matière</TableHead>
+                    <TableHead>Classe</TableHead>
+                    <TableHead>Charge hebdo</TableHead>
+                    <TableHead>Coefficient</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAffectations.map((affectation) => (
-                    <TableRow key={affectation.id}>
-                      <TableCell className="font-medium">{affectation.nom}</TableCell>
-                      <TableCell>{affectation.poste}</TableCell>
-                      <TableCell>{affectation.classe}</TableCell>
-                      <TableCell>{affectation.date_debut}</TableCell>
-                      <TableCell>{affectation.anciennete}</TableCell>
-                      <TableCell>
-                        <Badge variant={affectation.statut === "active" ? "default" : "secondary"}>
-                          {affectation.statut === "active" ? "Actif" : "Inactif"}
-                        </Badge>
+                  {filteredAffectations.map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium">
+                        {a.personnel ? `${a.personnel.nom} ${a.personnel.prenom}` : "-"}
                       </TableCell>
+                      <TableCell>{a.matiere?.nom ?? "-"}</TableCell>
                       <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditAffectation(affectation)}
-                        >
+                        <Badge variant="secondary">{a.classe?.nom ?? "-"}</Badge>
+                      </TableCell>
+                      <TableCell>{a.chargeHoraireHebdo ?? 0} h</TableCell>
+                      <TableCell>{a.coefficient ?? "-"}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditAffectation(a)}>
                           <Edit className="h-4 w-4 mr-1" />
                           Modifier
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="promotions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Historique des Promotions</CardTitle>
-                  <CardDescription>Évolution de carrière du personnel</CardDescription>
-                </div>
-                <Button onClick={() => {
-                  setPromotionForm({
-                    nom: "",
-                    ancien_poste: "",
-                    nouveau_poste: "",
-                    date: new Date().toISOString().split('T')[0],
-                    raison: "",
-                    decision_reference: "",
-                    observations: ""
-                  });
-                  setNewPromotionOpen(true);
-                }}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Promotion
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Ancien Poste</TableHead>
-                    <TableHead>Nouveau Poste</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Raison</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {promotions.map((promotion) => (
-                    <TableRow key={promotion.id}>
-                      <TableCell className="font-medium">{promotion.nom}</TableCell>
-                      <TableCell>{promotion.ancien_poste}</TableCell>
-                      <TableCell>
-                        <Badge variant="default">{promotion.nouveau_poste}</Badge>
-                      </TableCell>
-                      <TableCell>{promotion.date}</TableCell>
-                      <TableCell>{promotion.raison}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewPromotion(promotion)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Détails
+                        <Button variant="ghost" size="sm" onClick={() => removeAffectation(a)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredAffectations.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                        Aucune affectation enregistrée
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -576,601 +331,274 @@ const Affectations = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Évaluations du Personnel</CardTitle>
-                  <CardDescription>Performances et évaluations annuelles</CardDescription>
+                  <CardDescription>Performances et évaluations périodiques</CardDescription>
                 </div>
-                <Button onClick={() => {
-                  setEvaluationForm({
-                    nom: "",
-                    poste: "",
-                    note: 0,
-                    date: new Date().toISOString().split('T')[0],
-                    commentaire: "",
-                    competences_pedagogiques: 15,
-                    competences_relationnelles: 15,
-                    ponctualite: 15,
-                    engagement: 15,
-                    recommandations: ""
-                  });
-                  setNewEvaluationOpen(true);
-                }}>
+                <Button onClick={() => setEvalDialogOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Nouvelle Évaluation
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Poste</TableHead>
-                    <TableHead>Note</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Commentaire</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {evaluations.map((evaluation) => (
-                    <TableRow key={evaluation.id}>
-                      <TableCell className="font-medium">{evaluation.nom}</TableCell>
-                      <TableCell>{evaluation.poste}</TableCell>
-                      <TableCell>
-                        <Badge variant={evaluation.note >= 16 ? "default" : evaluation.note >= 12 ? "secondary" : "destructive"}>
-                          {evaluation.note}/20
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{evaluation.date}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{evaluation.commentaire}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewEvaluation(evaluation)}
-                        >
-                          <FileText className="h-4 w-4 mr-1" />
-                          Voir Détails
-                        </Button>
-                      </TableCell>
+              {evaluationsQuery.isLoading ? (
+                <div className="flex items-center justify-center py-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Chargement...
+                </div>
+              ) : evaluationsQuery.isError ? (
+                <p className="text-sm text-destructive py-6 text-center">
+                  Impossible de charger les évaluations.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employé</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Période</TableHead>
+                      <TableHead>Note</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {evaluations.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">
+                          {e.personnel ? `${e.personnel.nom} ${e.personnel.prenom}` : "-"}
+                        </TableCell>
+                        <TableCell>{e.typeEvaluation}</TableCell>
+                        <TableCell>{e.periode}</TableCell>
+                        <TableCell>
+                          {e.noteGlobale != null ? (
+                            <Badge variant={e.noteGlobale >= 16 ? "default" : e.noteGlobale >= 12 ? "secondary" : "destructive"}>
+                              {e.noteGlobale}/20
+                            </Badge>
+                          ) : "-"}
+                        </TableCell>
+                        <TableCell>{new Date(e.dateEvaluation).toLocaleDateString("fr-FR")}</TableCell>
+                        <TableCell><Badge variant="outline">{e.statut}</Badge></TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => setEvalDetail(e)}>
+                            Voir Détails
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {evaluations.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                          Aucune évaluation enregistrée
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Edit Affectation Dialog */}
-      <Dialog open={editAffectationOpen} onOpenChange={setEditAffectationOpen}>
-        <DialogContent className="max-w-2xl">
+      {/* Dialog affectation */}
+      <Dialog open={affectationDialogOpen} onOpenChange={setAffectationDialogOpen}>
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Modifier l'Affectation</DialogTitle>
-            <DialogDescription>
-              Modifier les informations d'affectation de {selectedAffectation?.nom}
-            </DialogDescription>
+            <DialogTitle>{editingAffectationId ? "Modifier l'Affectation" : "Nouvelle Affectation"}</DialogTitle>
+            <DialogDescription>Enseignant, matière, classe et charge horaire hebdomadaire</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Poste</Label>
-                <Select 
-                  value={editForm.poste.includes("Professeur") ? "prof" : editForm.poste.toLowerCase()}
-                  onValueChange={(value) => {
-                    const postes: Record<string, string> = {
-                      prof: "Professeur",
-                      censeur: "Censeur",
-                      surveillant: "Surveillant",
-                      directeur: "Directeur"
-                    };
-                    setEditForm(prev => ({ ...prev, poste: postes[value] || value }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="prof">Professeur</SelectItem>
-                    <SelectItem value="censeur">Censeur</SelectItem>
-                    <SelectItem value="surveillant">Surveillant</SelectItem>
-                    <SelectItem value="directeur">Directeur</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Matière</Label>
-                <Select 
-                  value={editForm.matiere.toLowerCase().replace("-", "").replace(" ", "")}
-                  onValueChange={(value) => {
-                    const matieres: Record<string, string> = {
-                      mathematiques: "Mathématiques",
-                      francais: "Français",
-                      anglais: "Anglais",
-                      physiquechimie: "Physique-Chimie",
-                      svt: "SVT",
-                      histoiregeo: "Histoire-Géographie"
-                    };
-                    setEditForm(prev => ({ ...prev, matiere: matieres[value] || value }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mathematiques">Mathématiques</SelectItem>
-                    <SelectItem value="francais">Français</SelectItem>
-                    <SelectItem value="anglais">Anglais</SelectItem>
-                    <SelectItem value="physiquechimie">Physique-Chimie</SelectItem>
-                    <SelectItem value="svt">SVT</SelectItem>
-                    <SelectItem value="histoiregeo">Histoire-Géographie</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Classes</Label>
-                <Input 
-                  placeholder="Ex: 3ème A, B" 
-                  value={editForm.classe}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, classe: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Date de début</Label>
-                <Input 
-                  type="date" 
-                  value={editForm.date_debut}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, date_debut: e.target.value }))}
-                />
-              </div>
-            </div>
+          <div className="grid gap-4 py-2">
             <div className="space-y-2">
-              <Label>Statut</Label>
-              <Select 
-                value={editForm.statut}
-                onValueChange={(value) => setEditForm(prev => ({ ...prev, statut: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
+              <Label>Enseignant</Label>
+              <Select value={affForm.personnelId} onValueChange={(v) => setAffForm({ ...affForm, personnelId: v })}>
+                <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Actif</SelectItem>
-                  <SelectItem value="inactive">Inactif</SelectItem>
-                  <SelectItem value="conge">En congé</SelectItem>
-                  <SelectItem value="mutation">En mutation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="flex justify-between">
-            <Button 
-              variant="destructive" 
-              onClick={() => selectedAffectation && handleDeleteAffectation(selectedAffectation.id)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Supprimer
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditAffectationOpen(false)}>Annuler</Button>
-              <Button onClick={handleSaveAffectation}>Enregistrer</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* View/Edit Promotion Dialog */}
-      <Dialog open={editPromotionOpen} onOpenChange={setEditPromotionOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Détails de la Promotion</DialogTitle>
-            <DialogDescription>
-              Informations complètes sur la promotion de {selectedPromotion?.nom}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Ancien Poste</Label>
-                <Input 
-                  value={promotionForm.ancien_poste}
-                  onChange={(e) => setPromotionForm(prev => ({ ...prev, ancien_poste: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Nouveau Poste</Label>
-                <Input 
-                  value={promotionForm.nouveau_poste}
-                  onChange={(e) => setPromotionForm(prev => ({ ...prev, nouveau_poste: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Date d'effet</Label>
-                <Input 
-                  type="date" 
-                  value={promotionForm.date}
-                  onChange={(e) => setPromotionForm(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Raison</Label>
-                <Select 
-                  value={promotionForm.raison}
-                  onValueChange={(value) => setPromotionForm(prev => ({ ...prev, raison: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Mérite">Mérite</SelectItem>
-                    <SelectItem value="Ancienneté">Ancienneté</SelectItem>
-                    <SelectItem value="Concours">Concours</SelectItem>
-                    <SelectItem value="Formation">Formation</SelectItem>
-                    <SelectItem value="Réorganisation">Réorganisation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Référence de la décision</Label>
-              <Input 
-                placeholder="Ex: DEC-2024-001"
-                value={promotionForm.decision_reference}
-                onChange={(e) => setPromotionForm(prev => ({ ...prev, decision_reference: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Observations</Label>
-              <Textarea 
-                placeholder="Notes et observations..."
-                value={promotionForm.observations}
-                onChange={(e) => setPromotionForm(prev => ({ ...prev, observations: e.target.value }))}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex justify-between">
-            <Button 
-              variant="destructive" 
-              onClick={() => selectedPromotion && handleDeletePromotion(selectedPromotion.id)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Supprimer
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditPromotionOpen(false)}>Annuler</Button>
-              <Button onClick={handleSavePromotion}>Enregistrer</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Promotion Dialog */}
-      <Dialog open={newPromotionOpen} onOpenChange={setNewPromotionOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Nouvelle Promotion</DialogTitle>
-            <DialogDescription>Créer une nouvelle promotion pour un membre du personnel</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Personnel</Label>
-              <Select 
-                value={promotionForm.nom}
-                onValueChange={(value) => setPromotionForm(prev => ({ ...prev, nom: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un membre du personnel..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {affectations.map(a => (
-                    <SelectItem key={a.id} value={a.nom}>{a.nom} - {a.poste}</SelectItem>
+                  {personnel.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nom} {p.prenom} — {p.poste}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Ancien Poste</Label>
-                <Input 
-                  value={promotionForm.ancien_poste}
-                  onChange={(e) => setPromotionForm(prev => ({ ...prev, ancien_poste: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Nouveau Poste</Label>
-                <Input 
-                  value={promotionForm.nouveau_poste}
-                  onChange={(e) => setPromotionForm(prev => ({ ...prev, nouveau_poste: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Date d'effet</Label>
-                <Input 
-                  type="date" 
-                  value={promotionForm.date}
-                  onChange={(e) => setPromotionForm(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Raison</Label>
-                <Select 
-                  value={promotionForm.raison}
-                  onValueChange={(value) => setPromotionForm(prev => ({ ...prev, raison: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
+                <Label>Matière</Label>
+                <Select value={affForm.matiereId} onValueChange={(v) => setAffForm({ ...affForm, matiereId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mérite">Mérite</SelectItem>
-                    <SelectItem value="Ancienneté">Ancienneté</SelectItem>
-                    <SelectItem value="Concours">Concours</SelectItem>
-                    <SelectItem value="Formation">Formation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Référence de la décision</Label>
-              <Input 
-                placeholder="Ex: DEC-2024-001"
-                value={promotionForm.decision_reference}
-                onChange={(e) => setPromotionForm(prev => ({ ...prev, decision_reference: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Observations</Label>
-              <Textarea 
-                placeholder="Notes et observations..."
-                value={promotionForm.observations}
-                onChange={(e) => setPromotionForm(prev => ({ ...prev, observations: e.target.value }))}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewPromotionOpen(false)}>Annuler</Button>
-            <Button onClick={handleCreatePromotion}>Créer la Promotion</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* View/Edit Evaluation Dialog */}
-      <Dialog open={editEvaluationOpen} onOpenChange={setEditEvaluationOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Détails de l'Évaluation</DialogTitle>
-            <DialogDescription>
-              Évaluation complète de {selectedEvaluation?.nom}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Date de l'évaluation</Label>
-                <Input 
-                  type="date" 
-                  value={evaluationForm.date}
-                  onChange={(e) => setEvaluationForm(prev => ({ ...prev, date: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Note Globale</Label>
-                <div className="flex items-center gap-2">
-                  <Badge variant={evaluationForm.note >= 16 ? "default" : evaluationForm.note >= 12 ? "secondary" : "destructive"} className="text-lg px-3 py-1">
-                    {Math.round((evaluationForm.competences_pedagogiques + evaluationForm.competences_relationnelles + evaluationForm.ponctualite + evaluationForm.engagement) / 4)}/20
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">(Calculée automatiquement)</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="border rounded-lg p-4 space-y-4">
-              <h4 className="font-semibold">Critères d'évaluation</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Compétences pédagogiques (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.competences_pedagogiques}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, competences_pedagogiques: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Compétences relationnelles (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.competences_relationnelles}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, competences_relationnelles: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ponctualité et assiduité (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.ponctualite}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, ponctualite: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Engagement et initiative (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.engagement}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, engagement: Number(e.target.value) }))}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Commentaire général</Label>
-              <Textarea 
-                placeholder="Appréciation générale..."
-                value={evaluationForm.commentaire}
-                onChange={(e) => setEvaluationForm(prev => ({ ...prev, commentaire: e.target.value }))}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Recommandations</Label>
-              <Textarea 
-                placeholder="Recommandations pour l'amélioration..."
-                value={evaluationForm.recommandations}
-                onChange={(e) => setEvaluationForm(prev => ({ ...prev, recommandations: e.target.value }))}
-                rows={2}
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex justify-between">
-            <Button 
-              variant="destructive" 
-              onClick={() => selectedEvaluation && handleDeleteEvaluation(selectedEvaluation.id)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Supprimer
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditEvaluationOpen(false)}>Annuler</Button>
-              <Button onClick={handleSaveEvaluation}>Enregistrer</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Evaluation Dialog */}
-      <Dialog open={newEvaluationOpen} onOpenChange={setNewEvaluationOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Nouvelle Évaluation</DialogTitle>
-            <DialogDescription>Créer une nouvelle évaluation pour un membre du personnel</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Personnel</Label>
-                <Select 
-                  value={evaluationForm.nom}
-                  onValueChange={(value) => {
-                    const personnel = affectations.find(a => a.nom === value);
-                    setEvaluationForm(prev => ({ 
-                      ...prev, 
-                      nom: value,
-                      poste: personnel?.poste || ""
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un membre du personnel..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {affectations.map(a => (
-                      <SelectItem key={a.id} value={a.nom}>{a.nom} - {a.poste}</SelectItem>
+                    {matieres.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Date de l'évaluation</Label>
-                <Input 
-                  type="date" 
-                  value={evaluationForm.date}
-                  onChange={(e) => setEvaluationForm(prev => ({ ...prev, date: e.target.value }))}
+                <Label>Classe</Label>
+                <Select value={affForm.classeId} onValueChange={(v) => setAffForm({ ...affForm, classeId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Charge horaire hebdo (h)</Label>
+                <Input
+                  type="number"
+                  value={affForm.chargeHoraireHebdo}
+                  onChange={(e) => setAffForm({ ...affForm, chargeHoraireHebdo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Coefficient (optionnel)</Label>
+                <Input
+                  type="number"
+                  value={affForm.coefficient}
+                  onChange={(e) => setAffForm({ ...affForm, coefficient: e.target.value })}
                 />
               </div>
             </div>
-            
-            <div className="border rounded-lg p-4 space-y-4">
-              <h4 className="font-semibold">Critères d'évaluation</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Compétences pédagogiques (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.competences_pedagogiques}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, competences_pedagogiques: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Compétences relationnelles (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.competences_relationnelles}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, competences_relationnelles: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ponctualité et assiduité (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.ponctualite}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, ponctualite: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Engagement et initiative (/20)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    max="20"
-                    value={evaluationForm.engagement}
-                    onChange={(e) => setEvaluationForm(prev => ({ ...prev, engagement: Number(e.target.value) }))}
-                  />
-                </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAffectationDialogOpen(false)}>Annuler</Button>
+            <Button onClick={submitAffectation} disabled={createAffectation.isPending || updateAffectation.isPending}>
+              {(createAffectation.isPending || updateAffectation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingAffectationId ? "Enregistrer" : "Créer l'Affectation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog nouvelle évaluation */}
+      <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nouvelle Évaluation</DialogTitle>
+            <DialogDescription>Quatre critères pondérés à parts égales ; la note globale est calculée automatiquement.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Employé évalué</Label>
+                <Select value={evalForm.personnelId} onValueChange={(v) => setEvalForm({ ...evalForm, personnelId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                  <SelectContent>
+                    {personnel.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nom} {p.prenom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="text-center">
-                <span className="text-sm text-muted-foreground">Note globale calculée: </span>
-                <Badge className="ml-2">
-                  {Math.round((evaluationForm.competences_pedagogiques + evaluationForm.competences_relationnelles + evaluationForm.ponctualite + evaluationForm.engagement) / 4)}/20
-                </Badge>
+              <div className="space-y-2">
+                <Label>Évaluateur</Label>
+                <Select value={evalForm.evaluateurId} onValueChange={(v) => setEvalForm({ ...evalForm, evaluateurId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                  <SelectContent>
+                    {personnel.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nom} {p.prenom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label>Commentaire général</Label>
-              <Textarea 
-                placeholder="Appréciation générale..."
-                value={evaluationForm.commentaire}
-                onChange={(e) => setEvaluationForm(prev => ({ ...prev, commentaire: e.target.value }))}
-                rows={2}
-              />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={evalForm.typeEvaluation} onValueChange={(v) => setEvalForm({ ...evalForm, typeEvaluation: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["Annuelle", "Semestrielle", "Trimestrielle", "Probatoire"].map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Période</Label>
+                <Input
+                  placeholder="2025-2026"
+                  value={evalForm.periode}
+                  onChange={(e) => setEvalForm({ ...evalForm, periode: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={evalForm.dateEvaluation}
+                  onChange={(e) => setEvalForm({ ...evalForm, dateEvaluation: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              {evalForm.criteres.map((c, i) => (
+                <div key={c.critere} className="flex items-center gap-3">
+                  <Label className="flex-1">{c.critere}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={20}
+                    className="w-24"
+                    value={c.note}
+                    onChange={(e) => setCritereNote(i, Number(e.target.value))}
+                  />
+                  <span className="text-xs text-muted-foreground w-16">poids {c.poids}%</span>
+                </div>
+              ))}
             </div>
             <div className="space-y-2">
-              <Label>Recommandations</Label>
-              <Textarea 
-                placeholder="Recommandations pour l'amélioration..."
-                value={evaluationForm.recommandations}
-                onChange={(e) => setEvaluationForm(prev => ({ ...prev, recommandations: e.target.value }))}
-                rows={2}
+              <Label>Appréciation générale</Label>
+              <Textarea
+                value={evalForm.appreciationGenerale}
+                onChange={(e) => setEvalForm({ ...evalForm, appreciationGenerale: e.target.value })}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewEvaluationOpen(false)}>Annuler</Button>
-            <Button onClick={handleCreateEvaluation}>Créer l'Évaluation</Button>
+            <Button variant="outline" onClick={() => setEvalDialogOpen(false)}>Annuler</Button>
+            <Button onClick={submitEvaluation} disabled={createEvaluation.isPending}>
+              {createEvaluation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog détail évaluation */}
+      <Dialog open={!!evalDetail} onOpenChange={(o) => !o && setEvalDetail(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Détail de l'évaluation</DialogTitle>
+            <DialogDescription>
+              {evalDetail?.personnel ? `${evalDetail.personnel.nom} ${evalDetail.personnel.prenom}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {evalDetail && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Période</span><span>{evalDetail.periode}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span>{evalDetail.typeEvaluation}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Note globale</span><span>{evalDetail.noteGlobale ?? "-"}/20</span></div>
+              <div className="space-y-1 pt-2">
+                {(evalDetail.criteres ?? []).map((c) => (
+                  <div key={c.critere} className="flex justify-between">
+                    <span className="text-muted-foreground">{c.critere}</span>
+                    <span>{c.note}/20 ({c.poids}%)</span>
+                  </div>
+                ))}
+              </div>
+              {evalDetail.appreciationGenerale && (
+                <p className="pt-2 text-muted-foreground">{evalDetail.appreciationGenerale}</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEvalDetail(null)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-};
-
-export default Affectations;
+}
