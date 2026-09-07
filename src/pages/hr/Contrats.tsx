@@ -1,75 +1,45 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  FileText, Download, Plus, Search, Eye, Edit, Trash2, 
-  Calendar, User, Clock, AlertTriangle, CheckCircle,
-  FileSignature, Printer, RefreshCw
-} from "lucide-react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  FileText, Download, Plus, Search, Eye, Edit, Trash2,
+  Clock, AlertTriangle, CheckCircle, FileSignature, Printer, Loader2,
+} from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { generateContratPDF, generateAttestationPDF } from "@/components/hr/ContratPDFGenerator";
+import {
+  Contrat, useContratsQuery, useCreateContrat, useUpdateContrat, useDeleteContrat,
+} from "@/hooks/api/useRH";
+import { Personnel, usePersonnelQuery } from "@/hooks/api/usePersonnel";
 
-interface Contrat {
-  id: string;
-  employeId: string;
-  employeNom: string;
-  employePrenom: string;
-  poste: string;
-  departement: string;
-  type: 'CDI' | 'CDD' | 'Vacation' | 'Stage';
-  dateDebut: string;
-  dateFin?: string;
-  salaireBase: number;
-  heuresHebdo: number;
-  statut: 'actif' | 'expire' | 'resilie' | 'en_attente';
-  periodEssai?: number;
-  dateSignature?: string;
-}
-
-const mockContrats: Contrat[] = [
-  { id: "1", employeId: "EMP001", employeNom: "KOFFI", employePrenom: "Yao", poste: "Professeur Mathématiques", departement: "Pédagogie", type: "CDI", dateDebut: "2020-09-01", salaireBase: 650000, heuresHebdo: 35, statut: "actif", dateSignature: "2020-08-25" },
-  { id: "2", employeId: "EMP002", employeNom: "DIALLO", employePrenom: "Fatoumata", poste: "Professeur Français", departement: "Pédagogie", type: "CDI", dateDebut: "2019-09-01", salaireBase: 600000, heuresHebdo: 35, statut: "actif", dateSignature: "2019-08-20" },
-  { id: "3", employeId: "EMP003", employeNom: "TOURÉ", employePrenom: "Mohamed", poste: "Professeur Physique", departement: "Pédagogie", type: "CDD", dateDebut: "2024-09-01", dateFin: "2025-08-31", salaireBase: 550000, heuresHebdo: 35, statut: "actif", periodEssai: 3, dateSignature: "2024-08-28" },
-  { id: "4", employeId: "EMP004", employeNom: "BAMBA", employePrenom: "Sarah", poste: "Secrétaire", departement: "Administration", type: "CDI", dateDebut: "2021-01-15", salaireBase: 350000, heuresHebdo: 40, statut: "actif", dateSignature: "2021-01-10" },
-  { id: "5", employeId: "EMP005", employeNom: "KONE", employePrenom: "Ibrahim", poste: "Professeur SVT", departement: "Pédagogie", type: "CDD", dateDebut: "2024-09-01", dateFin: "2025-02-28", salaireBase: 450000, heuresHebdo: 20, statut: "actif", dateSignature: "2024-08-30" },
-  { id: "6", employeId: "EMP006", employeNom: "OUATTARA", employePrenom: "Aminata", poste: "Stagiaire Comptabilité", departement: "Comptabilité", type: "Stage", dateDebut: "2024-11-01", dateFin: "2025-04-30", salaireBase: 100000, heuresHebdo: 35, statut: "actif", dateSignature: "2024-10-28" },
-  { id: "7", employeId: "EMP007", employeNom: "SANOGO", employePrenom: "Moussa", poste: "Agent de Sécurité", departement: "Sécurité", type: "CDD", dateDebut: "2024-01-01", dateFin: "2024-12-31", salaireBase: 180000, heuresHebdo: 48, statut: "expire" },
-  { id: "8", employeId: "EMP008", employeNom: "TRAORE", employePrenom: "Awa", poste: "Bibliothécaire", departement: "Bibliothèque", type: "CDI", dateDebut: "2018-09-01", salaireBase: 320000, heuresHebdo: 35, statut: "resilie", dateSignature: "2018-08-25" },
-];
+/**
+ * Page branchée sur `/api/rh/contrats` (routeur CRUD générique).
+ *
+ * Simplifications assumées par rapport à l'ancien mock (le modèle Prisma
+ * `Contrat` ne contient que personnelId, typeContrat, dateDebut, dateFin,
+ * salaire, documentUrl, statut) :
+ * - `heuresHebdo`, `periodEssai`, `dateSignature` : retirés, aucun équivalent
+ *   dans le schéma. Le PDF de contrat les affichait : on lui passe désormais
+ *   une charge horaire par défaut (35 h) explicitement signalée comme telle.
+ * - `poste` / `departement` ne vivent pas sur le contrat mais sur le membre du
+ *   personnel (`Personnel.poste`, `Personnel.departement`) : recoupés côté client.
+ * - Les statuts sont ceux du schéma ("Actif", "Terminé", "Résilié"), plus
+ *   "En attente" du mock qui n'existe pas côté backend et a été retiré.
+ * - L'historique des « Attestations récentes » (tableau en dur dans le mock)
+ *   est retiré : aucune table ne trace les attestations générées.
+ */
 
 const attestationTypes = [
   { value: 'travail', label: 'Attestation de Travail' },
@@ -79,118 +49,205 @@ const attestationTypes = [
   { value: 'domiciliation', label: 'Attestation de Domiciliation' },
 ];
 
+const typesContrat = ["CDI", "CDD", "Vacation", "Stage"];
+const statutsContrat = ["Actif", "Terminé", "Résilié"];
+
+const emptyForm = {
+  personnelId: "",
+  typeContrat: "CDI",
+  dateDebut: "",
+  dateFin: "",
+  salaire: "",
+  statut: "Actif",
+};
+
 export default function ContratsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatut, setFilterStatut] = useState<string>("all");
   const [isContratDialogOpen, setIsContratDialogOpen] = useState(false);
   const [isAttestationDialogOpen, setIsAttestationDialogOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedContrat, setSelectedContrat] = useState<Contrat | null>(null);
   const [attestationType, setAttestationType] = useState<string>("");
-  const [contrats, setContrats] = useState<Contrat[]>(mockContrats);
+  const [form, setForm] = useState(emptyForm);
 
-  // Formulaire nouveau contrat
-  const [newContrat, setNewContrat] = useState({
-    employeNom: "",
-    employePrenom: "",
-    poste: "",
-    departement: "",
-    type: "CDI" as const,
-    dateDebut: "",
-    dateFin: "",
-    salaireBase: "",
-    heuresHebdo: "35",
-    periodEssai: "0",
-  });
+  const { data: contrats = [], isLoading, isError } = useContratsQuery();
+  const { data: personnelData } = usePersonnelQuery({ pageSize: 500 });
+  const personnel = personnelData?.items ?? [];
 
-  const filteredContrats = contrats.filter(c => {
-    const matchSearch = 
-      c.employeNom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.employePrenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.poste.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType = filterType === "all" || c.type === filterType;
+  const createContrat = useCreateContrat();
+  const updateContrat = useUpdateContrat();
+  const deleteContrat = useDeleteContrat();
+
+  const personnelById = useMemo(() => {
+    const map = new Map<string, Personnel>();
+    personnel.forEach((p) => map.set(p.id, p));
+    return map;
+  }, [personnel]);
+
+  const employeLabel = (contrat: Contrat) => {
+    const p = personnelById.get(contrat.personnelId);
+    return p ? `${p.prenom} ${p.nom}` : "Employé inconnu";
+  };
+
+  const filteredContrats = contrats.filter((c) => {
+    const p = personnelById.get(c.personnelId);
+    const haystack = `${p?.nom ?? ""} ${p?.prenom ?? ""} ${p?.poste ?? ""} ${c.typeContrat}`.toLowerCase();
+    const matchSearch = haystack.includes(searchTerm.toLowerCase());
+    const matchType = filterType === "all" || c.typeContrat === filterType;
     const matchStatut = filterStatut === "all" || c.statut === filterStatut;
     return matchSearch && matchType && matchStatut;
   });
 
-  const stats = {
-    actifs: contrats.filter(c => c.statut === "actif").length,
-    aRenouveler: contrats.filter(c => {
-      if (!c.dateFin) return false;
-      const finDate = new Date(c.dateFin);
-      const now = new Date();
-      const diff = (finDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-      return diff > 0 && diff <= 90;
-    }).length,
-    expires: contrats.filter(c => c.statut === "expire").length,
-    cdi: contrats.filter(c => c.type === "CDI" && c.statut === "actif").length,
-    cdd: contrats.filter(c => c.type === "CDD" && c.statut === "actif").length,
+  const isExpiringSoon = (dateFin?: string | null) => {
+    if (!dateFin) return false;
+    const diff = (new Date(dateFin).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    return diff > 0 && diff <= 90;
   };
 
-  const handleCreateContrat = () => {
-    const nouveau: Contrat = {
-      id: `NEW-${Date.now()}`,
-      employeId: `EMP${String(contrats.length + 1).padStart(3, '0')}`,
-      employeNom: newContrat.employeNom,
-      employePrenom: newContrat.employePrenom,
-      poste: newContrat.poste,
-      departement: newContrat.departement,
-      type: newContrat.type,
-      dateDebut: newContrat.dateDebut,
-      dateFin: newContrat.dateFin || undefined,
-      salaireBase: parseInt(newContrat.salaireBase),
-      heuresHebdo: parseInt(newContrat.heuresHebdo),
-      statut: "en_attente",
-      periodEssai: parseInt(newContrat.periodEssai) || undefined,
-    };
-    setContrats([nouveau, ...contrats]);
-    setIsContratDialogOpen(false);
-    setNewContrat({
-      employeNom: "", employePrenom: "", poste: "", departement: "",
-      type: "CDI", dateDebut: "", dateFin: "", salaireBase: "", heuresHebdo: "35", periodEssai: "0"
+  const stats = {
+    actifs: contrats.filter((c) => c.statut === "Actif").length,
+    aRenouveler: contrats.filter((c) => isExpiringSoon(c.dateFin)).length,
+    expires: contrats.filter((c) => c.statut === "Terminé").length,
+    cdi: contrats.filter((c) => c.typeContrat === "CDI" && c.statut === "Actif").length,
+    cdd: contrats.filter((c) => c.typeContrat !== "CDI" && c.statut === "Actif").length,
+  };
+
+  const apiError = (err: any, fallback: string) =>
+    toast.error(err?.response?.data?.error ?? fallback);
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setIsContratDialogOpen(true);
+  };
+
+  const openEdit = (contrat: Contrat) => {
+    setEditingId(contrat.id);
+    setForm({
+      personnelId: contrat.personnelId,
+      typeContrat: contrat.typeContrat,
+      dateDebut: contrat.dateDebut?.slice(0, 10) ?? "",
+      dateFin: contrat.dateFin?.slice(0, 10) ?? "",
+      salaire: String(contrat.salaire ?? ""),
+      statut: contrat.statut,
     });
-    toast.success("Contrat créé avec succès");
+    setIsContratDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!form.personnelId || !form.dateDebut || !form.salaire) {
+      toast.error("Employé, date de début et salaire sont obligatoires");
+      return;
+    }
+    const payload = {
+      personnelId: form.personnelId,
+      typeContrat: form.typeContrat,
+      dateDebut: form.dateDebut,
+      dateFin: form.typeContrat === "CDI" || !form.dateFin ? null : form.dateFin,
+      salaire: Number(form.salaire),
+      statut: form.statut,
+    };
+    if (editingId) {
+      updateContrat.mutate({ id: editingId, ...payload }, {
+        onSuccess: () => {
+          toast.success("Contrat mis à jour");
+          setIsContratDialogOpen(false);
+        },
+        onError: (err) => apiError(err, "Impossible de mettre à jour le contrat"),
+      });
+    } else {
+      createContrat.mutate(payload, {
+        onSuccess: () => {
+          toast.success("Contrat créé avec succès");
+          setIsContratDialogOpen(false);
+          setForm(emptyForm);
+        },
+        onError: (err) => apiError(err, "Impossible de créer le contrat"),
+      });
+    }
+  };
+
+  const handleDelete = (contrat: Contrat) => {
+    deleteContrat.mutate(contrat.id, {
+      onSuccess: () => toast.success("Contrat supprimé"),
+      onError: (err) => apiError(err, "Impossible de supprimer le contrat"),
+    });
+  };
+
+  const handleRenouveler = (contrat: Contrat) => {
+    // Renouvellement = nouveau contrat qui reprend les mêmes termes, l'ancien
+    // passant en "Terminé". Le schéma ne modélise pas de lien de parenté entre
+    // deux contrats : on se contente de la succession chronologique.
+    const debut = contrat.dateFin ? new Date(contrat.dateFin) : new Date();
+    debut.setDate(debut.getDate() + 1);
+    const fin = new Date(debut);
+    fin.setFullYear(fin.getFullYear() + 1);
+    createContrat.mutate({
+      personnelId: contrat.personnelId,
+      typeContrat: contrat.typeContrat,
+      dateDebut: debut.toISOString().slice(0, 10),
+      dateFin: contrat.typeContrat === "CDI" ? null : fin.toISOString().slice(0, 10),
+      salaire: contrat.salaire,
+      statut: "Actif",
+    }, {
+      onSuccess: () => {
+        updateContrat.mutate({ id: contrat.id, statut: "Terminé" });
+        toast.success("Contrat renouvelé pour un an");
+      },
+      onError: (err) => apiError(err, "Impossible de renouveler le contrat"),
+    });
   };
 
   const handleGenerateContratPDF = (contrat: Contrat) => {
+    const p = personnelById.get(contrat.personnelId);
+    if (!p) {
+      toast.error("Employé introuvable pour ce contrat");
+      return;
+    }
     generateContratPDF({
-      type: contrat.type,
-      employeNom: contrat.employeNom,
-      employePrenom: contrat.employePrenom,
-      dateNaissance: "15/03/1985",
-      lieuNaissance: "Abidjan",
-      adresse: "Cocody, Abidjan",
-      numeroCNI: "CI0012345678",
-      poste: contrat.poste,
-      departement: contrat.departement,
+      type: (typesContrat.includes(contrat.typeContrat) ? contrat.typeContrat : "CDI") as any,
+      employeNom: p.nom,
+      employePrenom: p.prenom,
+      // Ces champs d'état civil ne sont pas exposés par /api/personnel :
+      // laissés vides plutôt qu'inventés, à compléter à la main sur le document.
+      dateNaissance: "",
+      lieuNaissance: "",
+      adresse: "",
+      numeroCNI: "",
+      poste: p.poste,
+      departement: p.departement ?? "",
       dateDebut: new Date(contrat.dateDebut).toLocaleDateString('fr-FR'),
       dateFin: contrat.dateFin ? new Date(contrat.dateFin).toLocaleDateString('fr-FR') : undefined,
-      salaireBase: contrat.salaireBase,
-      heuresHebdo: contrat.heuresHebdo,
-      periodEssai: contrat.periodEssai,
-      avantages: ["Prime de transport", "Assurance maladie"]
+      salaireBase: contrat.salaire,
+      heuresHebdo: 35, // valeur légale par défaut : non stockée dans le schéma
     });
     toast.success("Contrat PDF généré");
   };
 
   const handleGenerateAttestation = () => {
     if (!selectedContrat || !attestationType) return;
-    
+    const p = personnelById.get(selectedContrat.personnelId);
+    if (!p) {
+      toast.error("Employé introuvable pour ce contrat");
+      return;
+    }
     generateAttestationPDF({
       type: attestationType as any,
-      employeNom: selectedContrat.employeNom,
-      employePrenom: selectedContrat.employePrenom,
-      dateNaissance: "15/03/1985",
-      lieuNaissance: "Abidjan",
-      numeroCNI: "CI0012345678",
-      poste: selectedContrat.poste,
-      departement: selectedContrat.departement,
+      employeNom: p.nom,
+      employePrenom: p.prenom,
+      dateNaissance: "",
+      lieuNaissance: "",
+      numeroCNI: "",
+      poste: p.poste,
+      departement: p.departement ?? "",
       dateEmbauche: new Date(selectedContrat.dateDebut).toLocaleDateString('fr-FR'),
       dateFin: selectedContrat.dateFin ? new Date(selectedContrat.dateFin).toLocaleDateString('fr-FR') : undefined,
-      salaireBase: selectedContrat.salaireBase,
-      salaireNet: Math.round(selectedContrat.salaireBase * 0.78),
+      salaireBase: selectedContrat.salaire,
+      salaireNet: Math.round(selectedContrat.salaire * 0.78),
     });
-    
     setIsAttestationDialogOpen(false);
     setSelectedContrat(null);
     setAttestationType("");
@@ -199,14 +256,12 @@ export default function ContratsPage() {
 
   const getStatutBadge = (statut: string) => {
     switch (statut) {
-      case 'actif':
+      case 'Actif':
         return <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Actif</Badge>;
-      case 'expire':
-        return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Expiré</Badge>;
-      case 'resilie':
+      case 'Terminé':
+        return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Terminé</Badge>;
+      case 'Résilié':
         return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Résilié</Badge>;
-      case 'en_attente':
-        return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" />En attente</Badge>;
       default:
         return <Badge variant="outline">{statut}</Badge>;
     }
@@ -222,152 +277,40 @@ export default function ContratsPage() {
     return <Badge variant="outline" className={colors[type]}>{type}</Badge>;
   };
 
-  const isExpiringSoon = (dateFin?: string) => {
-    if (!dateFin) return false;
-    const fin = new Date(dateFin);
-    const now = new Date();
-    const diff = (fin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return diff > 0 && diff <= 90;
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-muted-foreground">
+        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+        Chargement des contrats...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
+        <p className="font-medium">Impossible de charger les contrats</p>
+        <p className="text-sm text-muted-foreground">
+          Vérifiez votre connexion, puis rechargez la page.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Contrats & Attestations</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Contrats &amp; Attestations</h1>
           <p className="text-muted-foreground mt-2">
-            Gestion complète des contrats de travail et génération d'attestations
+            Gestion des contrats de travail et génération d'attestations
           </p>
         </div>
-        <Dialog open={isContratDialogOpen} onOpenChange={setIsContratDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau Contrat
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Créer un Nouveau Contrat</DialogTitle>
-              <DialogDescription>Remplissez les informations du contrat de travail</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nom</Label>
-                  <Input 
-                    value={newContrat.employeNom}
-                    onChange={(e) => setNewContrat({...newContrat, employeNom: e.target.value})}
-                    placeholder="KOFFI"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Prénom</Label>
-                  <Input 
-                    value={newContrat.employePrenom}
-                    onChange={(e) => setNewContrat({...newContrat, employePrenom: e.target.value})}
-                    placeholder="Yao"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Poste</Label>
-                  <Input 
-                    value={newContrat.poste}
-                    onChange={(e) => setNewContrat({...newContrat, poste: e.target.value})}
-                    placeholder="Professeur Mathématiques"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Département</Label>
-                  <Select value={newContrat.departement} onValueChange={(v) => setNewContrat({...newContrat, departement: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Direction">Direction</SelectItem>
-                      <SelectItem value="Administration">Administration</SelectItem>
-                      <SelectItem value="Pédagogie">Pédagogie</SelectItem>
-                      <SelectItem value="Comptabilité">Comptabilité</SelectItem>
-                      <SelectItem value="Surveillance">Surveillance</SelectItem>
-                      <SelectItem value="Maintenance">Maintenance</SelectItem>
-                      <SelectItem value="Sécurité">Sécurité</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Type de Contrat</Label>
-                  <Select value={newContrat.type} onValueChange={(v: any) => setNewContrat({...newContrat, type: v})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CDI">CDI</SelectItem>
-                      <SelectItem value="CDD">CDD</SelectItem>
-                      <SelectItem value="Vacation">Vacation</SelectItem>
-                      <SelectItem value="Stage">Stage</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Période d'essai (mois)</Label>
-                  <Input 
-                    type="number"
-                    value={newContrat.periodEssai}
-                    onChange={(e) => setNewContrat({...newContrat, periodEssai: e.target.value})}
-                    placeholder="3"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date de début</Label>
-                  <Input 
-                    type="date"
-                    value={newContrat.dateDebut}
-                    onChange={(e) => setNewContrat({...newContrat, dateDebut: e.target.value})}
-                  />
-                </div>
-                {newContrat.type !== "CDI" && (
-                  <div className="space-y-2">
-                    <Label>Date de fin</Label>
-                    <Input 
-                      type="date"
-                      value={newContrat.dateFin}
-                      onChange={(e) => setNewContrat({...newContrat, dateFin: e.target.value})}
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Salaire Brut (FCFA)</Label>
-                  <Input 
-                    type="number"
-                    value={newContrat.salaireBase}
-                    onChange={(e) => setNewContrat({...newContrat, salaireBase: e.target.value})}
-                    placeholder="500000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Heures hebdomadaires</Label>
-                  <Input 
-                    type="number"
-                    value={newContrat.heuresHebdo}
-                    onChange={(e) => setNewContrat({...newContrat, heuresHebdo: e.target.value})}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsContratDialogOpen(false)}>Annuler</Button>
-              <Button onClick={handleCreateContrat}>Créer le Contrat</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouveau Contrat
+        </Button>
       </div>
 
       {/* Statistiques */}
@@ -394,7 +337,7 @@ export default function ContratsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expirés</CardTitle>
+            <CardTitle className="text-sm font-medium">Terminés</CardTitle>
             <Clock className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -442,8 +385,8 @@ export default function ContratsPage() {
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Rechercher..." 
+                    <Input
+                      placeholder="Rechercher..."
                       className="pl-8 w-[200px]"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -455,10 +398,9 @@ export default function ContratsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tous types</SelectItem>
-                      <SelectItem value="CDI">CDI</SelectItem>
-                      <SelectItem value="CDD">CDD</SelectItem>
-                      <SelectItem value="Vacation">Vacation</SelectItem>
-                      <SelectItem value="Stage">Stage</SelectItem>
+                      {typesContrat.map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={filterStatut} onValueChange={setFilterStatut}>
@@ -467,10 +409,9 @@ export default function ContratsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tous statuts</SelectItem>
-                      <SelectItem value="actif">Actif</SelectItem>
-                      <SelectItem value="expire">Expiré</SelectItem>
-                      <SelectItem value="resilie">Résilié</SelectItem>
-                      <SelectItem value="en_attente">En attente</SelectItem>
+                      {statutsContrat.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -491,71 +432,78 @@ export default function ContratsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredContrats.map((contrat) => (
-                    <TableRow key={contrat.id} className={isExpiringSoon(contrat.dateFin) ? "bg-yellow-50" : ""}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
+                  {filteredContrats.map((contrat) => {
+                    const p = personnelById.get(contrat.personnelId);
+                    return (
+                      <TableRow key={contrat.id} className={isExpiringSoon(contrat.dateFin) ? "bg-yellow-50" : ""}>
+                        <TableCell>
                           <div>
-                            <span className="font-medium">{contrat.employePrenom} {contrat.employeNom}</span>
-                            <p className="text-xs text-muted-foreground">{contrat.employeId}</p>
+                            <span className="font-medium">{employeLabel(contrat)}</span>
+                            <p className="text-xs text-muted-foreground">{p?.matricule ?? "-"}</p>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <span>{contrat.poste}</span>
-                          <p className="text-xs text-muted-foreground">{contrat.departement}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getTypeBadge(contrat.type)}</TableCell>
-                      <TableCell>{new Date(contrat.dateDebut).toLocaleDateString('fr-FR')}</TableCell>
-                      <TableCell>
-                        {contrat.dateFin ? (
-                          <div className="flex items-center gap-1">
-                            {isExpiringSoon(contrat.dateFin) && <AlertTriangle className="h-3 w-3 text-yellow-500" />}
-                            {new Date(contrat.dateFin).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <span>{p?.poste ?? "-"}</span>
+                            <p className="text-xs text-muted-foreground">{p?.departement ?? ""}</p>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">{contrat.salaireBase.toLocaleString('fr-FR')} FCFA</TableCell>
-                      <TableCell>{getStatutBadge(contrat.statut)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              Actions
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleGenerateContratPDF(contrat)}>
-                              <Printer className="mr-2 h-4 w-4" />
-                              Imprimer Contrat
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedContrat(contrat);
-                              setIsAttestationDialogOpen(true);
-                            }}>
-                              <FileSignature className="mr-2 h-4 w-4" />
-                              Générer Attestation
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Modifier
-                            </DropdownMenuItem>
-                            {contrat.dateFin && (
-                              <DropdownMenuItem>
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Renouveler
+                        </TableCell>
+                        <TableCell>{getTypeBadge(contrat.typeContrat)}</TableCell>
+                        <TableCell>{new Date(contrat.dateDebut).toLocaleDateString('fr-FR')}</TableCell>
+                        <TableCell>
+                          {contrat.dateFin ? (
+                            <div className="flex items-center gap-1">
+                              {isExpiringSoon(contrat.dateFin) && <AlertTriangle className="h-3 w-3 text-yellow-500" />}
+                              {new Date(contrat.dateFin).toLocaleDateString('fr-FR')}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{contrat.salaire.toLocaleString('fr-FR')} FCFA</TableCell>
+                        <TableCell>{getStatutBadge(contrat.statut)}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">Actions</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { setSelectedContrat(contrat); setIsDetailOpen(true); }}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Voir le détail
                               </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <DropdownMenuItem onClick={() => handleGenerateContratPDF(contrat)}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                Imprimer Contrat
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedContrat(contrat);
+                                setIsAttestationDialogOpen(true);
+                              }}>
+                                <FileSignature className="mr-2 h-4 w-4" />
+                                Générer Attestation
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEdit(contrat)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(contrat)} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {filteredContrats.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                        Aucun contrat ne correspond à cette recherche
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -570,7 +518,7 @@ export default function ContratsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {contrats.filter(c => isExpiringSoon(c.dateFin)).map((contrat) => (
+                {contrats.filter((c) => isExpiringSoon(c.dateFin)).map((contrat) => (
                   <Card key={contrat.id} className="border-yellow-200 bg-yellow-50/50">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
@@ -579,8 +527,10 @@ export default function ContratsPage() {
                             <AlertTriangle className="h-6 w-6 text-yellow-600" />
                           </div>
                           <div>
-                            <h3 className="font-semibold">{contrat.employePrenom} {contrat.employeNom}</h3>
-                            <p className="text-sm text-muted-foreground">{contrat.poste} - {contrat.type}</p>
+                            <h3 className="font-semibold">{employeLabel(contrat)}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {personnelById.get(contrat.personnelId)?.poste ?? "-"} — {contrat.typeContrat}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -590,11 +540,10 @@ export default function ContratsPage() {
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <RefreshCw className="mr-2 h-4 w-4" />
+                          <Button variant="outline" size="sm" onClick={() => handleRenouveler(contrat)}>
                             Renouveler
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => { setSelectedContrat(contrat); setIsDetailOpen(true); }}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </div>
@@ -602,7 +551,7 @@ export default function ContratsPage() {
                     </CardContent>
                   </Card>
                 ))}
-                {contrats.filter(c => isExpiringSoon(c.dateFin)).length === 0 && (
+                {contrats.filter((c) => isExpiringSoon(c.dateFin)).length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">
                     <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
                     <p>Aucun contrat à renouveler dans les 3 prochains mois</p>
@@ -617,12 +566,12 @@ export default function ContratsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Génération d'Attestations</CardTitle>
-              <CardDescription>Sélectionnez un employé pour générer une attestation</CardDescription>
+              <CardDescription>Choisissez un contrat, puis le type d'attestation à produire</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {attestationTypes.map((type) => (
-                  <Card key={type.value} className="hover:border-primary cursor-pointer transition-colors">
+                  <Card key={type.value} className="hover:border-primary transition-colors">
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -631,7 +580,7 @@ export default function ContratsPage() {
                         <div className="flex-1">
                           <h3 className="font-semibold">{type.label}</h3>
                           <p className="text-sm text-muted-foreground">
-                            Générer pour un employé
+                            Depuis la liste des contrats, action « Générer Attestation »
                           </p>
                         </div>
                       </div>
@@ -639,44 +588,131 @@ export default function ContratsPage() {
                   </Card>
                 ))}
               </div>
-
-              <div className="mt-6">
-                <h3 className="font-semibold mb-4">Attestations Récentes</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Employé</TableHead>
-                      <TableHead>Générée par</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[
-                      { date: "15/12/2024", type: "Attestation de Travail", employe: "KOFFI Yao", par: "Admin" },
-                      { date: "14/12/2024", type: "Attestation de Salaire", employe: "DIALLO Fatoumata", par: "Admin" },
-                      { date: "12/12/2024", type: "Certificat de Travail", employe: "TRAORE Awa", par: "DRH" },
-                    ].map((att, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{att.date}</TableCell>
-                        <TableCell><Badge variant="outline">{att.type}</Badge></TableCell>
-                        <TableCell className="font-medium">{att.employe}</TableCell>
-                        <TableCell>{att.par}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {/* Le suivi des attestations déjà émises n'existe pas dans le schéma
+                  backend : aucun historique n'est affiché ici. */}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog création / édition */}
+      <Dialog open={isContratDialogOpen} onOpenChange={setIsContratDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Modifier le Contrat" : "Créer un Nouveau Contrat"}</DialogTitle>
+            <DialogDescription>Informations du contrat de travail</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Employé</Label>
+              <Select value={form.personnelId} onValueChange={(v) => setForm({ ...form, personnelId: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un membre du personnel..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {personnel.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nom} {p.prenom} — {p.poste}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Type de Contrat</Label>
+                <Select value={form.typeContrat} onValueChange={(v) => setForm({ ...form, typeContrat: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {typesContrat.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Statut</Label>
+                <Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statutsContrat.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date de début</Label>
+                <Input
+                  type="date"
+                  value={form.dateDebut}
+                  onChange={(e) => setForm({ ...form, dateDebut: e.target.value })}
+                />
+              </div>
+              {form.typeContrat !== "CDI" && (
+                <div className="space-y-2">
+                  <Label>Date de fin</Label>
+                  <Input
+                    type="date"
+                    value={form.dateFin}
+                    onChange={(e) => setForm({ ...form, dateFin: e.target.value })}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Salaire (FCFA)</Label>
+              <Input
+                type="number"
+                value={form.salaire}
+                onChange={(e) => setForm({ ...form, salaire: e.target.value })}
+                placeholder="500000"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsContratDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleSubmit} disabled={createContrat.isPending || updateContrat.isPending}>
+              {(createContrat.isPending || updateContrat.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? "Enregistrer" : "Créer le Contrat"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog détail */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Détail du contrat</DialogTitle>
+            <DialogDescription>{selectedContrat && employeLabel(selectedContrat)}</DialogDescription>
+          </DialogHeader>
+          {selectedContrat && (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span>{selectedContrat.typeContrat}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Statut</span><span>{selectedContrat.statut}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Début</span><span>{new Date(selectedContrat.dateDebut).toLocaleDateString('fr-FR')}</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Fin</span>
+                <span>{selectedContrat.dateFin ? new Date(selectedContrat.dateFin).toLocaleDateString('fr-FR') : "Indéterminée"}</span>
+              </div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Salaire</span><span>{selectedContrat.salaire.toLocaleString('fr-FR')} FCFA</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Poste</span><span>{personnelById.get(selectedContrat.personnelId)?.poste ?? "-"}</span></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Fermer</Button>
+            {selectedContrat && (
+              <Button onClick={() => handleGenerateContratPDF(selectedContrat)}>
+                <Download className="mr-2 h-4 w-4" />
+                Télécharger le contrat
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog Attestation */}
       <Dialog open={isAttestationDialogOpen} onOpenChange={setIsAttestationDialogOpen}>
@@ -684,7 +720,7 @@ export default function ContratsPage() {
           <DialogHeader>
             <DialogTitle>Générer une Attestation</DialogTitle>
             <DialogDescription>
-              {selectedContrat && `Pour ${selectedContrat.employePrenom} ${selectedContrat.employeNom}`}
+              {selectedContrat && `Pour ${employeLabel(selectedContrat)}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -702,13 +738,13 @@ export default function ContratsPage() {
               </Select>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setIsAttestationDialogOpen(false)}>Annuler</Button>
             <Button onClick={handleGenerateAttestation} disabled={!attestationType}>
               <Download className="mr-2 h-4 w-4" />
               Générer PDF
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
