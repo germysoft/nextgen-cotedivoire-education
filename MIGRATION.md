@@ -240,3 +240,55 @@ aussi pour le déploiement Azure) :
   repasser sur `prisma migrate deploy` (plus sûr en production que
   `db push`, qui peut perdre des données sur certains changements de
   schéma).
+
+## Lot RH — Affectations, Pointage, Contrats, Évaluations — branchés
+
+- **`src/hooks/api/useRH.ts`** (nouveau) : hooks React Query typés sur la forme
+  exacte renvoyée par les routes backend, pour les affectations
+  (`/api/pedagogie/affectations`), le pointage (`/api/personnel/pointage`), les
+  contrats (`/api/rh/contrats`, routeur CRUD générique) et les évaluations
+  (`/api/personnel/evaluations`). `useMatieresQuery` (`/api/pedagogie/matieres`)
+  alimente les formulaires d'affectation.
+- **`src/pages/hr/Affectations.tsx`** : onglet **Affectations** entièrement
+  branché (liste réelle enseignant / matière / classe / coefficient / charge
+  horaire hebdomadaire, création, modification, suppression) et onglet
+  **Évaluations** branché sur les évaluations réelles, avec critères pondérés et
+  note globale calculée côté backend.
+- **`src/pages/hr/Pointage.tsx`** : pointage réel du personnel par date
+  (création, modification, suppression), statistiques du jour calculées sur les
+  données réelles, états de chargement et d'erreur explicites.
+- **`src/pages/hr/Contrats.tsx`** : contrats réels (création, modification,
+  suppression, renouvellement, suivi des échéances), impression du contrat et
+  génération d'attestations à partir des données persistées.
+
+### Ajouts backend nécessaires
+
+- `GET /api/personnel/pointage/all` (filtres `date` et `personnelId`, personnel
+  joint, tri par date puis heure d'arrivée, 500 lignes max) : il n'existait que
+  la création du pointage, pas de route de liste.
+- `PUT` / `DELETE /api/personnel/pointage/:id` (correction et suppression d'un
+  pointage) ; `commentaire` devient optionnel à la validation.
+- `GET /api/personnel/evaluations/all` : liste des évaluations, nécessaire à
+  l'onglet Évaluations.
+- `PUT` / `DELETE /api/pedagogie/affectations/:id` : l'endpoint ne gérait que la
+  création et la liste.
+
+### Simplifications assumées
+
+- L'onglet **Promotions** de la page Affectations a été **retiré** : aucun
+  modèle `Promotion` n'existe dans `backend/prisma/schema.prisma` (l'historique
+  de carrière n'est pas modélisé aujourd'hui). Plutôt que de fabriquer une
+  donnée qui ne serait jamais persistée, l'onglet a disparu et un commentaire
+  dans le fichier explique pourquoi.
+- Les champs de contrat présents dans le mock mais absents du modèle `Contrat`
+  ont été retirés : `poste` / `departement` (ils vivent sur `Personnel`, joint
+  côté client pour l'affichage), `heuresHebdo`, `periodEssai`, `dateSignature`
+  et l'historique des attestations émises. Le contrat réel ne porte que
+  `personnelId`, `typeContrat`, `dateDebut`, `dateFin`, `salaire`,
+  `documentUrl`, `statut`.
+- Le routeur générique ne joint pas la relation `personnel` sur les contrats :
+  la page recoupe `personnelId` avec la liste du personnel déjà chargée, plutôt
+  qu'une requête par ligne de tableau.
+- L'onglet "Absences quotidiennes" du module Congés reste non branché (voir la
+  section `hr/Conges.tsx` plus haut) : le modèle `Pointage` ne porte pas de
+  justificatif ni de motif détaillé.
