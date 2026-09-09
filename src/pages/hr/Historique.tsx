@@ -289,6 +289,15 @@ export default function HistoriqueCarriere() {
 
   return (
     <div className="space-y-6">
+      {/* Données d'exemple : aucun modèle `Carriere` / `Promotion` n'existe dans
+          backend/prisma/schema.prisma — page volontairement laissée en mock. */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> L'historique de carrière (promotions,
+        changements de poste, mobilité) n'est pas encore enregistré : la base ne modélise aujourd'hui que la
+        succession des contrats. Les informations affichées servent de maquette en attendant la conception d'un
+        modèle backend dédié — voir MIGRATION.md.
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Historique Carrière</h1>
