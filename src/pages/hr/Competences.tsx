@@ -387,6 +387,15 @@ export default function Competences() {
 
   return (
     <div className="space-y-6">
+      {/* Données d'exemple : aucun modèle `Competence` / `Skill` n'existe dans
+          backend/prisma/schema.prisma — page volontairement laissée en mock. */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> La matrice de compétences et les plans de
+        développement ne sont pas encore enregistrés : aucune table dédiée n'existe côté base de données. Les
+        informations affichées ici servent de maquette en attendant la conception d'un modèle backend
+        (compétences, niveaux, plans de développement) — voir MIGRATION.md.
+      </div>
+
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
