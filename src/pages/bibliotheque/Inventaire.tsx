@@ -93,6 +93,14 @@ export default function Inventaire() {
 
   return (
     <div className="space-y-6">
+      {/* Données d'exemple : cette page affiche des campagnes d'inventaire (quantité attendue vs comptée,
+          écarts). Ni `ExemplaireLivre` (état par code-barres) ni `Livre` (stock agrégé) ne stockent de
+          comptage ni de campagne — page volontairement laissée en mock. */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les campagnes d'inventaire (comptages,
+        écarts) ne sont pas encore enregistrées : aucune table dédiée n'existe côté base de données. Les
+        informations affichées ici servent de maquette en attendant la conception d'un modèle backend — voir MIGRATION.md.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Inventaire Bibliothèque</h1>

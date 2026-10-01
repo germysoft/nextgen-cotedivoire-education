@@ -316,3 +316,26 @@ Le routeur générique renvoie des réponses paginées : les hooks exposent `ite
 Ces pages seront branchées après conception d'un modèle backend dédié.
 
 **Permissions** : préfixe `/hr` déjà couvert par `{ prefix: '/hr', module: 'rh' }` dans `routePermissions.ts`.
+
+## Lot Bibliothèque — Catalogue, Alertes, Réservations, Cartes, Acquisitions, Suggestions — branchés ; Inventaire — mock
+
+**Routes backend ajoutées** (`backend/src/routes/bibliotheque.routes.ts`, même style zod/asyncHandler/ApiError) :
+- `PUT /api/bibliotheque/livres/:id` — recalcule `exemplairesDisponibles` ; 409 si le nouveau total < exemplaires empruntés.
+- `DELETE /api/bibliotheque/livres/:id` — 409 si le livre a des emprunts ou réservations ; détache les suggestions liées.
+- `livreSchema` accepte désormais `emplacement` (déjà présent dans Prisma).
+
+**Hooks** (`src/hooks/api/useBibliotheque.ts`, étendu) : `useCreateLivre/useUpdateLivre/useDeleteLivre`, `useAlertesRetardQuery`, et CRUD générique (réponse paginée → `items`) pour réservations, cartes lecteur, acquisitions, suggestions.
+
+**Pages branchées** (loading/erreur, toasts avec `err?.response?.data?.error`) :
+- `Catalogue.tsx` — CRUD livres. Retirés : résumé, langue, pages, note, mots-clés, cote.
+- `AlertesRetard.tsx` — `GET /alertes-retard` + retour. Retirés : contacts parents, historique des relances.
+- `Reservations.tsx` — `/reservations`. Retirés : expiration, position en file, notification.
+- `CartesLecteur.tsx` — `/cartes-lecteur` (élèves). Retirés : photo, quota, type d'abonnement.
+- `Acquisitions.tsx` — `/acquisitions`, lignes dans le JSON `lignes`, total recalculé. Retirés : budget, n° de bon, contact fournisseur. La réception ne crée pas les livres.
+- `Suggestions.tsx` — `/suggestions` (titre libre ou livre existant). Retirés : auteur, justification, votes, priorité, prix.
+
+Le routeur générique ne joint pas les relations : livres/élèves sont recoupés côté client.
+
+**Reste en mock (bandeau jaune)** : `Inventaire.tsx` affiche des campagnes de comptage (attendu vs compté, écarts) ; ni `ExemplaireLivre` ni `Livre` ne modélisent cela, donc aucun rapprochement forcé.
+
+**Permissions** : `/bibliotheque` déjà mappé au module `bibliotheque`.
