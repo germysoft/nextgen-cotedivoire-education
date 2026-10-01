@@ -19,6 +19,7 @@ const livreSchema = z.object({
   categorie: z.string().optional(),
   anneeEdition: z.number().int().optional(),
   nombreExemplaires: z.number().int().min(1).optional(),
+  emplacement: z.string().optional(),
 });
 router.get(
   '/livres',
