@@ -44,6 +44,44 @@ router.post(
     res.status(201).json(livre);
   })
 );
+router.put(
+  '/livres/:id',
+  asyncHandler(async (req, res) => {
+    const data = livreSchema.partial().parse(req.body);
+    const livre = await prisma.livre.findUnique({ where: { id: req.params.id } });
+    if (!livre) throw new ApiError(404, 'Livre introuvable.');
+
+    // Si le nombre total d'exemplaires change, on ajuste les disponibles du même écart,
+    // sans descendre sous le nombre d'exemplaires actuellement empruntés.
+    let exemplairesDisponibles = livre.exemplairesDisponibles;
+    if (data.nombreExemplaires !== undefined) {
+      const empruntes = livre.nombreExemplaires - livre.exemplairesDisponibles;
+      if (data.nombreExemplaires < empruntes) {
+        throw new ApiError(409, `Impossible : ${empruntes} exemplaire(s) sont actuellement empruntés.`);
+      }
+      exemplairesDisponibles = data.nombreExemplaires - empruntes;
+    }
+
+    res.json(await prisma.livre.update({ where: { id: req.params.id }, data: { ...data, exemplairesDisponibles } }));
+  })
+);
+router.delete(
+  '/livres/:id',
+  asyncHandler(async (req, res) => {
+    const livre = await prisma.livre.findUnique({ where: { id: req.params.id } });
+    if (!livre) throw new ApiError(404, 'Livre introuvable.');
+    const [emprunts, reservations] = await Promise.all([
+      prisma.emprunt.count({ where: { livreId: req.params.id } }),
+      prisma.reservation.count({ where: { livreId: req.params.id } }),
+    ]);
+    if (emprunts > 0 || reservations > 0) {
+      throw new ApiError(409, 'Ce livre a un historique d\'emprunts ou de réservations et ne peut pas être supprimé.');
+    }
+    await prisma.suggestionAchat.updateMany({ where: { livreId: req.params.id }, data: { livreId: null } });
+    await prisma.livre.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  })
+);
 
 // --- Emprunts ---
 const empruntSchema = z.object({
