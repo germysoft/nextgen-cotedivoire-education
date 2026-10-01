@@ -2,404 +2,176 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { 
-  CreditCard, Search, Plus, Download, User, Calendar,
-  CheckCircle, XCircle, AlertCircle, Printer, RefreshCw, Ban
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreditCard, Plus, Search, Pencil, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { mockReaderCards, ReaderCard } from "@/data/mockLibrary";
-import { generateReaderCard } from "@/components/bibliotheque/LibraryPDFGenerator";
+import { CarteLecteur, useCartesLecteurQuery, useCreateCarteLecteur, useDeleteCarteLecteur, useUpdateCarteLecteur } from "@/hooks/api/useBibliotheque";
+import { useElevesQuery } from "@/hooks/api/useEleves";
+
+/**
+ * Cartes lecteur — branché sur le CRUD générique /api/bibliotheque/cartes-lecteur (modèle `CarteLecteur`).
+ * Retirés du mock (absents du schéma) : photo, quota d'emprunts, type d'abonnement, historique de la carte.
+ * `personnelId` existe en base mais n'est pas exposé ici (cartes élèves uniquement pour l'instant).
+ */
+
+const errMsg = (e: any, fallback: string) => e?.response?.data?.error ?? fallback;
+const toDateInput = (d?: string | null) => (d ? d.slice(0, 10) : "");
 
 export default function CartesLecteur() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isNewCardOpen, setIsNewCardOpen] = useState(false);
-  const [selectedCard, setSelectedCard] = useState<ReaderCard | null>(null);
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<CarteLecteur | null>(null);
+  const [form, setForm] = useState({ numeroCarte: "", eleveId: "", dateExpiration: "", active: true });
 
-  const filteredCards = mockReaderCards.filter(card => {
-    const matchesSearch = 
-      card.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      card.number.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || card.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const { data: cartes = [], isLoading, isError } = useCartesLecteurQuery();
+  const { data: elevesData } = useElevesQuery({ pageSize: 500 });
+  const eleves = elevesData?.items ?? [];
+  const create = useCreateCarteLecteur();
+  const update = useUpdateCarteLecteur();
+  const remove = useDeleteCarteLecteur();
+
+  const eleveNom = (id?: string | null) => {
+    const e = eleves.find((x) => x.id === id);
+    return e ? `${e.nom} ${e.prenom}` : "—";
+  };
+  const expiree = (c: CarteLecteur) => !!c.dateExpiration && new Date(c.dateExpiration) < new Date();
+
+  const filtered = cartes.filter((c) => {
+    const s = search.toLowerCase();
+    return !s || c.numeroCarte.toLowerCase().includes(s) || eleveNom(c.eleveId).toLowerCase().includes(s);
   });
 
-  const handlePrintCard = (card: ReaderCard) => {
-    const pdf = generateReaderCard(card);
-    pdf.save(`carte-lecteur-${card.number}.pdf`);
-    toast.success("Carte de lecteur générée");
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ numeroCarte: `CL-${new Date().getFullYear()}-${String(cartes.length + 1).padStart(4, "0")}`, eleveId: "", dateExpiration: "", active: true });
+    setOpen(true);
+  };
+  const openEdit = (c: CarteLecteur) => {
+    setEditing(c);
+    setForm({ numeroCarte: c.numeroCarte, eleveId: c.eleveId ?? "", dateExpiration: toDateInput(c.dateExpiration), active: c.active });
+    setOpen(true);
   };
 
-  const handleSuspendCard = (card: ReaderCard) => {
-    toast.info(`Carte ${card.number} suspendue`);
+  const handleSubmit = () => {
+    if (!form.numeroCarte.trim()) { toast.error("Le numéro de carte est obligatoire"); return; }
+    const payload = {
+      numeroCarte: form.numeroCarte.trim(),
+      eleveId: form.eleveId || null,
+      dateExpiration: form.dateExpiration ? new Date(form.dateExpiration).toISOString() : null,
+      active: form.active,
+    };
+    const opts = {
+      onSuccess: () => { toast.success(editing ? "Carte modifiée" : "Carte créée"); setOpen(false); },
+      onError: (e: any) => toast.error(errMsg(e, "Erreur lors de l'enregistrement de la carte")),
+    };
+    if (editing) update.mutate({ id: editing.id, ...payload }, opts);
+    else create.mutate(payload, opts);
   };
 
-  const handleRenewCard = (card: ReaderCard) => {
-    toast.success(`Carte ${card.number} renouvelée jusqu'au 30/06/2026`);
-  };
+  const toggleActive = (c: CarteLecteur) =>
+    update.mutate({ id: c.id, active: !c.active }, {
+      onSuccess: () => toast.success(c.active ? "Carte désactivée" : "Carte activée"),
+      onError: (e: any) => toast.error(errMsg(e, "Erreur lors de la mise à jour")),
+    });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Active':
-        return <Badge className="bg-green-500 gap-1"><CheckCircle className="h-3 w-3" />Active</Badge>;
-      case 'Expirée':
-        return <Badge variant="secondary" className="gap-1"><AlertCircle className="h-3 w-3" />Expirée</Badge>;
-      case 'Suspendue':
-        return <Badge variant="destructive" className="gap-1"><Ban className="h-3 w-3" />Suspendue</Badge>;
-      case 'Perdue':
-        return <Badge variant="outline" className="gap-1"><XCircle className="h-3 w-3" />Perdue</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
+  const handleDelete = (c: CarteLecteur) =>
+    remove.mutate(c.id, {
+      onSuccess: () => toast.success("Carte supprimée"),
+      onError: (e: any) => toast.error(errMsg(e, "Erreur lors de la suppression (la carte a peut-être des emprunts)")),
+    });
 
-  const activeCount = mockReaderCards.filter(c => c.status === 'Active').length;
-  const expiredCount = mockReaderCards.filter(c => c.status === 'Expirée').length;
-  const suspendedCount = mockReaderCards.filter(c => c.status === 'Suspendue').length;
-  const totalBorrowings = mockReaderCards.reduce((sum, c) => sum + c.totalBorrowings, 0);
+  const saving = create.isPending || update.isPending;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cartes de Lecteur</h1>
-          <p className="text-muted-foreground">Gestion des abonnements et cartes de bibliothèque</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2"><CreditCard className="h-8 w-8 text-primary" />Cartes lecteur</h1>
+          <p className="text-muted-foreground">Émission et suivi des cartes de bibliothèque</p>
         </div>
-        <Dialog open={isNewCardOpen} onOpenChange={setIsNewCardOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Carte
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Créer une Carte de Lecteur</DialogTitle>
-              <DialogDescription>Émettre une nouvelle carte pour un lecteur</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Type de lecteur</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Élève">Élève</SelectItem>
-                    <SelectItem value="Enseignant">Enseignant</SelectItem>
-                    <SelectItem value="Personnel">Personnel</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Matricule ou recherche</Label>
-                <Input placeholder="Rechercher un élève, enseignant..." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date d'émission</Label>
-                  <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Date d'expiration</Label>
-                  <Input type="date" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Limite d'emprunts</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3">3 livres (Élèves)</SelectItem>
-                    <SelectItem value="5">5 livres (Personnel)</SelectItem>
-                    <SelectItem value="10">10 livres (Enseignants)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="p-4 bg-muted rounded-lg text-sm">
-                <p className="font-medium mb-2">Information</p>
-                <p className="text-muted-foreground">
-                  Un numéro de carte unique sera automatiquement généré.
-                  La carte pourra être imprimée après création.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsNewCardOpen(false)}>
-                Annuler
-              </Button>
-              <Button onClick={() => {
-                toast.success("Carte de lecteur créée");
-                setIsNewCardOpen(false);
-              }}>
-                Créer la Carte
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nouvelle carte</Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cartes Actives</CardTitle>
-            <CreditCard className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{activeCount}</div>
-            <p className="text-xs text-muted-foreground">En cours de validité</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cartes Expirées</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{expiredCount}</div>
-            <p className="text-xs text-muted-foreground">À renouveler</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Suspendues</CardTitle>
-            <Ban className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{suspendedCount}</div>
-            <p className="text-xs text-muted-foreground">Pour non-retour ou pénalités</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Emprunts</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalBorrowings}</div>
-            <p className="text-xs text-muted-foreground">Depuis la création</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{cartes.length}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Actives</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{cartes.filter((c) => c.active && !expiree(c)).length}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Expirées / inactives</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{cartes.filter((c) => !c.active || expiree(c)).length}</div></CardContent></Card>
       </div>
 
-      {/* Aperçu carte */}
       <Card>
         <CardHeader>
-          <CardTitle>Aperçu Carte de Lecteur</CardTitle>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input className="pl-9" placeholder="Numéro ou élève..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-6 items-start">
-            <div className="w-80 h-48 bg-gradient-to-br from-primary to-primary/80 rounded-xl p-4 text-white shadow-lg">
-              <div className="text-lg font-bold mb-1">CARTE DE LECTEUR</div>
-              <div className="text-xs opacity-80 mb-4">Bibliothèque NextGen Éducation</div>
-              
-              <div className="flex gap-3">
-                <div className="w-16 h-20 bg-white/20 rounded flex items-center justify-center text-xs">
-                  PHOTO
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold">KOUASSI Jean</div>
-                  <div className="text-xs opacity-80">N° LEC-2024-0001</div>
-                  <div className="text-xs opacity-80 mt-1">Élève - 3ème A</div>
-                  <div className="text-xs opacity-80">Valide jusqu'au: 30/06/2025</div>
-                </div>
-              </div>
-              
-              <div className="mt-3 flex gap-1">
-                {Array(20).fill(0).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="bg-white h-6" 
-                    style={{ width: Math.random() > 0.5 ? '2px' : '1px' }} 
-                  />
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : isError ? (
+            <div className="flex items-center gap-2 text-destructive py-8 justify-center"><AlertCircle className="h-5 w-5" />Impossible de charger les cartes.</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">Aucune carte lecteur.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Numéro</TableHead><TableHead>Élève</TableHead><TableHead>Émise le</TableHead>
+                  <TableHead>Expire le</TableHead><TableHead>Statut</TableHead><TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-mono">{c.numeroCarte}</TableCell>
+                    <TableCell>{eleveNom(c.eleveId)}</TableCell>
+                    <TableCell>{new Date(c.dateEmission).toLocaleDateString("fr-FR")}</TableCell>
+                    <TableCell>{c.dateExpiration ? new Date(c.dateExpiration).toLocaleDateString("fr-FR") : "—"}</TableCell>
+                    <TableCell>
+                      {expiree(c) ? <Badge variant="destructive">Expirée</Badge> : c.active ? <Badge>Active</Badge> : <Badge variant="secondary">Inactive</Badge>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Switch checked={c.active} onCheckedChange={() => toggleActive(c)} aria-label="Activer la carte" className="mr-2 align-middle" />
+                      <Button variant="ghost" size="icon" aria-label="Modifier" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" aria-label="Supprimer" onClick={() => handleDelete(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </div>
-            
-            <div className="flex-1 space-y-3">
-              <h4 className="font-medium">Informations de la carte</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Limite d'emprunts:</span>
-                  <span className="ml-2 font-medium">3 livres</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Durée max:</span>
-                  <span className="ml-2 font-medium">14 jours</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Renouvellements:</span>
-                  <span className="ml-2 font-medium">1 fois</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Réservations:</span>
-                  <span className="ml-2 font-medium">2 max</span>
-                </div>
-              </div>
-              <Button variant="outline" className="mt-4">
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimer un modèle
-              </Button>
-            </div>
-          </div>
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Liste des Cartes</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                  placeholder="Rechercher..." 
-                  className="pl-10 w-64"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous statuts</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Expirée">Expirée</SelectItem>
-                  <SelectItem value="Suspendue">Suspendue</SelectItem>
-                  <SelectItem value="Perdue">Perdue</SelectItem>
-                </SelectContent>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Modifier la carte" : "Nouvelle carte lecteur"}</DialogTitle>
+            <DialogDescription>Le numéro de carte doit être unique.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>Numéro de carte *</Label><Input value={form.numeroCarte} onChange={(e) => setForm({ ...form, numeroCarte: e.target.value })} /></div>
+            <div className="space-y-2">
+              <Label>Élève</Label>
+              <Select value={form.eleveId} onValueChange={(v) => setForm({ ...form, eleveId: v })}>
+                <SelectTrigger><SelectValue placeholder="Choisir un élève" /></SelectTrigger>
+                <SelectContent>{eleves.map((e) => <SelectItem key={e.id} value={e.id}>{e.nom} {e.prenom}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="space-y-2"><Label>Date d'expiration</Label><Input type="date" value={form.dateExpiration} onChange={(e) => setForm({ ...form, dateExpiration: e.target.value })} /></div>
+            <div className="flex items-center gap-2"><Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} /><Label>Carte active</Label></div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>N° Carte</TableHead>
-                <TableHead>Titulaire</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Émission</TableHead>
-                <TableHead>Expiration</TableHead>
-                <TableHead className="text-center">Emprunts</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Pénalités</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCards.map((card) => (
-                <TableRow key={card.id}>
-                  <TableCell>
-                    <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{card.number}</code>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <div className="font-medium">{card.userName}</div>
-                        {card.userClass && (
-                          <Badge variant="outline" className="text-xs">{card.userClass}</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{card.userType}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(card.issueDate).toLocaleDateString('fr-FR')}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(card.expirationDate).toLocaleDateString('fr-FR')}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="font-medium">{card.currentBorrowings}</span>
-                    <span className="text-muted-foreground">/{card.borrowLimit}</span>
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(card.status)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {card.penalties > 0 ? (
-                      <span className="font-medium text-red-600">{card.penalties} FCFA</span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handlePrintCard(card)}
-                        title="Imprimer"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      {card.status === 'Active' && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleSuspendCard(card)}
-                          title="Suspendre"
-                        >
-                          <Ban className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                      {(card.status === 'Expirée' || card.status === 'Suspendue') && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleRenewCard(card)}
-                        >
-                          <RefreshCw className="mr-1 h-3 w-3" />
-                          Renouveler
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+            <Button onClick={handleSubmit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
