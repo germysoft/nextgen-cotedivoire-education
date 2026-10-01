@@ -292,3 +292,27 @@ aussi pour le déploiement Azure) :
 - L'onglet "Absences quotidiennes" du module Congés reste non branché (voir la
   section `hr/Conges.tsx` plus haut) : le modèle `Pointage` ne porte pas de
   justificatif ni de motif détaillé.
+
+## Lot RH 2 — Recrutement, Entretiens, Formations — branchés ; Compétences, Historique — mock
+
+**Hooks** : `src/hooks/api/useRecrutementRH.ts` (fichier dédié pour la lisibilité). Query + create/update/delete pour :
+- `/rh/recrutements` (modèle `Recrutement`)
+- `/rh/candidatures` (modèle `Candidature`, liée à `Recrutement`, optionnellement à `Personnel`)
+- `/rh/entretiens` (modèle `Entretien`, lié à `Candidature`)
+- `/rh/formations` (modèle `Formation`, lié à `Personnel`)
+
+Le routeur générique renvoie des réponses paginées : les hooks exposent `items`. Les relations ne sont pas jointes côté serveur ; les pages recroisent les IDs côté client (candidature → recrutement, entretien → candidature, formation → personnel).
+
+**Pages branchées** (loading/erreur, toasts succès + `err?.response?.data?.error`) :
+- `hr/Recrutement.tsx` — onglets Offres et Candidatures, CRUD complet, changement de statut.
+- `hr/Entretiens.tsx` — planification, modification, suppression, notes et décision.
+- `hr/Formations.tsx` — CRUD des formations par membre du personnel.
+
+**Simplifications** : les champs mock sans équivalent Prisma ont été retirés (aucun champ inventé). Aucune route backend ajoutée : tout passe par `generic.routes.ts`.
+
+**Restent en mock (bandeau jaune visible)** :
+- `hr/Competences.tsx` — aucun modèle `Competence`/`Skill` dans `schema.prisma`.
+- `hr/Historique.tsx` (historique de carrière) — aucun modèle `Carriere`/`Promotion` ; seuls les contrats sont modélisés.
+Ces pages seront branchées après conception d'un modèle backend dédié.
+
+**Permissions** : préfixe `/hr` déjà couvert par `{ prefix: '/hr', module: 'rh' }` dans `routePermissions.ts`.
