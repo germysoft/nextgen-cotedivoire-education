@@ -76,6 +76,7 @@ router.delete(
 );
 
 // --- Matières ---
+const matiereSchema = z.object({ nom: z.string().min(1), code: z.string().optional(), coefficientDefaut: z.number().optional() });
 router.get(
   '/matieres',
   asyncHandler(async (_req, res) => {
@@ -85,8 +86,30 @@ router.get(
 router.post(
   '/matieres',
   asyncHandler(async (req, res) => {
-    const data = z.object({ nom: z.string(), code: z.string().optional(), coefficientDefaut: z.number().optional() }).parse(req.body);
+    const data = matiereSchema.parse(req.body);
     res.status(201).json(await prisma.matiere.create({ data }));
+  })
+);
+router.put(
+  '/matieres/:id',
+  asyncHandler(async (req, res) => {
+    const data = matiereSchema.partial().parse(req.body);
+    res.json(await prisma.matiere.update({ where: { id: req.params.id }, data }));
+  })
+);
+router.delete(
+  '/matieres/:id',
+  asyncHandler(async (req, res) => {
+    const [notes, cours, affectations] = await Promise.all([
+      prisma.note.count({ where: { matiereId: req.params.id } }),
+      prisma.cours.count({ where: { matiereId: req.params.id } }),
+      prisma.affectation.count({ where: { matiereId: req.params.id } }),
+    ]);
+    if (notes + cours + affectations > 0) {
+      throw new ApiError(409, 'Cette matière est utilisée (notes, cours ou affectations) et ne peut pas être supprimée.');
+    }
+    await prisma.matiere.delete({ where: { id: req.params.id } });
+    res.status(204).send();
   })
 );
 
@@ -177,6 +200,35 @@ router.get(
     );
   })
 );
+router.put(
+  '/emploi-du-temps/:id',
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.cours.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, 'Cours introuvable.');
+    const data = coursSchema.partial().parse(req.body);
+    const merged = { ...existing, ...data };
+
+    // Même contrôle de conflit qu'à la création, en excluant le cours modifié.
+    const conflit = await prisma.cours.findFirst({
+      where: {
+        id: { not: existing.id },
+        jourSemaine: merged.jourSemaine,
+        OR: [{ personnelId: merged.personnelId }, ...(merged.salleId ? [{ salleId: merged.salleId }] : [])],
+        AND: [{ heureDebut: { lt: merged.heureFin } }, { heureFin: { gt: merged.heureDebut } }],
+      },
+    });
+    if (conflit) throw new ApiError(409, "Conflit d'emploi du temps : enseignant ou salle déjà occupé(e) sur ce créneau.");
+
+    res.json(await prisma.cours.update({ where: { id: existing.id }, data }));
+  })
+);
+router.delete(
+  '/emploi-du-temps/:id',
+  asyncHandler(async (req, res) => {
+    await prisma.cours.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  })
+);
 
 // --- Discipline ---
 const disciplineSchema = z.object({
@@ -186,6 +238,7 @@ const disciplineSchema = z.object({
   motif: z.string(),
   pointsRetires: z.number().int().optional(),
   traitantParId: z.string().uuid().optional(),
+  suiteDonnee: z.string().optional(),
 });
 router.post(
   '/discipline',
@@ -204,6 +257,19 @@ router.get(
         orderBy: { date: 'desc' },
       })
     );
+  })
+);
+router.put(
+  '/discipline/:id',
+  asyncHandler(async (req, res) => {
+    res.json(await prisma.discipline.update({ where: { id: req.params.id }, data: disciplineSchema.partial().parse(req.body) }));
+  })
+);
+router.delete(
+  '/discipline/:id',
+  asyncHandler(async (req, res) => {
+    await prisma.discipline.delete({ where: { id: req.params.id } });
+    res.status(204).send();
   })
 );
 

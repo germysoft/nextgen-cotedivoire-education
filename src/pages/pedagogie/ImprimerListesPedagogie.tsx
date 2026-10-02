@@ -402,6 +402,10 @@ export default function ImprimerListesPedagogie() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Les listes sont générées par generateMockData ; aucun endpoint d'export agrégé n'existe — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les listes imprimables sont générées à partir de données fictives, en attendant un export côté serveur.
+      </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

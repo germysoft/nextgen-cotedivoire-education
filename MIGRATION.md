@@ -339,3 +339,30 @@ Le routeur générique ne joint pas les relations : livres/élèves sont recoup�
 **Reste en mock (bandeau jaune)** : `Inventaire.tsx` affiche des campagnes de comptage (attendu vs compté, écarts) ; ni `ExemplaireLivre` ni `Livre` ne modélisent cela, donc aucun rapprochement forcé.
 
 **Permissions** : `/bibliotheque` déjà mappé au module `bibliotheque`.
+
+## Lot Pédagogie — Matières, Attribution, Emplois du temps, Discipline, Conseils, E-learning — branchés ; Bulletins, Impression des listes — mock
+
+**Routes backend ajoutées** (`pedagogie.routes.ts`, style zod/asyncHandler/ApiError) :
+- `PUT/DELETE /pedagogie/matieres/:id` : la suppression renvoie 409 si la matière est utilisée (notes, cours, affectations).
+- `PUT/DELETE /pedagogie/emploi-du-temps/:id` : le PUT refait le contrôle de conflit enseignant/salle (409) en excluant le cours modifié.
+- `PUT/DELETE /pedagogie/discipline/:id` ; `disciplineSchema` accepte désormais `suiteDonnee` (déjà dans Prisma).
+
+**Hooks** : `src/hooks/api/usePedagogie.ts`. Il réexporte les hooks affectations/matières de `useRH.ts` (pas de doublon) et ajoute matières, cours, discipline, ainsi que le CRUD générique (réponse paginée → `items`, sans relations) pour salles (lecture), conseils de classe et e-learning.
+
+**Pages branchées** (loading/erreur, toasts `err?.response?.data?.error`, le 409 de conflit est affiché tel quel) :
+- `Matieres.tsx` : CRUD. Le nombre d'enseignants et de classes est dérivé des affectations. Retirés : couleur, volume horaire par niveau, programme, département.
+- `Attribution.tsx` : CRUD des affectations, avec la charge hebdo calculée par enseignant. Retirés : semestre, statut de validation, progression.
+- `EmploisDuTemps.tsx` : grille par classe, ajout/modification/suppression d'un cours. Retirés : couleur, type de séance, semaines A/B.
+- `Discipline.tsx` : CRUD des incidents. Retirés : gravité, lieu, témoins, convocation, workflow, pièces jointes.
+- `Conseils.tsx` : CRUD générique, avec `decisions` (JSON) saisi comme une liste de lignes. Retirés : participants, salle/heure, mentions par élève, statistiques. `periodeId` n'est pas exposé.
+- `Elearning.tsx` : CRUD générique de ressources sous forme de liens. Retirés : description, vues, notes, devoirs, forum, envoi de fichiers.
+
+**Restent en mock (bandeau jaune)** :
+- `Bulletins.tsx` : aucun endpoint pédagogie ne fournit de bulletin agrégé ; les vrais bulletins se font depuis `Grades.tsx`.
+- `ImprimerListesPedagogie.tsx` : données générées par `generateMockData`, aucun export serveur.
+
+**Classes** : déjà couvert par `Classes.tsx` à la racine (`/classes`), ignoré ici.
+
+**Points d'attention** :
+- `/pedagogie/salles` est rattaché au module RBAC `infrastructures`. Sans ce droit, la liste des salles de l'emploi du temps est vide ; la salle reste optionnelle.
+- **Permissions** : `/pedagogie` est déjà mappé au module `pedagogie`.
