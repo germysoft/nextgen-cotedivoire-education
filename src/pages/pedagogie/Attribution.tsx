@@ -1,713 +1,211 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Users, BookOpen, Calendar, Edit, Trash2, AlertTriangle, CheckCircle, Download, FileText, Printer, Copy } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "@/hooks/use-toast";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Plus, Search, Pencil, Trash2, Loader2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { Affectation, useAffectationsQuery, useCreateAffectation, useDeleteAffectation, useMatieresQuery, useUpdateAffectation } from "@/hooks/api/usePedagogie";
+import { useClassesQuery } from "@/hooks/api/useClasses";
+import { usePersonnelQuery } from "@/hooks/api/usePersonnel";
 
-interface Attribution {
-  id: number;
-  enseignant: string;
-  enseignantId: number;
-  matiere: string;
-  classe: string;
-  heures: number;
-  jour: string;
-  horaire: string;
-  statut: string;
-  profPrincipal: boolean;
-}
+/**
+ * Attribution pédagogique — branché sur /api/pedagogie/affectations (GET/POST/PUT/DELETE).
+ * Retirés du mock (absents du modèle `Affectation`) : semestre, statut de validation,
+ * progression du programme, répartition par discipline figée. La charge horaire par
+ * enseignant est calculée à partir de `chargeHoraireHebdo`.
+ */
 
-const initialAttributions: Attribution[] = [
-  { id: 1, enseignant: "M. KOFFI Yao", enseignantId: 1, matiere: "Mathématiques", classe: "Tle D", heures: 8, jour: "Lundi", horaire: "08:00-10:00", statut: "Actif", profPrincipal: true },
-  { id: 2, enseignant: "Mme DIALLO Fatoumata", enseignantId: 2, matiere: "Français", classe: "1ère A", heures: 6, jour: "Lundi", horaire: "10:00-12:00", statut: "Actif", profPrincipal: true },
-  { id: 3, enseignant: "M. TOURÉ Mohamed", enseignantId: 3, matiere: "Physique-Chimie", classe: "Tle D", heures: 7, jour: "Mardi", horaire: "08:00-10:00", statut: "Actif", profPrincipal: false },
-  { id: 4, enseignant: "M. TOURÉ Mohamed", enseignantId: 3, matiere: "Physique-Chimie", classe: "1ère C", heures: 6, jour: "Mardi", horaire: "10:00-12:00", statut: "Actif", profPrincipal: false },
-  { id: 5, enseignant: "Mme SANOGO Aminata", enseignantId: 4, matiere: "Anglais", classe: "2nde B", heures: 5, jour: "Mercredi", horaire: "08:00-10:00", statut: "Actif", profPrincipal: false },
-  { id: 6, enseignant: "M. KONE Ibrahim", enseignantId: 5, matiere: "SVT", classe: "3ème C", heures: 4, jour: "Jeudi", horaire: "08:00-10:00", statut: "Actif", profPrincipal: true },
-  { id: 7, enseignant: "Mme BAMBA Sarah", enseignantId: 6, matiere: "Histoire-Géo", classe: "Tle A", heures: 4, jour: "Jeudi", horaire: "10:00-12:00", statut: "Actif", profPrincipal: false },
-  { id: 8, enseignant: "M. YAO Jean", enseignantId: 7, matiere: "EPS", classe: "6ème B", heures: 3, jour: "Vendredi", horaire: "08:00-10:00", statut: "Actif", profPrincipal: false },
-];
-
-const enseignants = [
-  { id: 1, nom: "M. KOFFI Yao", matieres: ["Mathématiques"], heuresMax: 18, heuresAffectees: 16, classes: 3 },
-  { id: 2, nom: "Mme DIALLO Fatoumata", matieres: ["Français"], heuresMax: 18, heuresAffectees: 18, classes: 3 },
-  { id: 3, nom: "M. TOURÉ Mohamed", matieres: ["Physique-Chimie"], heuresMax: 20, heuresAffectees: 19, classes: 4 },
-  { id: 4, nom: "Mme SANOGO Aminata", matieres: ["Anglais"], heuresMax: 18, heuresAffectees: 15, classes: 3 },
-  { id: 5, nom: "M. KONE Ibrahim", matieres: ["SVT"], heuresMax: 18, heuresAffectees: 12, classes: 2 },
-  { id: 6, nom: "Mme BAMBA Sarah", matieres: ["Histoire-Géo"], heuresMax: 18, heuresAffectees: 14, classes: 3 },
-  { id: 7, nom: "M. YAO Jean", matieres: ["EPS"], heuresMax: 20, heuresAffectees: 18, classes: 6 },
-];
-
-const workloadData = enseignants.map(e => ({
-  name: e.nom.split(' ')[1],
-  heures: e.heuresAffectees,
-  max: e.heuresMax,
-}));
-
-const disciplineDistribution = [
-  { name: "Sciences", value: 35, color: "#3b82f6" },
-  { name: "Littérature", value: 25, color: "#10b981" },
-  { name: "Langues", value: 20, color: "#f59e0b" },
-  { name: "Sport & Arts", value: 12, color: "#ef4444" },
-  { name: "Humanités", value: 8, color: "#8b5cf6" },
-];
+const errMsg = (e: any, f: string) => e?.response?.data?.error ?? f;
+const empty = { personnelId: "", classeId: "", matiereId: "", chargeHoraireHebdo: "2", coefficient: "" };
 
 export default function Attribution() {
-  const [attributions, setAttributions] = useState<Attribution[]>(initialAttributions);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterNiveau, setFilterNiveau] = useState("tous");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAttribution, setEditingAttribution] = useState<Attribution | null>(null);
-  const [conflicts, setConflicts] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [classeFilter, setClasseFilter] = useState("all");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Affectation | null>(null);
+  const [form, setForm] = useState(empty);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    enseignantId: "",
-    matiere: "",
-    classe: "",
-    heures: "",
-    jour: "",
-    horaire: "",
-    profPrincipal: false,
+  const { data: affectations = [], isLoading, isError } = useAffectationsQuery();
+  const { data: classes = [] } = useClassesQuery();
+  const { data: matieres = [] } = useMatieresQuery();
+  const { data: personnelData } = usePersonnelQuery({ pageSize: 500, categoriePersonnel: "Enseignant" });
+  const enseignants = personnelData?.items ?? [];
+  const create = useCreateAffectation();
+  const update = useUpdateAffectation();
+  const remove = useDeleteAffectation();
+
+  const filtered = affectations.filter((a) => {
+    const s = search.toLowerCase();
+    const matchSearch = !s || `${a.personnel.nom} ${a.personnel.prenom}`.toLowerCase().includes(s) || a.matiere.nom.toLowerCase().includes(s);
+    return matchSearch && (classeFilter === "all" || a.classeId === classeFilter);
   });
 
-  const checkConflicts = (newAttrib: Partial<Attribution>) => {
-    const conflictsList: string[] = [];
-    
-    // Check time conflicts for the same teacher
-    attributions.forEach(attr => {
-      if (attr.enseignantId === Number(newAttrib.enseignantId) && 
-          attr.jour === newAttrib.jour && 
-          attr.horaire === newAttrib.horaire &&
-          attr.id !== editingAttribution?.id) {
-        conflictsList.push(`Conflit horaire: ${attr.enseignant} a déjà un cours ${attr.jour} à ${attr.horaire}`);
-      }
-    });
+  // Charge hebdomadaire par enseignant (réelle)
+  const charges = Object.values(
+    affectations.reduce<Record<string, { nom: string; heures: number }>>((acc, a) => {
+      const k = a.personnelId;
+      acc[k] = acc[k] ?? { nom: `${a.personnel.prenom} ${a.personnel.nom}`, heures: 0 };
+      acc[k].heures += a.chargeHoraireHebdo;
+      return acc;
+    }, {}),
+  ).sort((x, y) => y.heures - x.heures);
 
-    // Check time conflicts for the same class
-    attributions.forEach(attr => {
-      if (attr.classe === newAttrib.classe && 
-          attr.jour === newAttrib.jour && 
-          attr.horaire === newAttrib.horaire &&
-          attr.id !== editingAttribution?.id) {
-        conflictsList.push(`Conflit classe: ${attr.classe} a déjà ${attr.matiere} ${attr.jour} à ${attr.horaire}`);
-      }
-    });
-
-    // Check teacher workload
-    const teacher = enseignants.find(e => e.id === Number(newAttrib.enseignantId));
-    if (teacher) {
-      const currentHours = attributions
-        .filter(a => a.enseignantId === teacher.id && a.id !== editingAttribution?.id)
-        .reduce((sum, a) => sum + a.heures, 0);
-      
-      if (currentHours + Number(newAttrib.heures || 0) > teacher.heuresMax) {
-        conflictsList.push(`Surcharge: ${teacher.nom} dépasserait ses ${teacher.heuresMax}h max`);
-      }
-    }
-
-    setConflicts(conflictsList);
-    return conflictsList.length === 0;
+  const openCreate = () => { setEditing(null); setForm(empty); setOpen(true); };
+  const openEdit = (a: Affectation) => {
+    setEditing(a);
+    setForm({ personnelId: a.personnelId, classeId: a.classeId, matiereId: a.matiereId, chargeHoraireHebdo: String(a.chargeHoraireHebdo), coefficient: a.coefficient?.toString() ?? "" });
+    setOpen(true);
   };
 
-  const handleSaveAttribution = () => {
-    const teacher = enseignants.find(e => e.id === Number(formData.enseignantId));
-    
-    if (!checkConflicts({
-      ...formData,
-      enseignantId: Number(formData.enseignantId),
-      heures: Number(formData.heures),
-    })) {
-      toast({
-        title: "Conflits détectés",
-        description: "Veuillez résoudre les conflits avant de sauvegarder",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (editingAttribution) {
-      setAttributions(prev => prev.map(a => 
-        a.id === editingAttribution.id ? {
-          ...a,
-          enseignant: teacher?.nom || "",
-          enseignantId: Number(formData.enseignantId),
-          matiere: formData.matiere,
-          classe: formData.classe,
-          heures: Number(formData.heures),
-          jour: formData.jour,
-          horaire: formData.horaire,
-          profPrincipal: formData.profPrincipal,
-        } : a
-      ));
-      toast({ title: "Attribution modifiée", description: "Les modifications ont été enregistrées" });
-    } else {
-      const newAttribution: Attribution = {
-        id: Math.max(...attributions.map(a => a.id)) + 1,
-        enseignant: teacher?.nom || "",
-        enseignantId: Number(formData.enseignantId),
-        matiere: formData.matiere,
-        classe: formData.classe,
-        heures: Number(formData.heures),
-        jour: formData.jour,
-        horaire: formData.horaire,
-        statut: "Actif",
-        profPrincipal: formData.profPrincipal,
-      };
-      setAttributions(prev => [...prev, newAttribution]);
-      toast({ title: "Attribution créée", description: "La nouvelle attribution a été ajoutée" });
-    }
-
-    setIsDialogOpen(false);
-    setEditingAttribution(null);
-    setFormData({ enseignantId: "", matiere: "", classe: "", heures: "", jour: "", horaire: "", profPrincipal: false });
-    setConflicts([]);
-  };
-
-  const handleEdit = (attribution: Attribution) => {
-    setEditingAttribution(attribution);
-    setFormData({
-      enseignantId: String(attribution.enseignantId),
-      matiere: attribution.matiere,
-      classe: attribution.classe,
-      heures: String(attribution.heures),
-      jour: attribution.jour,
-      horaire: attribution.horaire,
-      profPrincipal: attribution.profPrincipal,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = (id: number) => {
-    setAttributions(prev => prev.filter(a => a.id !== id));
-    toast({ title: "Attribution supprimée", description: "L'attribution a été supprimée" });
-  };
-
-  const filteredAttributions = attributions.filter(attr => {
-    const matchesSearch = attr.enseignant.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         attr.matiere.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         attr.classe.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterNiveau === "tous" || 
-                         (filterNiveau === "tle" && attr.classe.startsWith("Tle")) ||
-                         (filterNiveau === "1ere" && attr.classe.startsWith("1ère")) ||
-                         (filterNiveau === "2nde" && attr.classe.startsWith("2nde"));
-    return matchesSearch && matchesFilter;
-  });
-
-  const totalAttributions = attributions.length;
-  const totalHeures = attributions.reduce((sum, a) => sum + a.heures, 0);
-  const profsPrincipaux = attributions.filter(a => a.profPrincipal).length;
-
-  // PDF Export - Liste des attributions
-  const handleExportAttributionsPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Attributions des Enseignants", 14, 22);
-    doc.setFontSize(10);
-    doc.text(`Total: ${totalAttributions} attributions | ${totalHeures}h/semaine`, 14, 30);
-
-    autoTable(doc, {
-      startY: 38,
-      head: [["Enseignant", "Matière", "Classe", "Jour", "Horaire", "Heures", "Rôle"]],
-      body: attributions.map(a => [
-        a.enseignant,
-        a.matiere,
-        a.classe,
-        a.jour,
-        a.horaire,
-        `${a.heures}h`,
-        a.profPrincipal ? "Prof Principal" : "Enseignant"
-      ]),
-      headStyles: { fillColor: [59, 130, 246] },
-    });
-
-    doc.save("attributions-enseignants.pdf");
-    toast({ title: "Export réussi", description: "Attributions exportées en PDF" });
-  };
-
-  // PDF Export - Charge horaire enseignants
-  const handleExportWorkloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Charge Horaire des Enseignants", 14, 22);
-    doc.setFontSize(10);
-    doc.text(`${enseignants.length} enseignants actifs`, 14, 30);
-
-    autoTable(doc, {
-      startY: 38,
-      head: [["Enseignant", "Matières", "Heures Affectées", "Maximum", "Taux", "Classes"]],
-      body: enseignants.map(e => [
-        e.nom,
-        e.matieres.join(", "),
-        `${e.heuresAffectees}h`,
-        `${e.heuresMax}h`,
-        `${((e.heuresAffectees / e.heuresMax) * 100).toFixed(0)}%`,
-        `${e.classes}`
-      ]),
-      headStyles: { fillColor: [16, 185, 129] },
-    });
-
-    // Alertes de surcharge
-    const surcharges = enseignants.filter(e => e.heuresAffectees >= e.heuresMax);
-    if (surcharges.length > 0) {
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [["⚠️ Enseignants en surcharge"]],
-        body: surcharges.map(e => [`${e.nom}: ${e.heuresAffectees}/${e.heuresMax}h`]),
-        headStyles: { fillColor: [239, 68, 68] },
-      });
-    }
-
-    doc.save("charge-horaire-enseignants.pdf");
-    toast({ title: "Export réussi", description: "Charge horaire exportée en PDF" });
-  };
-
-  // Dupliquer une attribution
-  const handleDuplicateAttribution = (attr: Attribution) => {
-    const teacher = enseignants.find(e => e.id === attr.enseignantId);
-    const newAttr: Attribution = {
-      ...attr,
-      id: Math.max(...attributions.map(a => a.id)) + 1,
-      classe: `${attr.classe} (copie)`,
-      profPrincipal: false
+  const submit = () => {
+    if (!form.personnelId || !form.classeId || !form.matiereId) { toast.error("Enseignant, classe et matière sont obligatoires"); return; }
+    const payload = {
+      personnelId: form.personnelId, classeId: form.classeId, matiereId: form.matiereId,
+      chargeHoraireHebdo: parseFloat(form.chargeHoraireHebdo) || 1,
+      coefficient: form.coefficient ? parseFloat(form.coefficient) : undefined,
     };
-    setAttributions([...attributions, newAttr]);
-    toast({ title: "Attribution dupliquée", description: `Attribution pour ${attr.classe} copiée` });
+    const opts = {
+      onSuccess: () => { toast.success(editing ? "Attribution modifiée" : "Attribution créée"); setOpen(false); },
+      onError: (e: any) => toast.error(errMsg(e, "Erreur lors de l'enregistrement (attribution peut-être déjà existante)")),
+    };
+    if (editing) update.mutate({ id: editing.id, ...payload }, opts);
+    else create.mutate(payload, opts);
   };
+
+  const del = (a: Affectation) =>
+    remove.mutate(a.id, {
+      onSuccess: () => toast.success("Attribution supprimée"),
+      onError: (e: any) => toast.error(errMsg(e, "Erreur lors de la suppression")),
+    });
+
+  const saving = create.isPending || update.isPending;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Attribution des Enseignants</h1>
-          <p className="text-muted-foreground">Affectation des professeurs aux matières et classes</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2"><Users className="h-8 w-8 text-primary" />Attribution pédagogique</h1>
+          <p className="text-muted-foreground">Enseignant × classe × matière, et charge horaire</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportAttributionsPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Exporter Attributions
-          </Button>
-          <Button variant="outline" onClick={handleExportWorkloadPDF}>
-            <FileText className="mr-2 h-4 w-4" />
-            Charge Horaire PDF
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) {
-              setEditingAttribution(null);
-              setFormData({ enseignantId: "", matiere: "", classe: "", heures: "", jour: "", horaire: "", profPrincipal: false });
-              setConflicts([]);
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvelle Attribution
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{editingAttribution ? "Modifier l'Attribution" : "Nouvelle Attribution"}</DialogTitle>
-              </DialogHeader>
-            <div className="grid gap-4 py-4">
-              {conflicts.length > 0 && (
-                <div className="p-3 bg-destructive/10 border border-destructive rounded-lg space-y-1">
-                  {conflicts.map((conflict, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      {conflict}
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Enseignant</Label>
-                  <Select value={formData.enseignantId} onValueChange={(v) => setFormData({...formData, enseignantId: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enseignants.map(e => (
-                        <SelectItem key={e.id} value={String(e.id)}>
-                          {e.nom} ({e.heuresAffectees}/{e.heuresMax}h)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Matière</Label>
-                  <Select value={formData.matiere} onValueChange={(v) => setFormData({...formData, matiere: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mathématiques">Mathématiques</SelectItem>
-                      <SelectItem value="Français">Français</SelectItem>
-                      <SelectItem value="Physique-Chimie">Physique-Chimie</SelectItem>
-                      <SelectItem value="SVT">SVT</SelectItem>
-                      <SelectItem value="Anglais">Anglais</SelectItem>
-                      <SelectItem value="Histoire-Géo">Histoire-Géo</SelectItem>
-                      <SelectItem value="EPS">EPS</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nouvelle attribution</Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Attributions</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{affectations.length}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Enseignants affectés</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{charges.length}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Heures hebdo totales</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{charges.reduce((a, c) => a + c.heures, 0)} h</div></CardContent></Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-9" placeholder="Enseignant ou matière..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Classe</Label>
-                  <Select value={formData.classe} onValueChange={(v) => setFormData({...formData, classe: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="6ème A">6ème A</SelectItem>
-                      <SelectItem value="5ème B">5ème B</SelectItem>
-                      <SelectItem value="4ème C">4ème C</SelectItem>
-                      <SelectItem value="3ème C">3ème C</SelectItem>
-                      <SelectItem value="2nde B">2nde B</SelectItem>
-                      <SelectItem value="1ère A">1ère A</SelectItem>
-                      <SelectItem value="1ère C">1ère C</SelectItem>
-                      <SelectItem value="Tle A">Tle A</SelectItem>
-                      <SelectItem value="Tle D">Tle D</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Heures/semaine</Label>
-                  <Input 
-                    type="number" 
-                    placeholder="Ex: 4" 
-                    value={formData.heures}
-                    onChange={(e) => setFormData({...formData, heures: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Jour</Label>
-                  <Select value={formData.jour} onValueChange={(v) => setFormData({...formData, jour: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Lundi">Lundi</SelectItem>
-                      <SelectItem value="Mardi">Mardi</SelectItem>
-                      <SelectItem value="Mercredi">Mercredi</SelectItem>
-                      <SelectItem value="Jeudi">Jeudi</SelectItem>
-                      <SelectItem value="Vendredi">Vendredi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Horaire</Label>
-                  <Select value={formData.horaire} onValueChange={(v) => setFormData({...formData, horaire: v})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="08:00-10:00">08:00-10:00</SelectItem>
-                      <SelectItem value="10:00-12:00">10:00-12:00</SelectItem>
-                      <SelectItem value="14:00-16:00">14:00-16:00</SelectItem>
-                      <SelectItem value="16:00-18:00">16:00-18:00</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  id="profPrincipal"
-                  checked={formData.profPrincipal}
-                  onChange={(e) => setFormData({...formData, profPrincipal: e.target.checked})}
-                />
-                <Label htmlFor="profPrincipal">Professeur Principal de cette classe</Label>
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleSaveAttribution}>
-                  {editingAttribution ? "Enregistrer" : "Créer"}
-                </Button>
-              </div>
+              <Select value={classeFilter} onValueChange={setClasseFilter}>
+                <SelectTrigger className="w-full md:w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les classes</SelectItem>
+                  {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enseignants</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{enseignants.length}</div>
-            <p className="text-xs text-muted-foreground">Actifs cette année</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Attributions</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAttributions}</div>
-            <p className="text-xs text-muted-foreground">Matière-Classe</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Heures Totales</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalHeures}h</div>
-            <p className="text-xs text-muted-foreground">Par semaine</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profs Principaux</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{profsPrincipaux}</div>
-            <p className="text-xs text-muted-foreground">Classes attribuées</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="attributions" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="attributions">Attributions</TabsTrigger>
-          <TabsTrigger value="workload">Charge Horaire</TabsTrigger>
-          <TabsTrigger value="statistics">Statistiques</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="attributions">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Liste des Attributions</CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                      placeholder="Rechercher..." 
-                      className="pl-10 w-64"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <Select value={filterNiveau} onValueChange={setFilterNiveau}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tous">Tous</SelectItem>
-                      <SelectItem value="tle">Terminale</SelectItem>
-                      <SelectItem value="1ere">Première</SelectItem>
-                      <SelectItem value="2nde">Seconde</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : isError ? (
+              <div className="flex items-center gap-2 text-destructive py-8 justify-center"><AlertCircle className="h-5 w-5" />Impossible de charger les attributions.</div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">Aucune attribution.</div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Enseignant</TableHead>
-                    <TableHead>Matière</TableHead>
-                    <TableHead>Classe</TableHead>
-                    <TableHead>Jour</TableHead>
-                    <TableHead>Horaire</TableHead>
-                    <TableHead>Heures/sem</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Enseignant</TableHead><TableHead>Classe</TableHead><TableHead>Matière</TableHead>
+                    <TableHead>H/sem.</TableHead><TableHead>Coef.</TableHead><TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAttributions.map((attr) => (
-                    <TableRow key={attr.id}>
-                      <TableCell className="font-medium">{attr.enseignant}</TableCell>
-                      <TableCell>{attr.matiere}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{attr.classe}</Badge>
-                      </TableCell>
-                      <TableCell>{attr.jour}</TableCell>
-                      <TableCell>{attr.horaire}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {attr.heures}h
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {attr.profPrincipal ? (
-                          <Badge variant="default">Prof Principal</Badge>
-                        ) : (
-                          <Badge variant="secondary">Enseignant</Badge>
-                        )}
-                      </TableCell>
+                  {filtered.map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium">{a.personnel.prenom} {a.personnel.nom}</TableCell>
+                      <TableCell><Badge variant="outline">{a.classe.nom}</Badge></TableCell>
+                      <TableCell>{a.matiere.nom}</TableCell>
+                      <TableCell>{a.chargeHoraireHebdo}</TableCell>
+                      <TableCell>{a.coefficient ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="ghost" onClick={() => handleDuplicateAttribution(attr)}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(attr)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(attr.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button variant="ghost" size="icon" aria-label="Modifier" onClick={() => openEdit(a)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" aria-label="Supprimer" onClick={() => del(a)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="workload">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Charge Horaire par Enseignant</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={workloadData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" domain={[0, 22]} />
-                      <YAxis type="category" dataKey="name" width={80} />
-                      <Tooltip />
-                      <Bar dataKey="heures" name="Heures affectées" fill="#3b82f6" />
-                      <Bar dataKey="max" name="Maximum" fill="#e5e7eb" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader><CardTitle>Charge horaire par enseignant</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {charges.length === 0 && <p className="text-sm text-muted-foreground">Aucune donnée.</p>}
+            {charges.map((c) => (
+              <div key={c.nom} className="flex items-center justify-between text-sm">
+                <span>{c.nom}</span>
+                <Badge variant={c.heures > 21 ? "destructive" : "secondary"}>{c.heures} h</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Détail par Enseignant</CardTitle>
-                <CardDescription>Heures hebdomadaires affectées</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {enseignants.map((ens) => (
-                    <div key={ens.id} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{ens.nom}</span>
-                        <span className={`font-bold ${
-                          ens.heuresAffectees >= ens.heuresMax ? "text-red-600" : 
-                          ens.heuresAffectees >= ens.heuresMax * 0.9 ? "text-orange-600" : "text-green-600"
-                        }`}>
-                          {ens.heuresAffectees}/{ens.heuresMax}h
-                        </span>
-                      </div>
-                      <Progress 
-                        value={(ens.heuresAffectees / ens.heuresMax) * 100} 
-                        className={`h-2 ${ens.heuresAffectees >= ens.heuresMax ? "[&>div]:bg-red-500" : ""}`}
-                      />
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{ens.matieres.join(", ")}</span>
-                        <span>{ens.classes} classes</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Modifier l'attribution" : "Nouvelle attribution"}</DialogTitle>
+            <DialogDescription>Un enseignant ne peut avoir qu'une attribution par classe et matière.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Enseignant *</Label>
+              <Select value={form.personnelId} onValueChange={(v) => setForm({ ...form, personnelId: v })}>
+                <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                <SelectContent>{enseignants.map((p) => <SelectItem key={p.id} value={p.id}>{p.prenom} {p.nom}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Classe *</Label>
+                <Select value={form.classeId} onValueChange={(v) => setForm({ ...form, classeId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                  <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Matière *</Label>
+                <Select value={form.matiereId} onValueChange={(v) => setForm({ ...form, matiereId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                  <SelectContent>{matieres.map((m) => <SelectItem key={m.id} value={m.id}>{m.nom}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label>Heures / semaine</Label><Input type="number" min={0} step="0.5" value={form.chargeHoraireHebdo} onChange={(e) => setForm({ ...form, chargeHoraireHebdo: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Coefficient (optionnel)</Label><Input type="number" min={0} step="0.5" value={form.coefficient} onChange={(e) => setForm({ ...form, coefficient: e.target.value })} /></div>
+            </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="statistics">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Répartition par Discipline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={disciplineDistribution}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={100}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {disciplineDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Résumé des Attributions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Taux d'affectation global</span>
-                      <span className="text-2xl font-bold text-primary">97.3%</span>
-                    </div>
-                    <Progress value={97.3} className="mt-2" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Classes couvertes</p>
-                      <p className="text-2xl font-bold">28/28</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Matières enseignées</p>
-                      <p className="text-2xl font-bold">12</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Enseignants actifs</p>
-                      <p className="text-2xl font-bold">{enseignants.length}</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Volume horaire</p>
-                      <p className="text-2xl font-bold">{totalHeures}h/sem</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+            <Button onClick={submit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
