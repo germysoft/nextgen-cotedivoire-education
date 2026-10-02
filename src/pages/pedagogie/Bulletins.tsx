@@ -34,6 +34,10 @@ export default function Bulletins() {
 
   return (
     <div className="space-y-6">
+      {/* Aucun endpoint pédagogie ne fournit de bulletin agrégé ; les bulletins réels sont générés depuis la page Notes (Grades.tsx) — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Ce bulletin est une maquette. Les bulletins calculés à partir des vraies notes sont disponibles depuis la page Notes.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bulletins MENA</h1>
