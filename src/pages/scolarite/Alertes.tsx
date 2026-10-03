@@ -407,6 +407,10 @@ export default function Alertes() {
 
   return (
     <div className="space-y-6">
+      {/* Relances d'impayés : aucun endpoint de relance/configuration ; relève du module Finance — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les impayés et relances affichés sont des exemples, en attendant le branchement sur le module Finance.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Alertes Impayés</h1>

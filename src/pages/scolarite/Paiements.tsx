@@ -113,6 +113,10 @@ const Paiements = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Relève du module Finance (déjà branché dans Finance.tsx), hors périmètre du lot Scolarité — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Ces paiements sont des exemples. Les paiements réels sont gérés dans la page Finance.
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-bold text-foreground">Gestion des Paiements</h1>

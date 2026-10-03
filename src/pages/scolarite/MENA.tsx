@@ -117,6 +117,10 @@ export default function MENAPage() {
 
   return (
     <div className="space-y-6">
+      {/* Aucun endpoint d'import/export MENA — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> L'import/export MENA est une maquette : aucun échange avec la plateforme ministérielle n'est encore en place.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Import/Export MENA</h1>

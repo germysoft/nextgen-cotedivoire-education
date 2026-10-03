@@ -140,6 +140,10 @@ export default function EcheancesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Relève du module Finance (échéanciers), hors périmètre du lot Scolarité — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Ces échéances sont des exemples. Le suivi financier réel est géré dans la page Finance.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Suivi des Échéances</h1>
