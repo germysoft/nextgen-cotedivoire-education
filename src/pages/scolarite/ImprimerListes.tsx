@@ -869,6 +869,10 @@ export default function ImprimerListes() {
 
   return (
     <div className="space-y-6">
+      {/* Listes générées à partir de données fictives ; aucun export serveur — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les listes imprimables utilisent des données fictives, en attendant un export côté serveur.
+      </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

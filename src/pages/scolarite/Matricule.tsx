@@ -30,6 +30,10 @@ const matriculesRecents = [
 export default function Matricule() {
   return (
     <div className="space-y-6">
+      {/* Aucun endpoint de génération/configuration de matricules (le matricule est saisi à la création de l'élève) — page volontairement laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> La génération et le format des matricules sont une maquette : le matricule réel est attribué à la création de l'élève.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Génération de Matricules</h1>

@@ -14,11 +14,13 @@ import { api, PaginatedResponse } from '@/lib/api';
  */
 
 function genericCrud<T, I>(path: string, key: string) {
-  const useList = (params: Record<string, string | undefined> = {}) =>
+  // crudFactory plafonne pageSize à 200 et n'accepte aucun filtre métier (seulement q/orderBy) :
+  // le filtrage par élève/classe se fait donc côté client.
+  const useList = () =>
     useQuery({
-      queryKey: [key, params],
+      queryKey: [key],
       queryFn: async () =>
-        (await api.get<PaginatedResponse<T>>(path, { params: { pageSize: 500, ...params } })).data.items,
+        (await api.get<PaginatedResponse<T>>(path, { params: { pageSize: 200 } })).data.items,
     });
   const useCreate = () => {
     const qc = useQueryClient();
