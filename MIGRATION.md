@@ -366,3 +366,27 @@ Le routeur générique ne joint pas les relations : livres/élèves sont recoup�
 **Points d'attention** :
 - `/pedagogie/salles` est rattaché au module RBAC `infrastructures`. Sans ce droit, la liste des salles de l'emploi du temps est vide ; la salle reste optionnelle.
 - **Permissions** : `/pedagogie` est déjà mappé au module `pedagogie`.
+
+## Lot Scolarité — Absences, Certificats, Documents, Historique — branchés ; Matricule, Paiements, Échéances, Alertes, MENA, Impression — mock
+
+**Hooks** : `src/hooks/api/useScolarite.ts`. Il fournit le CRUD générique pour absences, documents, certificats, inscriptions, parents et liens-parents, plus `useInscrireEleve` (endpoint dédié `POST /eleves/:id/inscrire`) et `genererNumeroReference`. Élèves et classes réutilisent `useElevesQuery`, `useClassesQuery` et `useAnneeScolaireActive`.
+
+**Aucune route backend ajoutée** : tout est couvert par `generic.routes.ts` et `eleves.routes.ts`.
+
+**Pages branchées** :
+- `Absences.tsx` : CRUD, bascule justifiée/non justifiée, filtres par classe et par statut. `coursId` n'est pas saisi. Retirés : type retard, pièce justificative, notification parent.
+- `Certificats.tsx` : délivrance, impression et suppression. `numeroReference` est généré côté client (préfixe + horodatage + aléa) ; une collision renvoie l'erreur serveur dans le toast. `contenuHtml` fige le texte émis. Retirés : statut de demande, motif, nombre d'exemplaires.
+- `Documents.tsx` : CRUD de documents sous forme de liens, sans envoi de fichier. Retirés : validation, expiration, pièces obligatoires.
+- `Historique.tsx` : parcours d'un élève à partir de ses inscriptions. Inscription/réinscription via `POST /eleves/:id/inscrire` sur l'année active ; statut et redoublement via le PUT générique. Retirés : bulletins et moyennes (page Notes), établissement d'origine.
+
+**Restent en mock (bandeau jaune)** :
+- `Matricule` : aucun endpoint de génération.
+- `Paiements`, `Echeances`, `Alertes` : relèvent du module Finance.
+- `MENA` : aucun échange ministériel.
+- `ImprimerListes` : données fictives.
+
+**Hooks prêts sans page** : les parents (`/scolarite/parents`) et les liens-parents n'ont aucune page dans `scolarite/`.
+
+**Limite connue** : `crudFactory` plafonne `pageSize` à 200 et n'accepte pas de filtre par `eleveId` ou `classeId`. Au-delà de 200 enregistrements, les listes sont tronquées. Les lots précédents qui passent par le générique sont concernés aussi. À prévoir : ajouter des filtres `where` dans `crudFactory`.
+
+**Permissions** : `/scolarite` est déjà mappé au module `scolarite`.
