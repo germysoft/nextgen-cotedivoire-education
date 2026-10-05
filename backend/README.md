@@ -146,3 +146,20 @@ tables à forte volumétrie (`Note`, `Absence`, `Pointage`,
 `EcritureComptable`, `AuditLog`) et l'archivage annuel vers Azure Blob
 Storage sont scriptés dans `scripts/` — voir **`AZURE_DEPLOYMENT.md`** pour
 la procédure complète de déploiement et la maintenance annuelle.
+
+## 8. Routeur CRUD générique : filtres et pagination
+
+Les ressources montées via `createCrudRouter` (voir `generic.routes.ts`)
+acceptent :
+- `?page=` / `?pageSize=` (plafond **1000**, 25 par défaut)
+- `?q=` recherche texte sur les champs déclarés `searchableFields`
+- `?orderBy=<champ>&orderDir=asc|desc`
+- **Filtres d'égalité sur n'importe quel champ scalaire du modèle**, ex.
+  `GET /api/scolarite/absences?eleveId=<uuid>&justifiee=false`.
+  Les valeurs sont converties vers le type du champ (booléen, nombre,
+  date). Un paramètre qui ne correspond à aucun champ scalaire du modèle
+  est ignoré (pas d'erreur, pas d'injection de filtre).
+
+Cela permet aux pages de ne charger que ce dont elles ont besoin (par
+élève, par classe...) au lieu de télécharger toute la table puis de
+filtrer côté navigateur.
