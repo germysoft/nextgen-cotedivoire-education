@@ -180,6 +180,10 @@ export default function RappelsMedicaux() {
 
   return (
     <div className="space-y-6">
+      {/* Données d'exemple : aucun modèle backend ne correspond à cette page — laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les rappels médicaux (vaccinations, visites, renouvellements) ne sont pas encore enregistrés : aucune table dédiée n'existe côté base de données. Les informations affichées ici servent de maquette en attendant la conception d'un modèle backend — voir MIGRATION.md.
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Rappels Automatiques</h1>
