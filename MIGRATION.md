@@ -390,3 +390,29 @@ Le routeur générique ne joint pas les relations : livres/élèves sont recoup�
 **Limite connue** : `crudFactory` plafonne `pageSize` à 200 et n'accepte pas de filtre par `eleveId` ou `classeId`. Au-delà de 200 enregistrements, les listes sont tronquées. Les lots précédents qui passent par le générique sont concernés aussi. À prévoir : ajouter des filtres `where` dans `crudFactory`.
 
 **Permissions** : `/scolarite` est déjà mappé au module `scolarite`.
+
+## Lot Infirmerie — Fiches, Consultations, Alertes, Ordonnances, Stock, Historique — branchés ; Rappels, Rapports, Impression — mock
+
+**Hooks** : `src/hooks/api/useInfirmerie.ts`. Il couvre les routes dédiées (fiches, consultations, alertes) et le CRUD générique (ordonnances, stock-medicaments). Le CRUD générique utilise `pageSize=1000` et les filtres d'égalité côté serveur, par exemple `useOrdonnancesQuery({ consultationId })`. Données de santé : aucun `console.log`.
+
+**Routes backend ajoutées** (`infirmerie.routes.ts`, style zod + asyncHandler + ApiError) :
+- `GET /infirmerie/fiches-sante` : liste des fiches avec l'élève (nom, prénom, matricule). Seul l'accès par élève existait.
+- `PUT/DELETE /infirmerie/consultations/:id` : la suppression retire aussi les ordonnances liées (cascade).
+- `PUT/DELETE /infirmerie/alertes/:id` : « Résoudre » envoie `PUT { resolue: true }`.
+
+**Pages branchées** :
+- `FichesSante.tsx` : liste, création et modification par upsert (`PUT /fiches-sante/:eleveId`). Aucune suppression (pas de route). Retirés : poids/taille/IMC, détail des vaccins, contacts d'urgence multiples, régimes.
+- `Consultations.tsx` : CRUD et filtre « suivi nécessaire ». La date est fixée par le serveur. Retirés : heure saisie, constantes, gravité, statut, prévenir les parents.
+- `Alertes.tsx` : création, modification, résolution et suppression. Le GET ne liste que les alertes non résolues, donc aucun historique des alertes résolues. Retirés : escalade, responsable, actions SMS/parents.
+- `Ordonnances.tsx` : CRUD avec médicaments `[{nom, posologie, duree}]`, filtre serveur `?consultationId=` et impression PDF. Retirés : prescripteur, statut de délivrance, renouvellement.
+- `StockMedicaments.tsx` : CRUD, boutons +/- (PUT de `quantiteStock`), états stock bas/péremption et inventaire PDF. Retirés : catégorie, forme, dosage, prix, lot, journal de mouvements, bons de commande.
+- `Historique.tsx` : lecture seule (fiche + `GET /consultations?eleveId=`). Retirés : vaccinations détaillées, hospitalisations, courbes de croissance.
+
+**Restent en mock (bandeau jaune)** :
+- `Rappels.tsx` : aucun modèle de rappel/vaccination.
+- `RapportsMedicaux.tsx` : aucune agrégation ni statistique épidémiologique côté serveur.
+- `ImprimerListesInfirmerie.tsx` : données fictives.
+
+**Limite** : les listes d'élèves et de personnel des formulaires passent par `/eleves` et `/personnel`, plafonnés à 200.
+
+**Permissions** : `/infirmerie` est déjà mappé au module `infirmerie`.

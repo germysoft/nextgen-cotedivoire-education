@@ -198,6 +198,10 @@ export default function RapportsMedicaux() {
 
   return (
     <div className="space-y-6">
+      {/* Données d'exemple : aucun modèle backend ne correspond à cette page — laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les rapports médicaux (statistiques épidémiologiques, synthèses périodiques) ne sont pas encore calculés côté serveur. Les informations affichées ici servent de maquette en attendant la conception d'un modèle backend — voir MIGRATION.md.
+      </div>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Rapports Médicaux Périodiques</h1>

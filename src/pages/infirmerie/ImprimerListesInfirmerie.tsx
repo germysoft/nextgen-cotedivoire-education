@@ -312,6 +312,10 @@ export default function ImprimerListesInfirmerie() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Données d'exemple : aucun modèle backend ne correspond à cette page — laissée en mock (voir MIGRATION.md). */}
+      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Données d'exemple.</strong> Les listes imprimables utilisent encore des données fictives (aucun endpoint d'agrégation dédié). Les informations affichées ici servent de maquette en attendant la conception d'un modèle backend — voir MIGRATION.md.
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
