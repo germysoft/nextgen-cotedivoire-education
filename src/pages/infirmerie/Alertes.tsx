@@ -26,7 +26,7 @@ const TYPES = ["Allergie sévère", "Maladie chronique", "Épidémie", "Stock cr
 const NIVEAUX: NiveauAlerte[] = ["Info", "Attention", "Urgent"];
 const NONE = "none";
 const vide = { eleveId: NONE, type: TYPES[0], description: "", niveau: "Info" as NiveauAlerte };
-const variant = (n: string) => (n === "Urgent" ? "destructive" : n === "Attention" ? "default" : "secondary") as const;
+const variant = (n: string): "destructive" | "default" | "secondary" => (n === "Urgent" ? "destructive" : n === "Attention" ? "default" : "secondary");
 
 export default function Alertes() {
   const [search, setSearch] = useState("");
