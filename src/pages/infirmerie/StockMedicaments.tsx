@@ -97,7 +97,7 @@ export default function StockMedicaments() {
   };
 
   const pending = create.isPending || update.isPending;
-  const variant = (e: string) => (e === "OK" ? "secondary" : e === "Péremption proche" ? "default" : "destructive") as const;
+  const variant = (e: string): "destructive" | "default" | "secondary" => (e === "OK" ? "secondary" : e === "Péremption proche" ? "default" : "destructive");
 
   return (
     <div className="space-y-6">
