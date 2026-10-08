@@ -13,12 +13,12 @@ export interface ThemeConfig {
 }
 
 const defaultColors: ThemeColors = {
-  primary: "217 91% 60%", // Blue
-  accent: "217 91% 60%",
+  primary: "208 100% 38%", // Blue
+  accent: "208 100% 38%",
 };
 
 const colorPresets = [
-  { name: "Bleu", primary: "217 91% 60%", accent: "217 91% 60%" },
+  { name: "Bleu", primary: "208 100% 38%", accent: "208 100% 38%" },
   { name: "Violet", primary: "271 81% 56%", accent: "271 81% 56%" },
   { name: "Vert", primary: "142 71% 45%", accent: "142 71% 45%" },
   { name: "Orange", primary: "25 95% 53%", accent: "25 95% 53%" },
