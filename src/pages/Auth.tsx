@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { GraduationCap, Loader2, Languages } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -41,23 +41,23 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-4 text-center">
+    <div className="mica-login min-h-svh flex items-center justify-center p-4 sm:p-6">
+      <Card className="fluent-window w-full max-w-[440px] bg-card/80 backdrop-blur-2xl overflow-hidden">
+        <CardHeader className="space-y-5 px-6 pt-8 pb-7 text-center sm:px-10 sm:pt-10">
           <div className="flex justify-center">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <GraduationCap className="h-10 w-10 text-primary" />
+              <GraduationCap className="h-8 w-8 text-primary" strokeWidth={1.5} />
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">{t('auth.welcome')}</CardTitle>
-            <CardDescription>{t('auth.subtitle')}</CardDescription>
+            <CardTitle className="text-2xl font-semibold">{t('auth.welcome')}</CardTitle>
+            <CardDescription className="mt-2 leading-relaxed">{t('auth.subtitle')}</CardDescription>
           </div>
           <div className="flex justify-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <span className="text-lg">{currentLanguageInfo.flag}</span>
+                <Button variant="outline" size="sm" className="gap-2 text-xs">
+                  <Languages className="h-4 w-4" />
                   {currentLanguageInfo.nativeName}
                 </Button>
               </DropdownMenuTrigger>
@@ -66,7 +66,7 @@ export default function Auth() {
                   <DropdownMenuItem
                     key={lang.code}
                     onClick={() => setLanguage(lang.code)}
-                    className={language === lang.code ? "bg-accent" : ""}
+                    className={language === lang.code ? "bg-muted text-foreground" : ""}
                   >
                     <span className="mr-2">{lang.flag}</span>
                     {lang.nativeName}
@@ -76,8 +76,8 @@ export default function Auth() {
             </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-6 pb-8 sm:px-10 sm:pb-10">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
@@ -99,14 +99,14 @@ export default function Auth() {
                 required
               />
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <div className="flex items-center space-x-2">
                 <Checkbox id="remember" />
-                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                <Label htmlFor="remember" className="text-xs font-normal cursor-pointer text-muted-foreground">
                   {t('auth.rememberMe')}
                 </Label>
               </div>
-              <Button variant="link" className="p-0 h-auto text-sm">
+              <Button variant="link" className="p-0 h-auto text-xs">
                 {t('auth.forgotPassword')}
               </Button>
             </div>
@@ -117,7 +117,7 @@ export default function Auth() {
               {chargement ? <Loader2 className="h-4 w-4 animate-spin" /> : t('auth.signIn')}
             </Button>
           </form>
-          <div className="mt-6 text-center text-xs text-muted-foreground">
+          <div className="mt-8 border-t border-border/60 pt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
             <p>© 2024 NextGen Éducation</p>
             <p className="mt-1">Conforme aux standards MENA - Côte d'Ivoire</p>
           </div>
