@@ -54,12 +54,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card px-6">
+         <div className="flex min-w-0 flex-1 flex-col">
+           <header className="fluent-header sticky top-0 z-10 flex min-h-16 flex-wrap items-center gap-3 border-b px-4 py-2 lg:px-6">
             <SidebarTrigger />
-            <div className="flex flex-1 items-center gap-4">
+             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
               <GlobalSearch />
-              <div className="ml-auto flex items-center gap-3">
+               <div className="ml-auto flex flex-wrap items-center gap-1 lg:gap-2">
                 <RoleSelector />
                 
                 <Button variant="ghost" size="icon" className="relative">
@@ -98,7 +98,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </div>
           </header>
           <ArchiveBanner />
-          <main className="flex-1 p-6 bg-background">
+           <main className="min-w-0 flex-1 bg-background p-4 lg:p-6">
             {autorise ? (
               children
             ) : (
