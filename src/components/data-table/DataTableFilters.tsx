@@ -70,8 +70,8 @@ export function DataTableFilters({
   const activeFilterCount = Object.keys(activeFilters).length;
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex-1 max-w-sm">
+    <div className="fluent-filter-bar flex flex-wrap items-center gap-3 py-3">
+      <div className="relative min-w-0 flex-1 basis-48 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
@@ -97,7 +97,7 @@ export function DataTableFilters({
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent>
+        <SheetContent className="fluent-menu overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Filtres avancés</SheetTitle>
             <SheetDescription>
