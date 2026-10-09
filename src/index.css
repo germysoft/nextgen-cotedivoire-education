@@ -126,6 +126,11 @@ All colors MUST be HSL.
     --surface-shadow: 0 2px 8px hsl(0 0% 0% / 0.04);
     --window-shadow: 0 12px 40px hsl(0 0% 0% / 0.08), 0 2px 6px hsl(0 0% 0% / 0.04);
     --control-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.15), 0 1px 2px hsl(0 0% 0% / 0.08);
+    --table-heading: 210 20% 94%;
+    --table-stripe: 210 20% 98%;
+    --table-hover: 208 45% 94%;
+    --table-selected: 208 65% 91%;
+    --menu-highlight: 210 18% 92%;
     --stat-icon-bg: 208 100% 94%;
     --stat-icon-color: 217 91% 60%;
   }
@@ -189,6 +194,11 @@ All colors MUST be HSL.
     --mica-end: 220 10% 11%;
     --surface-shadow: 0 2px 8px hsl(0 0% 0% / 0.12);
     --window-shadow: 0 12px 40px hsl(0 0% 0% / 0.25);
+    --table-heading: 0 0% 21%;
+    --table-stripe: 0 0% 18%;
+    --table-hover: 210 12% 24%;
+    --table-selected: 208 28% 27%;
+    --menu-highlight: 0 0% 26%;
     --stat-icon-bg: 208 60% 22%;
     --stat-icon-color: 217 91% 60%;
   }
@@ -244,6 +254,15 @@ All colors MUST be HSL.
   .fluent-window { box-shadow: var(--window-shadow); }
   .fluent-card { box-shadow: var(--surface-shadow); }
   .fluent-button { box-shadow: var(--control-shadow); }
+  .fluent-table-shell { background: hsl(var(--card)); border-radius: var(--radius); }
+  .fluent-table thead { background: hsl(var(--table-heading)); }
+  .fluent-table tbody tr:nth-child(even) { background: hsl(var(--table-stripe)); }
+  .fluent-table tbody tr:hover { background: hsl(var(--table-hover)); }
+  .fluent-table tbody tr[data-state="selected"] { background: hsl(var(--table-selected)); }
+  .fluent-table tbody tr:focus-within { outline: 2px solid hsl(var(--ring) / 0.45); outline-offset: -2px; }
+  .fluent-menu { background: hsl(var(--popover) / 0.97); backdrop-filter: blur(20px); box-shadow: var(--window-shadow); }
+  .fluent-menu-item:focus, .fluent-menu-item[data-highlighted], .fluent-menu-item[data-state="open"], .fluent-menu-item[data-selected="true"] { background: hsl(var(--menu-highlight)); }
+  .fluent-filter-bar { background: hsl(var(--background) / 0.75); border-bottom: 1px solid hsl(var(--border)); }
   .fluent-header { background: hsl(var(--background) / 0.86); backdrop-filter: blur(24px); }
   [data-sidebar="sidebar"] { background: hsl(var(--sidebar-background) / 0.92); backdrop-filter: blur(24px); }
   [data-sidebar="menu-button"][data-active="true"] { position: relative; background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-foreground)); }
